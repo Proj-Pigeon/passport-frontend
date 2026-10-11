@@ -24,15 +24,11 @@ export const routes: RouteObject[] = [
       },
       {
         path: 'register',
-        element: (
-          <PlaceholderPage title="注册" milestone="M2" description="注册并发送验证邮件" />
-        ),
+        element: <PlaceholderPage title="注册" milestone="M2" description="注册并发送验证邮件" />,
       },
       {
         path: 'forgot-password',
-        element: (
-          <PlaceholderPage title="忘记密码" milestone="M2" description="申请密码重置邮件" />
-        ),
+        element: <PlaceholderPage title="忘记密码" milestone="M2" description="申请密码重置邮件" />,
       },
       {
         path: 'reset-password',
@@ -76,27 +72,17 @@ export const routes: RouteObject[] = [
           {
             index: true,
             element: (
-              <PlaceholderPage
-                title="账号概览"
-                milestone="M3"
-                description="个人信息与安全摘要"
-              />
+              <PlaceholderPage title="账号概览" milestone="M3" description="个人信息与安全摘要" />
             ),
           },
           {
             path: 'profile',
-            element: (
-              <PlaceholderPage title="个人资料" milestone="M3" description="昵称与头像" />
-            ),
+            element: <PlaceholderPage title="个人资料" milestone="M3" description="昵称与头像" />,
           },
           {
             path: 'security',
             element: (
-              <PlaceholderPage
-                title="安全"
-                milestone="M4"
-                description="Passkey 管理与 Step-up"
-              />
+              <PlaceholderPage title="安全" milestone="M4" description="Passkey 管理与 Step-up" />
             ),
           },
           {
