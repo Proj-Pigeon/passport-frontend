@@ -4,6 +4,8 @@ import { Notifications } from '@mantine/notifications';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from 'react-router/dom';
 
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+
 import { queryClient } from './queryClient';
 import { createAppRouter } from './router';
 import { theme } from './theme';
@@ -16,7 +18,9 @@ export function App() {
       <QueryClientProvider client={queryClient}>
         <ModalsProvider>
           <Notifications position="top-right" />
-          <RouterProvider router={router} />
+          <ErrorBoundary>
+            <RouterProvider router={router} />
+          </ErrorBoundary>
         </ModalsProvider>
       </QueryClientProvider>
     </MantineProvider>

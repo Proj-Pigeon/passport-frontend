@@ -1,11 +1,13 @@
 import { ActionIcon, Tooltip, useComputedColorScheme, useMantineColorScheme } from '@mantine/core';
 import { IconMoon, IconSun } from '@tabler/icons-react';
+import { useTranslation } from 'react-i18next';
 
 export function ColorSchemeToggle() {
   const { setColorScheme } = useMantineColorScheme();
   const computed = useComputedColorScheme('light', { getInitialValueInEffect: true });
+  const { t } = useTranslation();
   const isDark = computed === 'dark';
-  const label = isDark ? '切换到浅色模式' : '切换到深色模式';
+  const label = isDark ? t('common.switchToLight') : t('common.switchToDark');
 
   return (
     <Tooltip label={label}>
