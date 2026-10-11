@@ -3,6 +3,7 @@ import '@testing-library/jest-dom/vitest';
 import '@/i18n';
 
 import { cleanup } from '@testing-library/react';
+import { notifications } from '@mantine/notifications';
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest';
 
 import { resetCsrfToken } from '@/api/csrf';
@@ -20,6 +21,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  notifications.clean();
   server.resetHandlers();
 });
 

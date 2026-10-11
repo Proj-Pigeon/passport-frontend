@@ -3,11 +3,17 @@ import { http, HttpResponse, type RequestHandler } from 'msw';
 import type { ApiFieldError } from '@/api/errors';
 
 import {
+  consumeCeremony,
   currentUser,
   findUserByIdentifier,
+  grantStepUp,
+  hasStepUp,
+  passkeysOf,
   signIn,
   signOut,
+  startCeremony,
   type MockDb,
+  type MockPasskey,
   type MockUser,
 } from './db';
 
@@ -73,7 +79,35 @@ function str(value: unknown): string {
 
 const USERNAME_PATTERN = /^[a-z0-9][a-z0-9_.-]{2,63}$/;
 
-function profileOf(user: MockUser) {
+const AVATAR_MAX_BYTES = 512 * 1024;
+const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+const JPEG_SIGNATURE = [0xff, 0xd8, 0xff];
+
+function sniffImage(content: Uint8Array): string | null {
+  const matches = (signature: readonly number[]) =>
+    content.length >= signature.length && signature.every((byte, index) => content[index] === byte);
+  if (matches(PNG_SIGNATURE)) {
+    return 'image/png';
+  }
+  if (matches(JPEG_SIGNATURE)) {
+    return 'image/jpeg';
+  }
+  return null;
+}
+
+function passkeyOf(passkey: MockPasskey) {
+  return {
+    id: passkey.id,
+    label: passkey.label,
+    created_at: passkey.created_at,
+    ...(passkey.last_used_at ? { last_used_at: passkey.last_used_at } : {}),
+    backup_eligible: passkey.backup_eligible,
+    backup_state: passkey.backup_state,
+    transports: passkey.transports,
+  };
+}
+
+function profileOf(db: MockDb, user: MockUser) {
   return {
     id: user.id,
     username: user.username,
@@ -81,7 +115,7 @@ function profileOf(user: MockUser) {
     email: user.email,
     email_verified: user.email_verified,
     status: user.status,
-    avatar_url: null,
+    avatar_url: db.avatar ? '/v1/me/avatar' : null,
   };
 }
 
@@ -293,7 +327,7 @@ export function createHandlers(db: MockDb): RequestHandler[] {
       if (!user) {
         return unauthorized();
       }
-      return HttpResponse.json(profileOf(user), { headers: { 'X-Request-ID': REQUEST_ID } });
+      return HttpResponse.json(profileOf(db, user), { headers: { 'X-Request-ID': REQUEST_ID } });
     }),
 
     http.patch('*/v1/me', async ({ request }) => {
@@ -311,25 +345,33 @@ export function createHandlers(db: MockDb): RequestHandler[] {
           { name: 'display_name', code: 'required' },
         ]);
       }
-      user.display_name = str(body['display_name']).trim();
-      return HttpResponse.json(profileOf(user), { headers: { 'X-Request-ID': REQUEST_ID } });
-    }),
-
-    http.get('*/v1/me/passkeys', () => {
-      if (!currentUser(db)) {
-        return unauthorized();
+      const displayName = str(body['display_name']).trim();
+      if ([...displayName].length > 80) {
+        return envelope(422, 'validation_failed', 'The request is not valid.', [
+          { name: 'display_name', code: 'invalid_format' },
+        ]);
       }
-      return HttpResponse.json([], { headers: { 'X-Request-ID': REQUEST_ID } });
+      user.display_name = displayName;
+      return HttpResponse.json(profileOf(db, user), { headers: { 'X-Request-ID': REQUEST_ID } });
     }),
 
     http.get('*/v1/me/avatar', () => {
       if (!currentUser(db)) {
         return unauthorized();
       }
-      return notFound();
+      if (!db.avatar) {
+        return notFound();
+      }
+      return new HttpResponse(new Uint8Array(db.avatar.content), {
+        headers: {
+          'X-Request-ID': REQUEST_ID,
+          'Content-Type': db.avatar.mediaType,
+          ETag: '"mock-avatar-etag"',
+        },
+      });
     }),
 
-    http.post('*/v1/me/passkeys/registration-options', ({ request }) => {
+    http.put('*/v1/me/avatar', async ({ request }) => {
       const csrf = csrfFailure(db, request);
       if (csrf) {
         return csrf;
@@ -337,7 +379,242 @@ export function createHandlers(db: MockDb): RequestHandler[] {
       if (!currentUser(db)) {
         return unauthorized();
       }
-      return envelope(403, 'forbidden', 'Step-up authentication is required.');
+      const mediaType = (str(request.headers.get('content-type')).split(';')[0] ?? '').trim();
+      if (mediaType !== 'image/jpeg' && mediaType !== 'image/png') {
+        return envelope(422, 'validation_failed', 'The request is not valid.', [
+          { name: 'avatar', code: 'unsupported_media_type' },
+        ]);
+      }
+      const content = new Uint8Array(await request.arrayBuffer());
+      const reject = (code: string) =>
+        envelope(422, 'validation_failed', 'The request is not valid.', [{ name: 'avatar', code }]);
+      if (content.length > AVATAR_MAX_BYTES) {
+        return reject('too_large');
+      }
+      const sniffed = sniffImage(content);
+      if (!sniffed) {
+        return reject('invalid_image');
+      }
+      if (sniffed !== mediaType) {
+        return reject('media_type_mismatch');
+      }
+      db.avatar = { mediaType, content };
+      return HttpResponse.json(
+        {
+          url: '/v1/me/avatar',
+          media_type: mediaType,
+          width: 512,
+          height: 512,
+          bytes: content.length,
+        },
+        { headers: { 'X-Request-ID': REQUEST_ID } },
+      );
+    }),
+
+    http.delete('*/v1/me/avatar', ({ request }) => {
+      const csrf = csrfFailure(db, request);
+      if (csrf) {
+        return csrf;
+      }
+      if (!currentUser(db)) {
+        return unauthorized();
+      }
+      db.avatar = null;
+      return new HttpResponse(null, { status: 204, headers: { 'X-Request-ID': REQUEST_ID } });
+    }),
+
+    http.get('*/v1/me/passkeys', () => {
+      const user = currentUser(db);
+      if (!user) {
+        return unauthorized();
+      }
+      return HttpResponse.json(passkeysOf(db, user.id).map(passkeyOf), {
+        headers: { 'X-Request-ID': REQUEST_ID },
+      });
+    }),
+
+    http.post('*/v1/me/passkeys/registration-options', ({ request }) => {
+      const csrf = csrfFailure(db, request);
+      if (csrf) {
+        return csrf;
+      }
+      const user = currentUser(db);
+      if (!user) {
+        return unauthorized();
+      }
+      if (passkeysOf(db, user.id).length > 0 && !hasStepUp(db)) {
+        return envelope(403, 'forbidden', 'A recent passkey step-up is required.');
+      }
+      return HttpResponse.json(
+        {
+          ceremony_id: startCeremony(db, 'registration'),
+          options: { publicKey: { challenge: 'bW9jay1jaGFsbGVuZ2U' } },
+        },
+        { headers: { 'X-Request-ID': REQUEST_ID } },
+      );
+    }),
+
+    http.post('*/v1/me/passkeys/registration-verify', async ({ request }) => {
+      const csrf = csrfFailure(db, request);
+      if (csrf) {
+        return csrf;
+      }
+      const user = currentUser(db);
+      if (!user) {
+        return unauthorized();
+      }
+      if (passkeysOf(db, user.id).length > 0 && !hasStepUp(db)) {
+        return envelope(403, 'forbidden', 'A recent passkey step-up is required.');
+      }
+      const ceremonyId = str(request.headers.get('x-passkey-ceremony'));
+      if (!consumeCeremony(db, ceremonyId, 'registration')) {
+        return envelope(409, 'conflict', 'The passkey ceremony is no longer valid.');
+      }
+      const body = await readJson(request);
+      const credentialId = str(body?.['rawId'] ?? body?.['id']);
+      if (db.passkeys.some((passkey) => passkey.credential_id === credentialId)) {
+        return envelope(409, 'conflict', 'This passkey is already registered.');
+      }
+      const created: MockPasskey = {
+        id: `pk_${db.passkeys.length + 1}`,
+        user_id: user.id,
+        credential_id: credentialId,
+        label: '',
+        created_at: new Date().toISOString(),
+        last_used_at: null,
+        backup_eligible: false,
+        backup_state: false,
+        transports: ['internal'],
+      };
+      db.passkeys.push(created);
+      return HttpResponse.json(passkeyOf(created), {
+        status: 201,
+        headers: { 'X-Request-ID': REQUEST_ID },
+      });
+    }),
+
+    http.patch('*/v1/me/passkeys/:passkeyId', async ({ params, request }) => {
+      const csrf = csrfFailure(db, request);
+      if (csrf) {
+        return csrf;
+      }
+      const user = currentUser(db);
+      if (!user) {
+        return unauthorized();
+      }
+      if (!hasStepUp(db)) {
+        return envelope(403, 'forbidden', 'A recent passkey step-up is required.');
+      }
+      const passkey = passkeysOf(db, user.id).find((entry) => entry.id === params['passkeyId']);
+      if (!passkey) {
+        return notFound();
+      }
+      const body = await readJson(request);
+      const label = str(body?.['label']);
+      if (typeof body?.['label'] !== 'string' || [...label].length > 80) {
+        return envelope(422, 'validation_failed', 'The request is not valid.', [
+          { name: 'label', code: 'invalid_format' },
+        ]);
+      }
+      passkey.label = label;
+      return HttpResponse.json(passkeyOf(passkey), { headers: { 'X-Request-ID': REQUEST_ID } });
+    }),
+
+    http.delete('*/v1/me/passkeys/:passkeyId', ({ params, request }) => {
+      const csrf = csrfFailure(db, request);
+      if (csrf) {
+        return csrf;
+      }
+      const user = currentUser(db);
+      if (!user) {
+        return unauthorized();
+      }
+      if (!hasStepUp(db)) {
+        return envelope(403, 'forbidden', 'A recent passkey step-up is required.');
+      }
+      const owned = passkeysOf(db, user.id);
+      const passkey = owned.find((entry) => entry.id === params['passkeyId']);
+      if (!passkey) {
+        return notFound();
+      }
+      if (owned.length <= 1 && !user.has_password) {
+        return envelope(403, 'forbidden', 'A password or another passkey is required.');
+      }
+      db.passkeys = db.passkeys.filter((entry) => entry.id !== passkey.id);
+      return new HttpResponse(null, { status: 204, headers: { 'X-Request-ID': REQUEST_ID } });
+    }),
+
+    http.post('*/v1/sessions/current/step-up/passkey/options', ({ request }) => {
+      const csrf = csrfFailure(db, request);
+      if (csrf) {
+        return csrf;
+      }
+      const user = currentUser(db);
+      if (!db.session || !user) {
+        return unauthorized();
+      }
+      if (passkeysOf(db, user.id).length === 0) {
+        return envelope(403, 'forbidden', 'A registered passkey is required for step-up.');
+      }
+      return HttpResponse.json(
+        {
+          ceremony_id: startCeremony(db, 'step_up'),
+          options: { publicKey: { challenge: 'bW9jay1jaGFsbGVuZ2U' } },
+        },
+        { headers: { 'X-Request-ID': REQUEST_ID } },
+      );
+    }),
+
+    http.post('*/v1/sessions/current/step-up/passkey/verify', ({ request }) => {
+      const csrf = csrfFailure(db, request);
+      if (csrf) {
+        return csrf;
+      }
+      const user = currentUser(db);
+      if (!db.session || !user) {
+        return unauthorized();
+      }
+      const ceremonyId = str(request.headers.get('x-passkey-ceremony'));
+      if (!consumeCeremony(db, ceremonyId, 'step_up')) {
+        return envelope(409, 'conflict', 'The passkey ceremony is no longer valid.');
+      }
+      grantStepUp(db);
+      return new HttpResponse(null, { status: 204, headers: { 'X-Request-ID': REQUEST_ID } });
+    }),
+
+    http.post('*/v1/sessions/passkey/options', ({ request }) => {
+      const csrf = csrfFailure(db, request);
+      if (csrf) {
+        return csrf;
+      }
+      return HttpResponse.json(
+        {
+          ceremony_id: startCeremony(db, 'login'),
+          options: { publicKey: { challenge: 'bW9jay1jaGFsbGVuZ2U' } },
+        },
+        { headers: { 'X-Request-ID': REQUEST_ID } },
+      );
+    }),
+
+    http.post('*/v1/sessions/passkey/verify', async ({ request }) => {
+      const csrf = csrfFailure(db, request);
+      if (csrf) {
+        return csrf;
+      }
+      const ceremonyId = str(request.headers.get('x-passkey-ceremony'));
+      if (!consumeCeremony(db, ceremonyId, 'login')) {
+        return envelope(409, 'conflict', 'The passkey ceremony is no longer valid.');
+      }
+      const body = await readJson(request);
+      const credentialId = str(body?.['rawId'] ?? body?.['id']);
+      const passkey = db.passkeys.find((entry) => entry.credential_id === credentialId);
+      const user = passkey ? db.users.find((entry) => entry.id === passkey.user_id) : undefined;
+      if (!passkey || !user || !user.email_verified || user.status !== 'active') {
+        return unauthorized();
+      }
+      passkey.last_used_at = new Date().toISOString();
+      signIn(db, user, 'passkey');
+      return new HttpResponse(null, { status: 204, headers: { 'X-Request-ID': REQUEST_ID } });
     }),
 
     http.get('*/livez', () => new HttpResponse(null, { status: 200 })),

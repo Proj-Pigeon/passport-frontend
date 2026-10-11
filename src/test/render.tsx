@@ -1,5 +1,4 @@
 import { MantineProvider } from '@mantine/core';
-import { ModalsProvider } from '@mantine/modals';
 import { Notifications } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, type RenderOptions } from '@testing-library/react';
@@ -30,10 +29,8 @@ export function renderWithProviders(ui: ReactElement, options: RenderWithProvide
     return (
       <MantineProvider theme={theme}>
         <QueryClientProvider client={queryClient}>
-          <ModalsProvider>
-            <Notifications />
-            {children}
-          </ModalsProvider>
+          <Notifications />
+          {children}
         </QueryClientProvider>
       </MantineProvider>
     );

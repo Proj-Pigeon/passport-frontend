@@ -1,15 +1,25 @@
+import type {
+  PublicKeyCredentialCreationOptionsJSON,
+  RegistrationResponseJSON,
+} from '@simplewebauthn/browser';
+
 import { apiDelete, apiGet, apiPatch, apiPost } from '../http';
 import type { Passkey, WebAuthnCeremony } from '../types';
+
+export type PasskeyRegistrationCeremony = WebAuthnCeremony<PublicKeyCredentialCreationOptionsJSON>;
 
 export function listPasskeys(signal?: AbortSignal) {
   return apiGet<Passkey[]>('/v1/me/passkeys', { signal });
 }
 
 export function passkeyRegistrationOptions() {
-  return apiPost<WebAuthnCeremony>('/v1/me/passkeys/registration-options');
+  return apiPost<PasskeyRegistrationCeremony>('/v1/me/passkeys/registration-options');
 }
 
-export function passkeyRegistrationVerify(attestation: unknown, ceremonyId: string) {
+export function passkeyRegistrationVerify(
+  attestation: RegistrationResponseJSON,
+  ceremonyId: string,
+) {
   return apiPost<Passkey>('/v1/me/passkeys/registration-verify', attestation, {
     headers: { 'X-Passkey-Ceremony': ceremonyId },
   });

@@ -1,4 +1,4 @@
-import type { AccountStatus, AuthenticationMethod } from '@/api/types';
+import type { AccountStatus, AuthenticationMethod, AuthenticatorTransport } from '@/api/types';
 
 export interface MockUser {
   id: string;
@@ -21,6 +21,25 @@ export interface MockSession {
   step_up_expires_at?: string;
 }
 
+export interface MockPasskey {
+  id: string;
+  user_id: string;
+  credential_id: string;
+  label: string;
+  created_at: string;
+  last_used_at: string | null;
+  backup_eligible: boolean;
+  backup_state: boolean;
+  transports: AuthenticatorTransport[];
+}
+
+export interface MockAvatar {
+  mediaType: string;
+  content: Uint8Array;
+}
+
+export type CeremonyKind = 'login' | 'step_up' | 'registration';
+
 export interface MockDb {
   users: MockUser[];
   verificationTokens: Map<string, string>;
@@ -29,9 +48,14 @@ export interface MockDb {
   currentUserId: string | null;
   csrfToken: string;
   requireCsrf: boolean;
+  passkeys: MockPasskey[];
+  avatar: MockAvatar | null;
+  ceremonies: Map<string, CeremonyKind>;
 }
 
 export const MOCK_CSRF_TOKEN = 'mock-csrf-token';
+
+export const STEP_UP_TTL_MS = 10 * 60_000;
 
 export function createMockDb(): MockDb {
   return {
@@ -42,6 +66,9 @@ export function createMockDb(): MockDb {
     currentUserId: null,
     csrfToken: MOCK_CSRF_TOKEN,
     requireCsrf: true,
+    passkeys: [],
+    avatar: null,
+    ceremonies: new Map(),
   };
 }
 
@@ -91,4 +118,54 @@ export function seedUser(db: MockDb, overrides: Partial<MockUser> = {}): MockUse
   };
   db.users.push(user);
   return user;
+}
+
+export function seedPasskey(db: MockDb, overrides: Partial<MockPasskey> = {}): MockPasskey {
+  const passkey: MockPasskey = {
+    id: `pk_${db.passkeys.length + 1}`,
+    user_id: db.currentUserId ?? 'usr_seed',
+    credential_id: `cred_${db.passkeys.length + 1}`,
+    label: '',
+    created_at: new Date().toISOString(),
+    last_used_at: null,
+    backup_eligible: true,
+    backup_state: false,
+    transports: ['internal', 'hybrid'],
+    ...overrides,
+  };
+  db.passkeys.push(passkey);
+  return passkey;
+}
+
+export function hasStepUp(db: MockDb, now = Date.now()): boolean {
+  const expiresAt = db.session?.step_up_expires_at;
+  if (!expiresAt) {
+    return false;
+  }
+  const deadline = Date.parse(expiresAt);
+  return Number.isFinite(deadline) && deadline > now;
+}
+
+export function grantStepUp(db: MockDb, ttlMs = STEP_UP_TTL_MS): void {
+  if (db.session) {
+    db.session.step_up_expires_at = new Date(Date.now() + ttlMs).toISOString();
+  }
+}
+
+export function passkeysOf(db: MockDb, userId: string): MockPasskey[] {
+  return db.passkeys.filter((passkey) => passkey.user_id === userId);
+}
+
+export function startCeremony(db: MockDb, kind: CeremonyKind): string {
+  const ceremonyId = `wac_${db.ceremonies.size + 1}_${kind}`;
+  db.ceremonies.set(ceremonyId, kind);
+  return ceremonyId;
+}
+
+export function consumeCeremony(db: MockDb, ceremonyId: string, kind: CeremonyKind): boolean {
+  if (db.ceremonies.get(ceremonyId) !== kind) {
+    return false;
+  }
+  db.ceremonies.delete(ceremonyId);
+  return true;
 }

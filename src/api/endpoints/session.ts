@@ -1,5 +1,12 @@
+import type {
+  AuthenticationResponseJSON,
+  PublicKeyCredentialRequestOptionsJSON,
+} from '@simplewebauthn/browser';
+
 import { apiDelete, apiGet, apiPost, apiVoid } from '../http';
 import type { CurrentSessionResponse, PasswordLoginRequest, WebAuthnCeremony } from '../types';
+
+export type PasskeyAuthenticationCeremony = WebAuthnCeremony<PublicKeyCredentialRequestOptionsJSON>;
 
 export const CURRENT_SESSION_PATH = '/v1/sessions/current';
 
@@ -19,10 +26,10 @@ export function logoutCurrentSession() {
 }
 
 export function passkeyLoginOptions() {
-  return apiPost<WebAuthnCeremony>('/v1/sessions/passkey/options');
+  return apiPost<PasskeyAuthenticationCeremony>('/v1/sessions/passkey/options');
 }
 
-export function passkeyLoginVerify(assertion: unknown, ceremonyId: string) {
+export function passkeyLoginVerify(assertion: AuthenticationResponseJSON, ceremonyId: string) {
   return apiVoid('/v1/sessions/passkey/verify', {
     method: 'POST',
     body: assertion,
@@ -31,10 +38,10 @@ export function passkeyLoginVerify(assertion: unknown, ceremonyId: string) {
 }
 
 export function stepUpPasskeyOptions() {
-  return apiPost<WebAuthnCeremony>('/v1/sessions/current/step-up/passkey/options');
+  return apiPost<PasskeyAuthenticationCeremony>('/v1/sessions/current/step-up/passkey/options');
 }
 
-export function stepUpPasskeyVerify(assertion: unknown, ceremonyId: string) {
+export function stepUpPasskeyVerify(assertion: AuthenticationResponseJSON, ceremonyId: string) {
   return apiVoid('/v1/sessions/current/step-up/passkey/verify', {
     method: 'POST',
     body: assertion,
