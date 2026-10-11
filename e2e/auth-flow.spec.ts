@@ -50,7 +50,7 @@ test.describe('account lifecycle', () => {
     await expect(page).toHaveURL(/\/login$/);
 
     await signIn(page, username, PASSWORD);
-    await expect(page.getByRole('heading', { name: '账号概览' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '概览' })).toBeVisible();
     await expect(page).toHaveURL(/\/account$/);
 
     await page.getByRole('button', { name: '用户菜单' }).click();
@@ -155,7 +155,7 @@ test.describe('password recovery', () => {
 
     await page.getByRole('link', { name: '去登录' }).click();
     await signIn(page, username, NEW_PASSWORD);
-    await expect(page.getByRole('heading', { name: '账号概览' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '概览' })).toBeVisible();
   });
 
   test('an unknown address yields the same anti-enumeration result', async ({ page }) => {
@@ -236,7 +236,7 @@ test.describe('route guards', () => {
 
     await page.getByRole('link', { name: '去登录' }).click();
     await signIn(page, username, PASSWORD);
-    await expect(page.getByRole('heading', { name: '账号概览' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '概览' })).toBeVisible();
 
     await page.goto('/login');
     await expect(page).toHaveURL(/\/account$/);
