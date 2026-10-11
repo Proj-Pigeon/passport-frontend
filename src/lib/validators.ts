@@ -107,6 +107,10 @@ export const displayNameSchema = z.string().superRefine((raw, ctx) => {
 
 export const passkeyLabelSchema = displayNameSchema;
 
+export const profileSchema = z.object({
+  display_name: displayNameSchema,
+});
+
 export const mailTokenSchema = z.string().superRefine((raw, ctx) => {
   if (raw.trim().length < MAIL_TOKEN_MIN) {
     issue(ctx, 'validation.token.invalid');
@@ -156,6 +160,7 @@ export type RegistrationFormValues = z.infer<typeof registrationSchema>;
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
+export type ProfileFormValues = z.infer<typeof profileSchema>;
 
 export function passwordStrengthScore(password: string): number {
   if (password.length === 0) {
