@@ -1,10 +1,30 @@
+import './locale';
 import '@testing-library/jest-dom/vitest';
+import '@/i18n';
 
 import { cleanup } from '@testing-library/react';
-import { afterEach, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest';
+
+import { resetCsrfToken } from '@/api/csrf';
+
+import { resetMockDb, server } from './mocks/server';
+
+beforeAll(() => {
+  server.listen({ onUnhandledFrame: 'error' });
+});
+
+beforeEach(() => {
+  resetMockDb();
+  resetCsrfToken();
+});
 
 afterEach(() => {
   cleanup();
+  server.resetHandlers();
+});
+
+afterAll(() => {
+  server.close();
 });
 
 const { getComputedStyle } = window;

@@ -10,6 +10,16 @@ export default defineConfig(({ mode }) => {
 
   const api: ProxyOptions = { target, changeOrigin: false, xfwd: true };
 
+  const proxy: Record<string, ProxyOptions> = {
+    '/v1': api,
+    '/oauth2': api,
+    '^/federation/(?!complete(?:[/?#]|$))': api,
+    '/.well-known': api,
+    '/jwks.json': api,
+    '/livez': api,
+    '/readyz': api,
+  };
+
   return {
     plugins: [react()],
     resolve: {
@@ -20,18 +30,12 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5173,
       strictPort: true,
-      proxy: {
-        '/v1': api,
-        '/oauth2': api,
-        '^/federation/(?!complete(?:[/?#]|$))': api,
-        '/.well-known': api,
-        '/jwks.json': api,
-        '/livez': api,
-        '/readyz': api,
-      },
+      proxy,
     },
     preview: {
       port: 4173,
+      strictPort: true,
+      proxy,
     },
     test: {
       environment: 'jsdom',
@@ -39,6 +43,7 @@ export default defineConfig(({ mode }) => {
       include: ['src/**/*.{test,spec}.{ts,tsx}'],
       css: false,
       restoreMocks: true,
+      unstubGlobals: true,
     },
   };
 });
