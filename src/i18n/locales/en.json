@@ -1,0 +1,269 @@
+{
+  "common": {
+    "appName": "Pigeon Passport",
+    "tagline": "Unified account center",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "back": "Back",
+    "continue": "Continue",
+    "retry": "Retry",
+    "loading": "Loading…",
+    "save": "Save",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "close": "Close",
+    "optional": "optional",
+    "copy": "Copy",
+    "copied": "Copied",
+    "requestId": "Request ID",
+    "requestIdHint": "Share this request ID with support when troubleshooting.",
+    "language": "Language",
+    "colorScheme": "Color scheme",
+    "lightMode": "Light",
+    "darkMode": "Dark",
+    "autoMode": "System",
+    "switchToLight": "Switch to light mode",
+    "switchToDark": "Switch to dark mode"
+  },
+  "nav": {
+    "account": "Overview",
+    "profile": "Profile",
+    "security": "Security",
+    "logout": "Sign out",
+    "login": "Sign in",
+    "register": "Sign up",
+    "pages": "Pages",
+    "openMenu": "Open menu",
+    "userMenu": "User menu"
+  },
+  "errors": {
+    "title": "Something went wrong",
+    "generic": "An unexpected error occurred. Please try again later.",
+    "code": {
+      "invalid_request": "The request is invalid or has expired. Please start again.",
+      "validation_failed": "The submitted values failed validation. Please review and retry.",
+      "unauthorized": "Your session has expired. Please sign in again.",
+      "forbidden": "This action is not allowed. Additional verification may be required.",
+      "not_found": "The requested resource does not exist or was already handled.",
+      "method_not_allowed": "The request method is not allowed.",
+      "conflict": "This operation was already handled or has expired. Please start again.",
+      "request_too_large": "The submitted content exceeds the size limit.",
+      "rate_limited": "Too many attempts. Please try again later.",
+      "dependency_unavailable": "The service is temporarily unavailable. Please retry later.",
+      "internal_error": "Internal server error. Please retry later.",
+      "network_error": "Could not reach the server. Check your connection and retry.",
+      "aborted": "The request was cancelled."
+    },
+    "field": {
+      "username": {
+        "invalid_format": "The username format is invalid.",
+        "required": "Please enter a username."
+      },
+      "email": {
+        "invalid_format": "The email address format is invalid.",
+        "required": "Please enter an email address."
+      },
+      "password": {
+        "invalid_format": "The password does not meet the requirements (at least 12 characters).",
+        "required": "Please enter a password."
+      },
+      "display_name": {
+        "invalid_format": "The display name format is invalid.",
+        "required": "Please enter a display name."
+      },
+      "label": {
+        "invalid_format": "The label format is invalid."
+      },
+      "token": {
+        "invalid": "The link is invalid or has expired. Please request a new email."
+      },
+      "avatar": {
+        "unsupported_media_type": "Only JPEG and PNG images are supported.",
+        "unsupported_format": "Only JPEG and PNG images are supported.",
+        "too_large": "The image exceeds the 512 KB limit.",
+        "invalid_image": "The image could not be decoded. Please choose another file.",
+        "invalid_dimensions": "Image dimensions must be between 1 and 2048 pixels.",
+        "media_type_mismatch": "The actual file format does not match the declared type.",
+        "read_failed": "The image could not be read. Please retry.",
+        "encode_failed": "The image could not be processed. Please retry."
+      }
+    }
+  },
+  "validation": {
+    "username": {
+      "required": "Please enter a username",
+      "length": "Usernames must be 3 to 64 characters long",
+      "invalid_format": "Start with a lowercase letter or digit; only lowercase letters, digits, _ - . are allowed",
+      "hint": "3 to 64 characters, starting with a lowercase letter or digit; _ - . allowed",
+      "lowercased": "Usernames are stored in lowercase"
+    },
+    "email": {
+      "required": "Please enter an email address",
+      "too_long": "The email address is too long (320 characters max)",
+      "invalid_format": "Enter a valid email address"
+    },
+    "password": {
+      "required": "Please enter a password",
+      "too_short": "Passwords must be at least 12 characters",
+      "too_long": "The password is too long (1024 characters max)"
+    },
+    "display_name": {
+      "too_long": "Display names must be 80 characters or fewer",
+      "invalid_characters": "Display names cannot contain control characters"
+    },
+    "confirm_password": {
+      "required": "Please re-enter the password",
+      "mismatch": "The two passwords do not match"
+    },
+    "identifier": {
+      "required": "Please enter your username or email"
+    },
+    "token": {
+      "invalid": "The link is invalid or has expired"
+    }
+  },
+  "passwordStrength": {
+    "label": "Password strength",
+    "hint": "Advisory only, not enforced",
+    "level": {
+      "0": "Very weak",
+      "1": "Weak",
+      "2": "Fair",
+      "3": "Good",
+      "4": "Strong",
+      "5": "Very strong"
+    },
+    "check": {
+      "length": "At least 12 characters",
+      "case": "Mixed upper and lower case",
+      "digit": "Contains a number",
+      "symbol": "Contains a symbol",
+      "unique": "Avoids repeated characters"
+    }
+  },
+  "turnstile": {
+    "label": "Human verification",
+    "required": "Please complete the human verification challenge",
+    "unavailable": "The verification widget failed to load. Please refresh the page."
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Continue with your Pigeon Passport account",
+      "identifier": "Username or email",
+      "identifierPlaceholder": "alice or alice@example.com",
+      "password": "Password",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "failed": "Incorrect username or password",
+      "failedHint": "We do not reveal the specific reason, to avoid leaking account details.",
+      "forgot": "Forgot your password?",
+      "noAccount": "No account yet?",
+      "createAccount": "Create one",
+      "rateLimited": "Too many attempts. Try again in {{seconds}}s",
+      "passkey": "Sign in with a passkey",
+      "passkeyUnsupported": "This browser does not support passkeys",
+      "federationDivider": "Or continue with"
+    },
+    "register": {
+      "title": "Create account",
+      "subtitle": "Verify your email after signing up to enable sign-in",
+      "username": "Username",
+      "usernamePlaceholder": "alice",
+      "email": "Email",
+      "emailPlaceholder": "alice@example.com",
+      "password": "Password",
+      "displayName": "Display name",
+      "displayNamePlaceholder": "Alice",
+      "submit": "Sign up",
+      "submitting": "Submitting…",
+      "haveAccount": "Already have an account?",
+      "goLogin": "Sign in",
+      "resultTitle": "Check your inbox",
+      "resultBody": "We sent a verification email to {{email}}. Click the link inside to verify your address.",
+      "resultNote": "This account cannot sign in until the email is verified.",
+      "resultDuplicateNote": "This message is shown whether or not the email or username was already taken, to avoid leaking account details.",
+      "resultMissing": "Not seeing it? Check your spam folder, or submit the registration again later.",
+      "backToLogin": "Back to sign in"
+    },
+    "forgotPassword": {
+      "title": "Reset your password",
+      "subtitle": "Enter your account email and we will send a reset link",
+      "email": "Email",
+      "emailPlaceholder": "alice@example.com",
+      "submit": "Send reset email",
+      "submitting": "Sending…",
+      "backToLogin": "Back to sign in",
+      "resultTitle": "Reset email sent",
+      "resultBody": "If that email is registered, we have sent a password reset link to it.",
+      "resultNote": "Reset links expire after 30 minutes. This message appears whether or not the email exists."
+    },
+    "resetPassword": {
+      "title": "Choose a new password",
+      "subtitle": "Resetting signs this account out on every device",
+      "password": "New password",
+      "confirmPassword": "Confirm new password",
+      "submit": "Reset password",
+      "submitting": "Resetting…",
+      "invalidTitle": "The link is invalid or expired",
+      "invalidBody": "This password reset link is no longer valid. Please request a new one.",
+      "invalidAction": "Request a new link",
+      "successTitle": "Password reset",
+      "successBody": "All devices were signed out. Sign in again with your new password.",
+      "successAction": "Sign in"
+    },
+    "verifyEmail": {
+      "title": "Email verification",
+      "verifying": "Verifying your email…",
+      "successTitle": "Email verified",
+      "successBody": "Your account is active and ready to use.",
+      "successAction": "Sign in",
+      "invalidTitle": "The link is invalid or expired",
+      "invalidBody": "This verification link is no longer valid. Please request a new email.",
+      "invalidAction": "Back to sign in",
+      "missingTitle": "Missing verification token",
+      "missingBody": "Open this page from the link in your verification email."
+    }
+  },
+  "session": {
+    "logoutSuccess": "Signed out",
+    "logoutFailed": "Sign out failed. Please try again.",
+    "loggingOut": "Signing out…",
+    "expired": "Your session has expired. Please sign in again."
+  },
+  "guard": {
+    "authRequired": "Please sign in to continue",
+    "alreadySignedIn": "You are already signed in",
+    "continueToAccount": "Go to account overview"
+  },
+  "state": {
+    "loading": "Loading…",
+    "empty": "Nothing here yet",
+    "errorTitle": "Failed to load",
+    "retry": "Retry"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The address you visited may be invalid or mistyped.",
+    "action": "Back to account home"
+  },
+  "errorBoundary": {
+    "title": "Something broke",
+    "body": "An unexpected error occurred. Please refresh the page.",
+    "action": "Refresh page"
+  },
+  "placeholder": {
+    "milestone": "Milestone",
+    "currentPath": "Current path",
+    "account": "Account overview",
+    "accountDescription": "Personal information and security summary",
+    "profile": "Profile",
+    "profileDescription": "Display name, avatar and linked identities",
+    "security": "Security",
+    "securityDescription": "Passkey management and step-up",
+    "federationComplete": "Federation result",
+    "federationCompleteDescription": "Handles result=success / link_success",
+    "authorize": "Authorization consent",
+    "authorizeDescription": "OAuth interaction approve / deny"
+  }
+}

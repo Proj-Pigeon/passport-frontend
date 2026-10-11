@@ -1,0 +1,269 @@
+{
+  "common": {
+    "appName": "Pigeon Passport",
+    "tagline": "统一账号中心",
+    "submit": "提交",
+    "cancel": "取消",
+    "back": "返回",
+    "continue": "继续",
+    "retry": "重试",
+    "loading": "加载中…",
+    "save": "保存",
+    "delete": "删除",
+    "confirm": "确认",
+    "close": "关闭",
+    "optional": "选填",
+    "copy": "复制",
+    "copied": "已复制",
+    "requestId": "请求 ID",
+    "requestIdHint": "如需排障，请向后端提供此请求 ID。",
+    "language": "语言",
+    "colorScheme": "配色",
+    "lightMode": "浅色",
+    "darkMode": "深色",
+    "autoMode": "跟随系统",
+    "switchToLight": "切换到浅色模式",
+    "switchToDark": "切换到深色模式"
+  },
+  "nav": {
+    "account": "概览",
+    "profile": "个人资料",
+    "security": "安全",
+    "logout": "退出登录",
+    "login": "登录",
+    "register": "注册",
+    "pages": "页面",
+    "openMenu": "打开菜单",
+    "userMenu": "用户菜单"
+  },
+  "errors": {
+    "title": "出错了",
+    "generic": "发生未知错误，请稍后重试。",
+    "code": {
+      "invalid_request": "请求无效或已过期，请重新发起。",
+      "validation_failed": "提交的内容未通过校验，请检查后重试。",
+      "unauthorized": "登录状态已失效，请重新登录。",
+      "forbidden": "当前操作不被允许，可能需要额外的身份验证。",
+      "not_found": "请求的资源不存在，或已被处理。",
+      "method_not_allowed": "请求方法不被允许。",
+      "conflict": "该操作已被处理或已过期，请重新发起。",
+      "request_too_large": "提交的内容超出大小限制。",
+      "rate_limited": "尝试过于频繁，请稍后再试。",
+      "dependency_unavailable": "服务暂时不可用，请稍后重试。",
+      "internal_error": "服务器内部错误，请稍后重试。",
+      "network_error": "无法连接到服务器，请检查网络后重试。",
+      "aborted": "请求已取消。"
+    },
+    "field": {
+      "username": {
+        "invalid_format": "用户名格式不正确。",
+        "required": "请填写用户名。"
+      },
+      "email": {
+        "invalid_format": "邮箱格式不正确。",
+        "required": "请填写邮箱。"
+      },
+      "password": {
+        "invalid_format": "密码不符合要求（至少 12 个字符）。",
+        "required": "请填写密码。"
+      },
+      "display_name": {
+        "invalid_format": "昵称格式不正确。",
+        "required": "请填写昵称。"
+      },
+      "label": {
+        "invalid_format": "名称格式不正确。"
+      },
+      "token": {
+        "invalid": "链接无效或已过期，请重新获取邮件。"
+      },
+      "avatar": {
+        "unsupported_media_type": "仅支持 JPEG 或 PNG 格式。",
+        "unsupported_format": "仅支持 JPEG 或 PNG 格式。",
+        "too_large": "图片超过 512 KB 限制。",
+        "invalid_image": "图片无法解析，请更换文件。",
+        "invalid_dimensions": "图片宽高需在 1 ~ 2048 像素之间。",
+        "media_type_mismatch": "文件真实格式与声明的类型不一致。",
+        "read_failed": "图片读取失败，请重试。",
+        "encode_failed": "图片处理失败，请重试。"
+      }
+    }
+  },
+  "validation": {
+    "username": {
+      "required": "请填写用户名",
+      "length": "用户名需为 3 ~ 64 个字符",
+      "invalid_format": "以小写字母或数字开头，仅可包含小写字母、数字与 _ - .",
+      "hint": "3 ~ 64 个字符，以小写字母或数字开头，可包含 _ - .",
+      "lowercased": "用户名将统一保存为小写"
+    },
+    "email": {
+      "required": "请填写邮箱",
+      "too_long": "邮箱过长，最多 320 个字符",
+      "invalid_format": "邮箱格式不正确"
+    },
+    "password": {
+      "required": "请填写密码",
+      "too_short": "密码至少需要 12 个字符",
+      "too_long": "密码过长，最多 1024 个字符"
+    },
+    "display_name": {
+      "too_long": "昵称最多 80 个字符",
+      "invalid_characters": "昵称不能包含控制字符"
+    },
+    "confirm_password": {
+      "required": "请再次输入密码",
+      "mismatch": "两次输入的密码不一致"
+    },
+    "identifier": {
+      "required": "请填写用户名或邮箱"
+    },
+    "token": {
+      "invalid": "链接无效或已过期"
+    }
+  },
+  "passwordStrength": {
+    "label": "密码强度",
+    "hint": "仅为建议，不强制要求",
+    "level": {
+      "0": "过弱",
+      "1": "较弱",
+      "2": "一般",
+      "3": "较好",
+      "4": "强",
+      "5": "很强"
+    },
+    "check": {
+      "length": "至少 12 个字符",
+      "case": "同时包含大小写字母",
+      "digit": "包含数字",
+      "symbol": "包含符号",
+      "unique": "避免重复字符"
+    }
+  },
+  "turnstile": {
+    "label": "人机验证",
+    "required": "请先完成人机验证",
+    "unavailable": "人机验证组件加载失败，请刷新页面重试"
+  },
+  "auth": {
+    "login": {
+      "title": "登录",
+      "subtitle": "使用您的 Pigeon Passport 账号继续",
+      "identifier": "用户名或邮箱",
+      "identifierPlaceholder": "alice 或 alice@example.com",
+      "password": "密码",
+      "submit": "登录",
+      "submitting": "登录中…",
+      "failed": "账号或密码错误",
+      "failedHint": "为避免账号信息泄露，我们不会提示具体原因。",
+      "forgot": "忘记密码？",
+      "noAccount": "还没有账号？",
+      "createAccount": "创建账号",
+      "rateLimited": "尝试过于频繁，请 {{seconds}} 秒后重试",
+      "passkey": "使用通行密钥登录",
+      "passkeyUnsupported": "当前浏览器不支持通行密钥",
+      "federationDivider": "或使用第三方账号"
+    },
+    "register": {
+      "title": "创建账号",
+      "subtitle": "注册后需验证邮箱才能登录",
+      "username": "用户名",
+      "usernamePlaceholder": "alice",
+      "email": "邮箱",
+      "emailPlaceholder": "alice@example.com",
+      "password": "密码",
+      "displayName": "昵称",
+      "displayNamePlaceholder": "Alice",
+      "submit": "注册",
+      "submitting": "提交中…",
+      "haveAccount": "已有账号？",
+      "goLogin": "去登录",
+      "resultTitle": "请查收验证邮件",
+      "resultBody": "我们已向 {{email}} 发送验证邮件，请点击邮件中的链接完成验证。",
+      "resultNote": "邮箱验证完成前，该账号无法登录。",
+      "resultDuplicateNote": "为防止账号信息泄露，无论邮箱或用户名是否已被占用，都会显示本提示。",
+      "resultMissing": "没有收到？请检查垃圾邮件目录，或稍后重新提交注册。",
+      "backToLogin": "返回登录"
+    },
+    "forgotPassword": {
+      "title": "找回密码",
+      "subtitle": "填写注册邮箱，我们会发送重置链接",
+      "email": "邮箱",
+      "emailPlaceholder": "alice@example.com",
+      "submit": "发送重置邮件",
+      "submitting": "发送中…",
+      "backToLogin": "返回登录",
+      "resultTitle": "重置邮件已发出",
+      "resultBody": "如该邮箱已注册，我们已向其发送密码重置链接。",
+      "resultNote": "重置链接 30 分钟内有效。无论邮箱是否存在都会显示本提示。"
+    },
+    "resetPassword": {
+      "title": "设置新密码",
+      "subtitle": "重置成功后，该账号在所有设备上的登录都会被撤销",
+      "password": "新密码",
+      "confirmPassword": "确认新密码",
+      "submit": "重置密码",
+      "submitting": "重置中…",
+      "invalidTitle": "链接无效或已过期",
+      "invalidBody": "密码重置链接已失效，请重新申请。",
+      "invalidAction": "重新申请",
+      "successTitle": "密码已重置",
+      "successBody": "所有设备已登出，请使用新密码重新登录。",
+      "successAction": "去登录"
+    },
+    "verifyEmail": {
+      "title": "邮箱验证",
+      "verifying": "正在验证邮箱…",
+      "successTitle": "邮箱验证成功",
+      "successBody": "该账号已激活，现在可以登录。",
+      "successAction": "去登录",
+      "invalidTitle": "链接无效或已过期",
+      "invalidBody": "验证链接已失效，请重新获取验证邮件。",
+      "invalidAction": "返回登录",
+      "missingTitle": "缺少验证令牌",
+      "missingBody": "请通过验证邮件中的链接访问本页面。"
+    }
+  },
+  "session": {
+    "logoutSuccess": "已退出登录",
+    "logoutFailed": "退出登录失败，请重试",
+    "loggingOut": "正在退出登录…",
+    "expired": "登录状态已失效，请重新登录"
+  },
+  "guard": {
+    "authRequired": "请先登录后继续",
+    "alreadySignedIn": "您已登录，无需重复登录",
+    "continueToAccount": "前往账号概览"
+  },
+  "state": {
+    "loading": "加载中…",
+    "empty": "暂无内容",
+    "errorTitle": "加载失败",
+    "retry": "重试"
+  },
+  "notFound": {
+    "title": "页面不存在",
+    "body": "您访问的地址可能已失效或输入有误。",
+    "action": "返回账号首页"
+  },
+  "errorBoundary": {
+    "title": "页面出错了",
+    "body": "发生了意外错误，请刷新页面重试。",
+    "action": "刷新页面"
+  },
+  "placeholder": {
+    "milestone": "里程碑",
+    "currentPath": "当前路径",
+    "account": "账号概览",
+    "accountDescription": "个人信息与安全摘要",
+    "profile": "个人资料",
+    "profileDescription": "昵称、头像与第三方身份绑定",
+    "security": "安全",
+    "securityDescription": "通行密钥管理与 Step-up",
+    "federationComplete": "第三方登录结果",
+    "federationCompleteDescription": "处理 result=success / link_success",
+    "authorize": "授权同意",
+    "authorizeDescription": "OAuth interaction 授权 / 拒绝"
+  }
+}
