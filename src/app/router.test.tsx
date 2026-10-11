@@ -48,7 +48,7 @@ describe('authenticated routing', () => {
   it('redirects / to the account overview', async () => {
     signInMockUser();
     renderRoute(['/']);
-    expect(await screen.findByRole('heading', { name: '账号概览' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '概览' })).toBeInTheDocument();
   });
 
   it.each([

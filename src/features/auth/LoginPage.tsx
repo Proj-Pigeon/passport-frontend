@@ -16,6 +16,7 @@ import { nextFromSearchParams } from '@/lib/safeNext';
 import { isTurnstileEnabled } from '@/lib/turnstile';
 import { loginSchema } from '@/lib/validators';
 
+import { PasskeyLoginButton } from './components/PasskeyLoginButton';
 import { SubmitErrorAlert } from './components/SubmitErrorAlert';
 import { TurnstileField, type TurnstileFieldHandle } from './components/TurnstileField';
 
@@ -95,67 +96,71 @@ export function LoginPage() {
         </>
       }
     >
-      <form onSubmit={handleSubmit} noValidate>
-        <Stack gap="md">
-          <SubmitErrorAlert
-            error={submitError}
-            message={credentialFailure ? t('auth.login.failed') : undefined}
-            hint={credentialFailure ? t('auth.login.failedHint') : undefined}
-            color={apiError?.status === 429 ? 'orange' : 'red'}
-          />
+      <>
+        <form onSubmit={handleSubmit} noValidate>
+          <Stack gap="md">
+            <SubmitErrorAlert
+              error={submitError}
+              message={credentialFailure ? t('auth.login.failed') : undefined}
+              hint={credentialFailure ? t('auth.login.failedHint') : undefined}
+              color={apiError?.status === 429 ? 'orange' : 'red'}
+            />
 
-          <TextInput
-            {...form.getInputProps('identifier')}
-            error={errorText(form.errors.identifier)}
-            label={t('auth.login.identifier')}
-            placeholder={t('auth.login.identifierPlaceholder')}
-            leftSection={<IconAt size={16} stroke={1.5} />}
-            autoComplete="username"
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
-            disabled={mutation.isPending}
-            required
-          />
+            <TextInput
+              {...form.getInputProps('identifier')}
+              error={errorText(form.errors.identifier)}
+              label={t('auth.login.identifier')}
+              placeholder={t('auth.login.identifierPlaceholder')}
+              leftSection={<IconAt size={16} stroke={1.5} />}
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              disabled={mutation.isPending}
+              required
+            />
 
-          <PasswordInput
-            {...form.getInputProps('password')}
-            error={errorText(form.errors.password)}
-            label={t('auth.login.password')}
-            leftSection={<IconLock size={16} stroke={1.5} />}
-            autoComplete="current-password"
-            disabled={mutation.isPending}
-            required
-          />
+            <PasswordInput
+              {...form.getInputProps('password')}
+              error={errorText(form.errors.password)}
+              label={t('auth.login.password')}
+              leftSection={<IconLock size={16} stroke={1.5} />}
+              autoComplete="current-password"
+              disabled={mutation.isPending}
+              required
+            />
 
-          <Group justify="flex-end">
-            <Anchor component={Link} to="/forgot-password" size="sm">
-              {t('auth.login.forgot')}
-            </Anchor>
-          </Group>
+            <Group justify="flex-end">
+              <Anchor component={Link} to="/forgot-password" size="sm">
+                {t('auth.login.forgot')}
+              </Anchor>
+            </Group>
 
-          <TurnstileField
-            ref={turnstileRef}
-            onTokenChange={(token) => {
-              setTurnstileToken(token);
-              if (token) {
-                setTurnstileError(null);
-              }
-            }}
-            error={turnstileError}
-          />
+            <TurnstileField
+              ref={turnstileRef}
+              onTokenChange={(token) => {
+                setTurnstileToken(token);
+                if (token) {
+                  setTurnstileError(null);
+                }
+              }}
+              error={turnstileError}
+            />
 
-          <Button
-            type="submit"
-            size="md"
-            fullWidth
-            loading={mutation.isPending}
-            disabled={rateLimited}
-          >
-            {submitLabel}
-          </Button>
-        </Stack>
-      </form>
+            <Button
+              type="submit"
+              size="md"
+              fullWidth
+              loading={mutation.isPending}
+              disabled={rateLimited}
+            >
+              {submitLabel}
+            </Button>
+          </Stack>
+        </form>
+
+        <PasskeyLoginButton />
+      </>
     </AuthLayout>
   );
 }

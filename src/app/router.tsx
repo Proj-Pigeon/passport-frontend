@@ -4,6 +4,9 @@ import { AccountLayout } from '@/components/AccountLayout';
 import { NotFoundPage } from '@/components/NotFoundPage';
 import { PlaceholderPage } from '@/components/PlaceholderPage';
 import { RouteErrorPage } from '@/components/RouteErrorPage';
+import { OverviewPage } from '@/features/account/OverviewPage';
+import { ProfilePage } from '@/features/account/ProfilePage';
+import { SecurityPage } from '@/features/account/SecurityPage';
 import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPage } from '@/features/auth/RegisterPage';
@@ -78,36 +81,9 @@ export const routes: RouteObject[] = [
           </RequireAuth>
         ),
         children: [
-          {
-            index: true,
-            element: (
-              <PlaceholderPage
-                titleKey="placeholder.account"
-                milestone="M3"
-                descriptionKey="placeholder.accountDescription"
-              />
-            ),
-          },
-          {
-            path: 'profile',
-            element: (
-              <PlaceholderPage
-                titleKey="placeholder.profile"
-                milestone="M3"
-                descriptionKey="placeholder.profileDescription"
-              />
-            ),
-          },
-          {
-            path: 'security',
-            element: (
-              <PlaceholderPage
-                titleKey="placeholder.security"
-                milestone="M4"
-                descriptionKey="placeholder.securityDescription"
-              />
-            ),
-          },
+          { index: true, element: <OverviewPage /> },
+          { path: 'profile', element: <ProfilePage /> },
+          { path: 'security', element: <SecurityPage /> },
         ],
       },
 

@@ -1,6 +1,5 @@
 import {
   AppShell,
-  Avatar,
   Burger,
   Group,
   Menu,
@@ -26,6 +25,7 @@ import { useLogout } from '@/features/session/useLogout';
 import { useSession } from '@/features/session/useSession';
 
 import { BrandMark } from './BrandMark';
+import { AccountAvatar } from './AccountAvatar';
 import { ColorSchemeToggle } from './ColorSchemeToggle';
 import { LanguageSwitch } from './LanguageSwitch';
 
@@ -90,7 +90,7 @@ export function AccountLayout() {
                     {isLoading ? (
                       <Skeleton circle width={30} height={30} />
                     ) : (
-                      <Avatar size="sm" radius="xl" name={displayName} variant="light" />
+                      <AccountAvatar size="sm" radius="xl" />
                     )}
                     <Stack gap={0} visibleFrom="xs">
                       {isLoading ? (

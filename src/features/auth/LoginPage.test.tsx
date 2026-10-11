@@ -32,7 +32,7 @@ describe('LoginPage', () => {
 
     await submitCredentials(user, 'alice', PASSWORD);
 
-    expect(await screen.findByRole('heading', { name: '账号概览' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '概览' })).toBeInTheDocument();
     expect(mockDb.currentUserId).not.toBeNull();
   });
 
@@ -43,7 +43,7 @@ describe('LoginPage', () => {
 
     await submitCredentials(user, '  Alice@Example.com ', PASSWORD);
 
-    expect(await screen.findByRole('heading', { name: '账号概览' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '概览' })).toBeInTheDocument();
   });
 
   it('honours the next parameter', async () => {
@@ -63,7 +63,7 @@ describe('LoginPage', () => {
 
     await submitCredentials(user, 'alice', PASSWORD);
 
-    expect(await screen.findByRole('heading', { name: '账号概览' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '概览' })).toBeInTheDocument();
   });
 
   it('shows one generic message for a wrong password', async () => {
@@ -160,14 +160,14 @@ describe('LoginPage', () => {
     signIn(mockDb, seedUser(mockDb), 'pwd');
     renderRoute(['/login']);
 
-    expect(await screen.findByRole('heading', { name: '账号概览' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '概览' })).toBeInTheDocument();
   });
 
   it('signs out from the account layout and returns to the login page', async () => {
     signIn(mockDb, seedUser(mockDb, { username: 'alice', display_name: 'Alice' }), 'pwd');
     const user = userEvent.setup();
     renderRoute(['/account']);
-    await screen.findByRole('heading', { name: '账号概览' });
+    await screen.findByRole('heading', { name: '概览' });
 
     await user.click(screen.getByRole('button', { name: '用户菜单' }));
     await user.click(await screen.findByRole('menuitem', { name: '退出登录' }));
