@@ -1,15 +1,21 @@
 import { Badge, Code, Group, Paper, Stack, Text, Title } from '@mantine/core';
 import { IconHammer } from '@tabler/icons-react';
+import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router';
 
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+
 export interface PlaceholderPageProps {
-  title: string;
+  titleKey: string;
   milestone: string;
-  description?: string;
+  descriptionKey?: string;
 }
 
-export function PlaceholderPage({ title, milestone, description }: PlaceholderPageProps) {
+export function PlaceholderPage({ titleKey, milestone, descriptionKey }: PlaceholderPageProps) {
   const location = useLocation();
+  const { t } = useTranslation();
+  const title = t(titleKey);
+  useDocumentTitle(title);
 
   return (
     <Paper p="xl" maw={560} mx="auto" mt="xl">
@@ -20,10 +26,13 @@ export function PlaceholderPage({ title, milestone, description }: PlaceholderPa
             {milestone}
           </Badge>
         </Group>
-        {description && <Text c="dimmed">{description}</Text>}
-        <Text size="sm" c="dimmed">
-          当前路径：<Code>{location.pathname + location.search}</Code>
-        </Text>
+        {descriptionKey && <Text c="dimmed">{t(descriptionKey)}</Text>}
+        <Group gap={6} wrap="nowrap">
+          <Text size="sm" c="dimmed">
+            {t('placeholder.currentPath')}
+          </Text>
+          <Code>{location.pathname + location.search}</Code>
+        </Group>
       </Stack>
     </Paper>
   );

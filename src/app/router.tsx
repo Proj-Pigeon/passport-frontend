@@ -1,94 +1,111 @@
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router';
 
+import { AccountLayout } from '@/components/AccountLayout';
 import { NotFoundPage } from '@/components/NotFoundPage';
 import { PlaceholderPage } from '@/components/PlaceholderPage';
-import { RootLayout } from '@/components/RootLayout';
 import { RouteErrorPage } from '@/components/RouteErrorPage';
+import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage';
+import { LoginPage } from '@/features/auth/LoginPage';
+import { RegisterPage } from '@/features/auth/RegisterPage';
+import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage';
+import { VerifyEmailPage } from '@/features/auth/VerifyEmailPage';
+import { GuestOnly, RequireAuth } from '@/features/session/guards';
+
+import { RootShell } from './RootShell';
 
 export const routes: RouteObject[] = [
   {
-    path: '/',
-    element: <RootLayout />,
+    element: <RootShell />,
     errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <Navigate to="/account" replace /> },
+
       {
         path: 'login',
         element: (
-          <PlaceholderPage
-            title="登录"
-            milestone="M2"
-            description="密码登录、Passkey 登录、第三方登录"
-          />
+          <GuestOnly>
+            <LoginPage />
+          </GuestOnly>
         ),
       },
       {
         path: 'register',
-        element: <PlaceholderPage title="注册" milestone="M2" description="注册并发送验证邮件" />,
+        element: (
+          <GuestOnly>
+            <RegisterPage />
+          </GuestOnly>
+        ),
       },
       {
         path: 'forgot-password',
-        element: <PlaceholderPage title="忘记密码" milestone="M2" description="申请密码重置邮件" />,
-      },
-      {
-        path: 'reset-password',
         element: (
-          <PlaceholderPage
-            title="重置密码"
-            milestone="M2"
-            description="读取 #token= 后设置新密码"
-          />
+          <GuestOnly>
+            <ForgotPasswordPage />
+          </GuestOnly>
         ),
       },
-      {
-        path: 'verify-email',
-        element: (
-          <PlaceholderPage title="邮箱验证" milestone="M2" description="读取 #token= 后确认邮箱" />
-        ),
-      },
+      { path: 'reset-password', element: <ResetPasswordPage /> },
+      { path: 'verify-email', element: <VerifyEmailPage /> },
+
       {
         path: 'federation/complete',
         element: (
           <PlaceholderPage
-            title="第三方登录结果"
+            titleKey="placeholder.federationComplete"
             milestone="M5"
-            description="处理 result=success / link_success"
+            descriptionKey="placeholder.federationCompleteDescription"
           />
         ),
       },
       {
         path: 'authorize',
         element: (
-          <PlaceholderPage
-            title="授权同意"
-            milestone="M6"
-            description="OAuth interaction 授权 / 拒绝"
-          />
+          <RequireAuth>
+            <PlaceholderPage
+              titleKey="placeholder.authorize"
+              milestone="M6"
+              descriptionKey="placeholder.authorizeDescription"
+            />
+          </RequireAuth>
         ),
       },
+
       {
         path: 'account',
+        element: (
+          <RequireAuth>
+            <AccountLayout />
+          </RequireAuth>
+        ),
         children: [
           {
             index: true,
             element: (
-              <PlaceholderPage title="账号概览" milestone="M3" description="个人信息与安全摘要" />
+              <PlaceholderPage
+                titleKey="placeholder.account"
+                milestone="M3"
+                descriptionKey="placeholder.accountDescription"
+              />
             ),
           },
           {
             path: 'profile',
-            element: <PlaceholderPage title="个人资料" milestone="M3" description="昵称与头像" />,
+            element: (
+              <PlaceholderPage
+                titleKey="placeholder.profile"
+                milestone="M3"
+                descriptionKey="placeholder.profileDescription"
+              />
+            ),
           },
           {
             path: 'security',
             element: (
-              <PlaceholderPage title="安全" milestone="M4" description="Passkey 管理与 Step-up" />
-            ),
-          },
-          {
-            path: 'connections',
-            element: (
-              <PlaceholderPage title="连接账号" milestone="M5" description="绑定第三方身份" />
+              <PlaceholderPage
+                titleKey="placeholder.security"
+                milestone="M4"
+                descriptionKey="placeholder.securityDescription"
+              />
             ),
           },
         ],

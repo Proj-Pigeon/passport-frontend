@@ -1,42 +1,82 @@
 import { screen } from '@testing-library/react';
-import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it } from 'vitest';
 
-import { renderWithProviders } from '@/test/render';
+import { seedUser, signIn } from '@/test/mocks/db';
+import { mockDb } from '@/test/mocks/server';
+import { renderRoute } from '@/test/render';
 
-import { routes } from './router';
-
-function renderAt(path: string) {
-  const router = createMemoryRouter(routes, { initialEntries: [path] });
-  renderWithProviders(<RouterProvider router={router} />);
-  return router;
+function signInMockUser() {
+  signIn(mockDb, seedUser(mockDb), 'pwd');
 }
 
-describe('router skeleton', () => {
-  it('redirects / to /account', async () => {
-    const router = renderAt('/');
-    expect(await screen.findByRole('heading', { name: '账号概览' })).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe('/account');
+describe('routing', () => {
+  it('redirects an anonymous visitor from / to /login', async () => {
+    renderRoute(['/']);
+    expect(await screen.findByRole('heading', { name: '登录' })).toBeInTheDocument();
+  });
+
+  it('renders the login page', async () => {
+    renderRoute(['/login']);
+    expect(await screen.findByRole('heading', { name: '登录' })).toBeInTheDocument();
   });
 
   it.each([
-    ['/login', '登录'],
-    ['/register', '注册'],
-    ['/forgot-password', '忘记密码'],
-    ['/reset-password', '重置密码'],
-    ['/verify-email', '邮箱验证'],
-    ['/federation/complete?result=success', '第三方登录结果'],
-    ['/authorize?interaction=abc', '授权同意'],
-    ['/account/profile', '个人资料'],
-    ['/account/security', '安全'],
-    ['/account/connections', '连接账号'],
-  ])('renders placeholder for %s', async (path, title) => {
-    renderAt(path);
-    expect(await screen.findByRole('heading', { name: title })).toBeInTheDocument();
+    ['/register', '创建账号'],
+    ['/forgot-password', '找回密码'],
+  ])('renders %s', async (path, heading) => {
+    renderRoute([path]);
+    expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument();
+  });
+
+  it('shows the invalid-link state on /reset-password without a token', async () => {
+    renderRoute(['/reset-password']);
+    expect(await screen.findByRole('heading', { name: '链接无效或已过期' })).toBeInTheDocument();
+  });
+
+  it('shows the missing-token state on /verify-email', async () => {
+    renderRoute(['/verify-email']);
+    expect(await screen.findByText('缺少验证令牌')).toBeInTheDocument();
   });
 
   it('renders 404 for unknown paths', async () => {
-    renderAt('/does-not-exist');
+    renderRoute(['/does-not-exist']);
     expect(await screen.findByText('页面不存在')).toBeInTheDocument();
+  });
+});
+
+describe('authenticated routing', () => {
+  it('redirects / to the account overview', async () => {
+    signInMockUser();
+    renderRoute(['/']);
+    expect(await screen.findByRole('heading', { name: '账号概览' })).toBeInTheDocument();
+  });
+
+  it.each([
+    ['/account/profile', '个人资料'],
+    ['/account/security', '安全'],
+  ])('renders %s inside the account layout', async (path, heading) => {
+    signInMockUser();
+    renderRoute([path]);
+    expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Pigeon Passport' })).toBeInTheDocument();
+  });
+
+  it('redirects an authenticated visitor away from /login', async () => {
+    signInMockUser();
+    renderRoute(['/login?next=%2Faccount%2Fsecurity']);
+    expect(await screen.findByRole('heading', { name: '安全' })).toBeInTheDocument();
+  });
+
+  it('sends an anonymous visitor from /authorize to the login page', async () => {
+    renderRoute(['/authorize?interaction=int_1']);
+    expect(await screen.findByRole('heading', { name: '登录' })).toBeInTheDocument();
+  });
+
+  it('preserves the intended destination when bouncing to /login', async () => {
+    const { router } = renderRoute(['/account/security']);
+
+    expect(await screen.findByRole('heading', { name: '登录' })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/login');
+    expect(router.state.location.search).toBe('?next=%2Faccount%2Fsecurity');
   });
 });
