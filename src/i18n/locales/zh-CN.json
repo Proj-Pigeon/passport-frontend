@@ -238,6 +238,24 @@
     "blocked": "当前账号没有可用的通行密钥，或浏览器不支持通行密钥。请先在安全页添加一个通行密钥。",
     "goToSecurity": "前往安全页"
   },
+  "federation": {
+    "loginWith": "使用 {{name}} 继续",
+    "complete": {
+      "processingTitle": "正在处理…",
+      "failedTitle": "未能完成",
+      "failedBody": "第三方登录或绑定没有完成，请返回重试，或更换登录方式。",
+      "backToLogin": "返回登录"
+    },
+    "link": {
+      "title": "第三方身份",
+      "description": "绑定后即可使用该第三方账号登录 Pigeon Passport",
+      "bind": "绑定",
+      "bindName": "绑定 {{name}}",
+      "success": "第三方账号绑定成功",
+      "conflict": "该第三方账号已被绑定到其他账号。",
+      "notConfigured": "该登录方式当前不可用，请稍后再试。"
+    }
+  },
   "account": {
     "overview": {
       "title": "概览",
@@ -365,8 +383,6 @@
   "placeholder": {
     "milestone": "里程碑",
     "currentPath": "当前路径",
-    "federationComplete": "第三方登录结果",
-    "federationCompleteDescription": "处理 result=success / link_success",
     "authorize": "授权同意",
     "authorizeDescription": "OAuth interaction 授权 / 拒绝"
   }

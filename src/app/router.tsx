@@ -8,6 +8,7 @@ import { OverviewPage } from '@/features/account/OverviewPage';
 import { ProfilePage } from '@/features/account/ProfilePage';
 import { SecurityPage } from '@/features/account/SecurityPage';
 import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage';
+import { FederationCompletePage } from '@/features/auth/FederationCompletePage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPage } from '@/features/auth/RegisterPage';
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage';
@@ -52,13 +53,7 @@ export const routes: RouteObject[] = [
 
       {
         path: 'federation/complete',
-        element: (
-          <PlaceholderPage
-            titleKey="placeholder.federationComplete"
-            milestone="M5"
-            descriptionKey="placeholder.federationCompleteDescription"
-          />
-        ),
+        element: <FederationCompletePage />,
       },
       {
         path: 'authorize',

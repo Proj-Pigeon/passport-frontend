@@ -16,6 +16,7 @@ import { nextFromSearchParams } from '@/lib/safeNext';
 import { isTurnstileEnabled } from '@/lib/turnstile';
 import { loginSchema } from '@/lib/validators';
 
+import { FederationButtons } from './components/FederationButtons';
 import { PasskeyLoginButton } from './components/PasskeyLoginButton';
 import { SubmitErrorAlert } from './components/SubmitErrorAlert';
 import { TurnstileField, type TurnstileFieldHandle } from './components/TurnstileField';
@@ -160,6 +161,8 @@ export function LoginPage() {
         </form>
 
         <PasskeyLoginButton />
+
+        <FederationButtons />
       </>
     </AuthLayout>
   );
