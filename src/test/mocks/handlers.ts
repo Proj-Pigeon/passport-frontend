@@ -437,11 +437,7 @@ export function createHandlers(db: MockDb): RequestHandler[] {
       }
       const slug = str(params['slug']);
       if (db.takenExternalIdentities.has(slug)) {
-        return envelope(
-          409,
-          'conflict',
-          'The external identity cannot be linked to this account.',
-        );
+        return envelope(409, 'conflict', 'The external identity cannot be linked to this account.');
       }
       return HttpResponse.json(
         {

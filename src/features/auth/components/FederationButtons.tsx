@@ -25,10 +25,7 @@ export function FederationButtons() {
 
   return (
     <>
-      <Divider
-        label={t('auth.login.federationDivider')}
-        labelPosition="center"
-      />
+      <Divider label={t('auth.login.federationDivider')} labelPosition="center" />
       <Stack gap="sm">
         {providers.map((provider: FederationProvider) => (
           <Button

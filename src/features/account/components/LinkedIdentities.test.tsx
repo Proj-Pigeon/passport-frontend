@@ -74,9 +74,7 @@ describe('LinkedIdentities', () => {
 
     await user.click(await screen.findByRole('button', { name: '绑定 GitHub' }));
 
-    await waitFor(() =>
-      expect(topLevel.openTopLevel).toHaveBeenCalledWith(GITHUB_CONTINUE_URL),
-    );
+    await waitFor(() => expect(topLevel.openTopLevel).toHaveBeenCalledWith(GITHUB_CONTINUE_URL));
   });
 
   it('asks for step-up before creating the transaction', async () => {
@@ -89,9 +87,7 @@ describe('LinkedIdentities', () => {
     expect(await screen.findByText('安全验证')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '使用通行密钥验证' }));
 
-    await waitFor(() =>
-      expect(topLevel.openTopLevel).toHaveBeenCalledWith(GITHUB_CONTINUE_URL),
-    );
+    await waitFor(() => expect(topLevel.openTopLevel).toHaveBeenCalledWith(GITHUB_CONTINUE_URL));
     expect(mockDb.session?.step_up_expires_at).toBeTruthy();
   });
 
