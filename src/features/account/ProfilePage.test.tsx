@@ -94,6 +94,13 @@ describe('ProfilePage display name', () => {
     expect(screen.getByText('用户名暂不支持修改')).toBeInTheDocument();
     expect(screen.getByText('邮箱暂不支持修改')).toBeInTheDocument();
   });
+
+  it('hides the external identities section when no provider is configured', async () => {
+    signIn(mockDb, seedUser(mockDb), 'pwd');
+    await openProfilePage();
+
+    expect(screen.queryByRole('heading', { name: '第三方身份' })).not.toBeInTheDocument();
+  });
 });
 
 describe('ProfilePage avatar', () => {

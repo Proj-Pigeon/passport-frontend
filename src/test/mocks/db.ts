@@ -51,6 +51,7 @@ export interface MockDb {
   passkeys: MockPasskey[];
   avatar: MockAvatar | null;
   ceremonies: Map<string, CeremonyKind>;
+  takenExternalIdentities: Set<string>;
 }
 
 export const MOCK_CSRF_TOKEN = 'mock-csrf-token';
@@ -69,7 +70,12 @@ export function createMockDb(): MockDb {
     passkeys: [],
     avatar: null,
     ceremonies: new Map(),
+    takenExternalIdentities: new Set(),
   };
+}
+
+export function markExternalIdentityTaken(db: MockDb, slug: string): void {
+  db.takenExternalIdentities.add(slug);
 }
 
 export function findUserByIdentifier(db: MockDb, identifier: string): MockUser | undefined {

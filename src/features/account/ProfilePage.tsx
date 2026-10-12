@@ -7,6 +7,7 @@ import { describeApiError } from '@/i18n/errors';
 
 import { AvatarUploader } from './components/AvatarUploader';
 import { DisplayNameForm } from './components/DisplayNameForm';
+import { LinkedIdentities } from './components/LinkedIdentities';
 import { useProfile } from './useProfile';
 
 export function ProfilePage() {
@@ -79,6 +80,8 @@ export function ProfilePage() {
           </InfoItem>
         </SimpleGrid>
       </SectionCard>
+
+      <LinkedIdentities />
     </Stack>
   );
 }

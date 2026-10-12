@@ -423,6 +423,34 @@ export function createHandlers(db: MockDb): RequestHandler[] {
       return new HttpResponse(null, { status: 204, headers: { 'X-Request-ID': REQUEST_ID } });
     }),
 
+    http.post('*/v1/me/external-identities/:slug/link-transactions', ({ params, request }) => {
+      const csrf = csrfFailure(db, request);
+      if (csrf) {
+        return csrf;
+      }
+      const user = currentUser(db);
+      if (!user) {
+        return unauthorized();
+      }
+      if (!hasStepUp(db)) {
+        return envelope(403, 'forbidden', 'A recent passkey step-up is required.');
+      }
+      const slug = str(params['slug']);
+      if (db.takenExternalIdentities.has(slug)) {
+        return envelope(
+          409,
+          'conflict',
+          'The external identity cannot be linked to this account.',
+        );
+      }
+      return HttpResponse.json(
+        {
+          continue_url: `https://account.example/federation/${slug}/link/continue?state=st_mock_${slug}`,
+        },
+        { status: 201, headers: { 'X-Request-ID': REQUEST_ID } },
+      );
+    }),
+
     http.get('*/v1/me/passkeys', () => {
       const user = currentUser(db);
       if (!user) {
