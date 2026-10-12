@@ -256,6 +256,32 @@
       "notConfigured": "This provider is not available right now. Please retry later."
     }
   },
+  "oauth": {
+    "title": "Authorization request",
+    "subtitle": "An application wants to access your account",
+    "requestedBy": "{{client}} is requesting permission to:",
+    "accountLabel": "Account",
+    "switchAccount": "Use another account",
+    "expiresIn": "Expires in {{time}}",
+    "approve": "Allow",
+    "deny": "Deny",
+    "missingTitle": "Authorization request unavailable",
+    "missingBody": "The link is missing the authorization request. Return to the application and start again.",
+    "unavailableTitle": "Authorization request unavailable",
+    "unavailableBody": "This authorization request does not exist, has expired, or was handled in another session. Return to the application and start again.",
+    "handledTitle": "Authorization request already completed",
+    "handledBody": "This authorization request was already used or has expired. Return to the application and start again.",
+    "expiredTitle": "Authorization request expired",
+    "expiredBody": "The request exceeded its validity period. Return to the application and start again.",
+    "loadFailedTitle": "Could not load the authorization request",
+    "decisionAmbiguous": "The authorization result could not be confirmed. Return to the application to check, or start the request again.",
+    "scopes": {
+      "openid": "Confirm your identity",
+      "profile": "Read your basic profile (username, display name)",
+      "email": "Read your email address",
+      "unknown": "{{scope}} (unrecognized scope)"
+    }
+  },
   "account": {
     "overview": {
       "title": "Account overview",
@@ -379,11 +405,5 @@
     "title": "Something broke",
     "body": "An unexpected error occurred. Please refresh the page.",
     "action": "Refresh page"
-  },
-  "placeholder": {
-    "milestone": "Milestone",
-    "currentPath": "Current path",
-    "authorize": "Authorization consent",
-    "authorizeDescription": "OAuth interaction approve / deny"
   }
 }

@@ -2,7 +2,6 @@ import { createBrowserRouter, Navigate, type RouteObject } from 'react-router';
 
 import { AccountLayout } from '@/components/AccountLayout';
 import { NotFoundPage } from '@/components/NotFoundPage';
-import { PlaceholderPage } from '@/components/PlaceholderPage';
 import { RouteErrorPage } from '@/components/RouteErrorPage';
 import { OverviewPage } from '@/features/account/OverviewPage';
 import { ProfilePage } from '@/features/account/ProfilePage';
@@ -13,6 +12,7 @@ import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPage } from '@/features/auth/RegisterPage';
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage';
 import { VerifyEmailPage } from '@/features/auth/VerifyEmailPage';
+import { AuthorizePage } from '@/features/oauth/AuthorizePage';
 import { GuestOnly, RequireAuth } from '@/features/session/guards';
 
 import { RootShell } from './RootShell';
@@ -59,11 +59,7 @@ export const routes: RouteObject[] = [
         path: 'authorize',
         element: (
           <RequireAuth>
-            <PlaceholderPage
-              titleKey="placeholder.authorize"
-              milestone="M6"
-              descriptionKey="placeholder.authorizeDescription"
-            />
+            <AuthorizePage />
           </RequireAuth>
         ),
       },

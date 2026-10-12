@@ -40,6 +40,17 @@ export interface MockAvatar {
 
 export type CeremonyKind = 'login' | 'step_up' | 'registration';
 
+export interface MockInteraction {
+  id: string;
+  client_id: string;
+  client_name: string;
+  scopes: string[];
+  expires_at: string;
+  approveUrl: string;
+  denyUrl: string;
+  boundUserId: string | null;
+}
+
 export interface MockDb {
   users: MockUser[];
   verificationTokens: Map<string, string>;
@@ -52,11 +63,14 @@ export interface MockDb {
   avatar: MockAvatar | null;
   ceremonies: Map<string, CeremonyKind>;
   takenExternalIdentities: Set<string>;
+  interactions: Map<string, MockInteraction>;
 }
 
 export const MOCK_CSRF_TOKEN = 'mock-csrf-token';
 
 export const STEP_UP_TTL_MS = 10 * 60_000;
+
+export const INTERACTION_TTL_MS = 5 * 60_000;
 
 export function createMockDb(): MockDb {
   return {
@@ -71,6 +85,7 @@ export function createMockDb(): MockDb {
     avatar: null,
     ceremonies: new Map(),
     takenExternalIdentities: new Set(),
+    interactions: new Map(),
   };
 }
 
@@ -166,6 +181,22 @@ export function startCeremony(db: MockDb, kind: CeremonyKind): string {
   const ceremonyId = `wac_${db.ceremonies.size + 1}_${kind}`;
   db.ceremonies.set(ceremonyId, kind);
   return ceremonyId;
+}
+
+export function seedInteraction(db: MockDb, overrides: Partial<MockInteraction> = {}): MockInteraction {
+  const interaction: MockInteraction = {
+    id: `int_${db.interactions.size + 1}`,
+    client_id: 'oc_mock',
+    client_name: 'Mock Client',
+    scopes: ['openid', 'profile'],
+    expires_at: new Date(Date.now() + INTERACTION_TTL_MS).toISOString(),
+    approveUrl: 'https://client.example.test/callback?code=ac_mock&state=st_mock',
+    denyUrl: 'https://client.example.test/callback?error=access_denied&state=st_mock',
+    boundUserId: db.currentUserId,
+    ...overrides,
+  };
+  db.interactions.set(interaction.id, interaction);
+  return interaction;
 }
 
 export function consumeCeremony(db: MockDb, ceremonyId: string, kind: CeremonyKind): boolean {

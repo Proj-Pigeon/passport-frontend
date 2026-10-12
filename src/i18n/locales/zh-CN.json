@@ -256,6 +256,32 @@
       "notConfigured": "该登录方式当前不可用，请稍后再试。"
     }
   },
+  "oauth": {
+    "title": "授权请求",
+    "subtitle": "有应用请求访问你的账号",
+    "requestedBy": "{{client}} 请求获得以下权限：",
+    "accountLabel": "当前账号",
+    "switchAccount": "切换账号",
+    "expiresIn": "{{time}} 后失效",
+    "approve": "允许",
+    "deny": "拒绝",
+    "missingTitle": "无法显示授权请求",
+    "missingBody": "链接中缺少授权请求信息，请回到发起授权的应用重试。",
+    "unavailableTitle": "授权请求不可用",
+    "unavailableBody": "该授权请求不存在、已过期或已在其他会话中处理，请回到应用重新发起授权。",
+    "handledTitle": "授权请求已处理",
+    "handledBody": "该授权请求已被使用或已过期，请回到应用重新发起授权。",
+    "expiredTitle": "授权请求已过期",
+    "expiredBody": "该请求已超过有效期，请回到应用重新发起授权。",
+    "loadFailedTitle": "无法加载授权请求",
+    "decisionAmbiguous": "授权结果暂时无法确认，请回到发起授权的应用查看；如未完成，请重新发起。",
+    "scopes": {
+      "openid": "确认你的身份",
+      "profile": "读取你的基本资料（用户名、昵称）",
+      "email": "读取你的邮箱地址",
+      "unknown": "{{scope}}（未知权限）"
+    }
+  },
   "account": {
     "overview": {
       "title": "概览",
@@ -379,11 +405,5 @@
     "title": "页面出错了",
     "body": "发生了意外错误，请刷新页面重试。",
     "action": "刷新页面"
-  },
-  "placeholder": {
-    "milestone": "里程碑",
-    "currentPath": "当前路径",
-    "authorize": "授权同意",
-    "authorizeDescription": "OAuth interaction 授权 / 拒绝"
   }
 }

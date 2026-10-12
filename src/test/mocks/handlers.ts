@@ -1,4 +1,4 @@
-import { http, HttpResponse, type RequestHandler } from 'msw';
+import { http, HttpResponse, type PathParams, type RequestHandler } from 'msw';
 
 import type { ApiFieldError } from '@/api/errors';
 
@@ -13,6 +13,7 @@ import {
   signOut,
   startCeremony,
   type MockDb,
+  type MockInteraction,
   type MockPasskey,
   type MockUser,
 } from './db';
@@ -117,6 +118,54 @@ function profileOf(db: MockDb, user: MockUser) {
     status: user.status,
     avatar_url: db.avatar ? '/v1/me/avatar' : null,
   };
+}
+
+function interactionView(interaction: MockInteraction) {
+  return {
+    interaction_id: interaction.id,
+    client_id: interaction.client_id,
+    client_name: interaction.client_name,
+    scopes: interaction.scopes,
+    expires_at: interaction.expires_at,
+  };
+}
+
+function interactionDecision(
+  db: MockDb,
+  params: PathParams,
+  request: Request,
+  action: 'approve' | 'deny',
+): Response {
+  const csrf = csrfFailure(db, request);
+  if (csrf) {
+    return csrf;
+  }
+  const user = currentUser(db);
+  if (!db.session || !user) {
+    return unauthorized();
+  }
+  const interaction = db.interactions.get(str(params['interactionId']));
+  if (!interaction) {
+    return notFound();
+  }
+  if (interaction.boundUserId === null) {
+    interaction.boundUserId = user.id;
+  }
+  if (interaction.boundUserId !== user.id) {
+    return notFound();
+  }
+  if (Date.parse(interaction.expires_at) <= Date.now()) {
+    return envelope(
+      409,
+      'conflict',
+      'The authorization interaction has expired or was already completed.',
+    );
+  }
+  db.interactions.delete(interaction.id);
+  return HttpResponse.json(
+    { continue_url: action === 'approve' ? interaction.approveUrl : interaction.denyUrl },
+    { headers: { 'X-Request-ID': REQUEST_ID } },
+  );
 }
 
 export function createHandlers(db: MockDb): RequestHandler[] {
@@ -446,6 +495,34 @@ export function createHandlers(db: MockDb): RequestHandler[] {
         { status: 201, headers: { 'X-Request-ID': REQUEST_ID } },
       );
     }),
+
+    http.get('*/oauth2/authorize/interactions/:interactionId', ({ params }) => {
+      const user = currentUser(db);
+      if (!db.session || !user) {
+        return unauthorized();
+      }
+      const interaction = db.interactions.get(str(params['interactionId']));
+      if (!interaction) {
+        return notFound();
+      }
+      if (interaction.boundUserId === null) {
+        interaction.boundUserId = user.id;
+      }
+      if (interaction.boundUserId !== user.id) {
+        return notFound();
+      }
+      return HttpResponse.json(interactionView(interaction), {
+        headers: { 'X-Request-ID': REQUEST_ID },
+      });
+    }),
+
+    http.post('*/oauth2/authorize/interactions/:interactionId/approve', ({ params, request }) =>
+      interactionDecision(db, params, request, 'approve'),
+    ),
+
+    http.post('*/oauth2/authorize/interactions/:interactionId/deny', ({ params, request }) =>
+      interactionDecision(db, params, request, 'deny'),
+    ),
 
     http.get('*/v1/me/passkeys', () => {
       const user = currentUser(db);
