@@ -7,11 +7,11 @@ import {
   currentUser,
   findUserByIdentifier,
   grantStepUp,
-  hasStepUp,
   passkeysOf,
   signIn,
   signOut,
   startCeremony,
+  stepUpSatisfied,
   type MockDb,
   type MockInteraction,
   type MockPasskey,
@@ -20,7 +20,7 @@ import {
 
 const REQUEST_ID = 'req_mock_handler';
 
-function envelope(
+export function envelope(
   status: number,
   code: string,
   message: string,
@@ -40,11 +40,11 @@ function envelope(
   );
 }
 
-function unauthorized() {
+export function unauthorized() {
   return envelope(401, 'unauthorized', 'Authentication is required.');
 }
 
-function notFound() {
+export function notFound() {
   return envelope(404, 'not_found', 'The resource was not found.');
 }
 
@@ -58,7 +58,7 @@ function csrfFailure(db: MockDb, request: Request): Response | null {
   return envelope(403, 'forbidden', 'A valid CSRF token is required.');
 }
 
-async function readJson(request: Request): Promise<Record<string, unknown> | null> {
+export async function readJson(request: Request): Promise<Record<string, unknown> | null> {
   const text = await request.text();
   if (text.length === 0) {
     return null;
@@ -74,7 +74,7 @@ async function readJson(request: Request): Promise<Record<string, unknown> | nul
   }
 }
 
-function str(value: unknown): string {
+export function str(value: unknown): string {
   return typeof value === 'string' ? value : '';
 }
 
@@ -117,6 +117,7 @@ function profileOf(db: MockDb, user: MockUser) {
     email_verified: user.email_verified,
     status: user.status,
     avatar_url: db.avatar ? '/v1/me/avatar' : null,
+    step_up_required: user.step_up_required,
   };
 }
 
@@ -168,8 +169,12 @@ function interactionDecision(
   );
 }
 
+import { createAdminHandlers } from './adminHandlers';
+
 export function createHandlers(db: MockDb): RequestHandler[] {
   return [
+    http.get('*/v1/federation/providers', () => HttpResponse.json({ providers: [] })),
+    ...createAdminHandlers(db),
     http.get('*/v1/auth/csrf', () =>
       HttpResponse.json(
         { token: db.csrfToken },
@@ -226,6 +231,7 @@ export function createHandlers(db: MockDb): RequestHandler[] {
         email_verified: false,
         status: 'pending_verification',
         has_password: true,
+        step_up_required: true,
       };
       db.users.push(user);
       db.verificationTokens.set(`verify_${user.id}`, user.id);
@@ -273,6 +279,7 @@ export function createHandlers(db: MockDb): RequestHandler[] {
             status: user.status,
             email: user.email,
             email_verified: user.email_verified,
+            step_up_required: user.step_up_required,
           },
         },
         { headers: { 'X-Request-ID': REQUEST_ID } },
@@ -389,18 +396,25 @@ export function createHandlers(db: MockDb): RequestHandler[] {
         return unauthorized();
       }
       const body = await readJson(request);
-      if (!body || typeof body['display_name'] !== 'string') {
+      const hasDisplayName = body && typeof body['display_name'] === 'string';
+      const hasStepUpRequired = body && typeof body['step_up_required'] === 'boolean';
+      if (!hasDisplayName && !hasStepUpRequired) {
         return envelope(422, 'validation_failed', 'The request is not valid.', [
           { name: 'display_name', code: 'required' },
         ]);
       }
-      const displayName = str(body['display_name']).trim();
-      if ([...displayName].length > 80) {
-        return envelope(422, 'validation_failed', 'The request is not valid.', [
-          { name: 'display_name', code: 'invalid_format' },
-        ]);
+      if (hasDisplayName) {
+        const displayName = str(body['display_name']).trim();
+        if ([...displayName].length > 80) {
+          return envelope(422, 'validation_failed', 'The request is not valid.', [
+            { name: 'display_name', code: 'invalid_format' },
+          ]);
+        }
+        user.display_name = displayName;
       }
-      user.display_name = displayName;
+      if (hasStepUpRequired) {
+        user.step_up_required = body['step_up_required'] as boolean;
+      }
       return HttpResponse.json(profileOf(db, user), { headers: { 'X-Request-ID': REQUEST_ID } });
     }),
 
@@ -481,7 +495,7 @@ export function createHandlers(db: MockDb): RequestHandler[] {
       if (!user) {
         return unauthorized();
       }
-      if (!hasStepUp(db)) {
+      if (!stepUpSatisfied(db)) {
         return envelope(403, 'forbidden', 'A recent passkey step-up is required.');
       }
       const slug = str(params['slug']);
@@ -494,6 +508,36 @@ export function createHandlers(db: MockDb): RequestHandler[] {
         },
         { status: 201, headers: { 'X-Request-ID': REQUEST_ID } },
       );
+    }),
+
+    http.get('*/v1/me/external-identities', () => {
+      if (!currentUser(db) || !db.session) {
+        return unauthorized();
+      }
+      return HttpResponse.json(
+        { identities: db.linkedExternalIdentities },
+        { headers: { 'X-Request-ID': REQUEST_ID } },
+      );
+    }),
+
+    http.delete('*/v1/me/external-identities/:identityId', ({ params, request }) => {
+      const csrf = csrfFailure(db, request);
+      if (csrf) {
+        return csrf;
+      }
+      if (!currentUser(db) || !db.session) {
+        return unauthorized();
+      }
+      if (!stepUpSatisfied(db)) {
+        return envelope(403, 'forbidden', 'A recent passkey step-up is required.');
+      }
+      const identityId = str(params['identityId']);
+      const index = db.linkedExternalIdentities.findIndex((identity) => identity.id === identityId);
+      if (index === -1) {
+        return notFound();
+      }
+      db.linkedExternalIdentities.splice(index, 1);
+      return new HttpResponse(null, { status: 204, headers: { 'X-Request-ID': REQUEST_ID } });
     }),
 
     http.get('*/oauth2/authorize/interactions/:interactionId', ({ params }) => {
@@ -543,7 +587,7 @@ export function createHandlers(db: MockDb): RequestHandler[] {
       if (!user) {
         return unauthorized();
       }
-      if (passkeysOf(db, user.id).length > 0 && !hasStepUp(db)) {
+      if (passkeysOf(db, user.id).length > 0 && !stepUpSatisfied(db)) {
         return envelope(403, 'forbidden', 'A recent passkey step-up is required.');
       }
       return HttpResponse.json(
@@ -564,7 +608,7 @@ export function createHandlers(db: MockDb): RequestHandler[] {
       if (!user) {
         return unauthorized();
       }
-      if (passkeysOf(db, user.id).length > 0 && !hasStepUp(db)) {
+      if (passkeysOf(db, user.id).length > 0 && !stepUpSatisfied(db)) {
         return envelope(403, 'forbidden', 'A recent passkey step-up is required.');
       }
       const ceremonyId = str(request.headers.get('x-passkey-ceremony'));
@@ -603,7 +647,7 @@ export function createHandlers(db: MockDb): RequestHandler[] {
       if (!user) {
         return unauthorized();
       }
-      if (!hasStepUp(db)) {
+      if (!stepUpSatisfied(db)) {
         return envelope(403, 'forbidden', 'A recent passkey step-up is required.');
       }
       const passkey = passkeysOf(db, user.id).find((entry) => entry.id === params['passkeyId']);
@@ -630,7 +674,7 @@ export function createHandlers(db: MockDb): RequestHandler[] {
       if (!user) {
         return unauthorized();
       }
-      if (!hasStepUp(db)) {
+      if (!stepUpSatisfied(db)) {
         return envelope(403, 'forbidden', 'A recent passkey step-up is required.');
       }
       const owned = passkeysOf(db, user.id);

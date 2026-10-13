@@ -16,6 +16,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   resetMockDb();
+  sessionStorage.clear();
   resetCsrfToken();
 });
 
@@ -54,3 +55,9 @@ class ResizeObserver {
 }
 
 window.ResizeObserver = ResizeObserver;
+
+if (!('fonts' in document)) {
+  Object.defineProperty(document, 'fonts', {
+    value: { addEventListener: () => {}, removeEventListener: () => {} },
+  });
+}
