@@ -117,7 +117,6 @@ describe('RegisterPage', () => {
     await user.click(screen.getByRole('button', { name: '注册' }));
 
     expect(await screen.findByRole('heading', { name: '请查收验证邮件' })).toBeInTheDocument();
-    expect(screen.getByText(/无论邮箱或用户名是否已被占用/)).toBeInTheDocument();
     expect(mockDb.users).toHaveLength(1);
   });
 

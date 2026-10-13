@@ -103,7 +103,6 @@ export function RegisterPage() {
           <Alert color="blue" variant="light">
             <List size="sm" spacing={4} listStyleType="none" center={false}>
               <List.Item>{t('auth.register.resultNote')}</List.Item>
-              <List.Item>{t('auth.register.resultDuplicateNote')}</List.Item>
               <List.Item>{t('auth.register.resultMissing')}</List.Item>
             </List>
           </Alert>

@@ -44,7 +44,6 @@ describe('ForgotPasswordPage', () => {
 
     expect(await screen.findByRole('heading', { name: '重置邮件已发出' })).toBeInTheDocument();
     expect(screen.getByText(/如该邮箱已注册/)).toBeInTheDocument();
-    expect(screen.getByText(/无论邮箱是否存在都会显示本提示/)).toBeInTheDocument();
     expect(payload).toEqual({ email: 'nobody@example.com' });
   });
 

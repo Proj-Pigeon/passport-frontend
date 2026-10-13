@@ -9,7 +9,7 @@ import { resetCsrfToken } from '@/api/csrf';
 import { getCurrentSession } from '@/api/endpoints/session';
 import { AuthLayout } from '@/components/AuthLayout';
 import { queryKeys } from '@/features/session/keys';
-import { nextFromSearchParams } from '@/lib/safeNext';
+import { completeLogin } from '@/lib/loginReturn';
 
 type CompletePhase = 'processing' | 'failed';
 
@@ -31,12 +31,11 @@ export function FederationCompletePage() {
     started.current = true;
 
     if (result === 'success') {
-      const next = nextFromSearchParams(searchParams.toString());
       getCurrentSession()
         .then(() => {
           resetCsrfToken();
           queryClient.clear();
-          navigate(next ?? '/account', { replace: true });
+          completeLogin(searchParams.toString(), navigate, true);
         })
         .catch(() => {
           setPhase('failed');

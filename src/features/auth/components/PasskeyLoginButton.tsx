@@ -7,7 +7,7 @@ import { useNavigate, useSearchParams } from 'react-router';
 
 import { resetCsrfToken } from '@/api/csrf';
 import { useRetryAfter } from '@/hooks/useRetryAfter';
-import { nextFromSearchParams } from '@/lib/safeNext';
+import { completeLogin } from '@/lib/loginReturn';
 import { isPasskeyCancelled, isWebAuthnSupported, loginWithPasskey } from '@/lib/webauthn';
 
 import { SubmitErrorAlert } from './SubmitErrorAlert';
@@ -21,14 +21,13 @@ export function PasskeyLoginButton() {
   const [error, setError] = useState<unknown>(null);
 
   const supported = isWebAuthnSupported();
-  const next = nextFromSearchParams(searchParams.toString());
 
   const mutation = useMutation({
     mutationFn: () => loginWithPasskey(),
     onSuccess: () => {
       resetCsrfToken();
       queryClient.clear();
-      navigate(next ?? '/account', { replace: true });
+      completeLogin(searchParams.toString(), navigate);
     },
     onError: (cause) => {
       if (isPasskeyCancelled(cause)) {

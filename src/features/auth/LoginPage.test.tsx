@@ -74,7 +74,6 @@ describe('LoginPage', () => {
     await submitCredentials(user, 'alice', 'wrong-password-entirely');
 
     expect(await screen.findByText('账号或密码错误')).toBeInTheDocument();
-    expect(screen.getByText(/我们不会提示具体原因/)).toBeInTheDocument();
     expect(mockDb.currentUserId).toBeNull();
   });
 
@@ -101,7 +100,6 @@ describe('LoginPage', () => {
     await submitCredentials(user, 'alice', PASSWORD);
 
     expect(await screen.findByText('账号或密码错误')).toBeInTheDocument();
-    expect(screen.getByText(/我们不会提示具体原因/)).toBeInTheDocument();
   });
 
   it('blocks submission when the identifier is empty', async () => {

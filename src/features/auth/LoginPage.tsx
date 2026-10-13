@@ -12,7 +12,7 @@ import { isApiError } from '@/api/errors';
 import { AuthLayout } from '@/components/AuthLayout';
 import { useRetryAfter } from '@/hooks/useRetryAfter';
 import { fieldErrorsFromApiError, useFieldErrorText } from '@/i18n/errors';
-import { nextFromSearchParams } from '@/lib/safeNext';
+import { completeLogin } from '@/lib/loginReturn';
 import { isTurnstileEnabled } from '@/lib/turnstile';
 import { loginSchema } from '@/lib/validators';
 
@@ -39,7 +39,7 @@ export function LoginPage() {
     validate: schemaResolver(loginSchema, { sync: true }),
   });
 
-  const next = nextFromSearchParams(searchParams.toString());
+  const reauthRequired = searchParams.get('reauth') === 'required';
 
   const mutation = useMutation({
     mutationFn: (values: { identifier: string; password: string }) =>
@@ -51,7 +51,7 @@ export function LoginPage() {
     onSuccess: () => {
       resetCsrfToken();
       queryClient.clear();
-      navigate(next ?? '/account', { replace: true });
+      completeLogin(searchParams.toString(), navigate);
     },
     onError: (error) => {
       setSubmitError(error);
@@ -103,7 +103,6 @@ export function LoginPage() {
             <SubmitErrorAlert
               error={submitError}
               message={credentialFailure ? t('auth.login.failed') : undefined}
-              hint={credentialFailure ? t('auth.login.failedHint') : undefined}
               color={apiError?.status === 429 ? 'orange' : 'red'}
             />
 
@@ -162,7 +161,7 @@ export function LoginPage() {
 
         <PasskeyLoginButton />
 
-        <FederationButtons />
+        {!reauthRequired && <FederationButtons />}
       </>
     </AuthLayout>
   );
