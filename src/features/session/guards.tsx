@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { PageState } from '@/components/PageState';
 import { describeApiError } from '@/i18n/errors';
+import { samlRequestFromSearch } from '@/lib/loginReturn';
 import { locationToNext, nextFromSearchParams, withNextParam } from '@/lib/safeNext';
 
 import { useSession } from './useSession';
@@ -46,7 +47,7 @@ export function GuestOnly({ children }: { children: ReactNode }) {
     return <PageState kind="loading" minHeight="60vh" />;
   }
 
-  if (status === 'authenticated') {
+  if (status === 'authenticated' && !samlRequestFromSearch(searchParams.toString())) {
     const next = nextFromSearchParams(searchParams.toString());
     return <Navigate to={next ?? '/account'} replace />;
   }

@@ -2,6 +2,7 @@ import { useModals } from '@mantine/modals';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Text } from '@mantine/core';
 
 import type { CurrentSessionResponse } from '@/api/types';
 import { useSession } from '@/features/session/useSession';
@@ -36,6 +37,7 @@ export interface UseStepUpResult {
   isActive: boolean;
   expiresAt: string | null;
   remainingSeconds: number;
+  stepUpRequired: boolean;
   ensureStepUp: (options?: { force?: boolean }) => Promise<void>;
   runWithStepUp: <T>(action: () => Promise<T>, options?: StepUpRunOptions) => Promise<T>;
 }
@@ -44,11 +46,12 @@ export function useStepUp(): UseStepUpResult {
   const modals = useModals();
   const queryClient = useQueryClient();
   const { t } = useTranslation();
-  const { session } = useSession();
+  const { session, user } = useSession();
 
   const expiresAt = session?.step_up_expires_at ?? null;
   const isActive = isStepUpActive(expiresAt);
   const remainingSeconds = secondsUntil(expiresAt);
+  const stepUpRequired = user?.step_up_required ?? true;
 
   const ensureStepUp = useCallback(
     (options?: { force?: boolean }): Promise<void> => {
@@ -94,10 +97,28 @@ export function useStepUp(): UseStepUpResult {
     [modals, queryClient, t],
   );
 
+  const confirmRiskyAction = useCallback((): Promise<void> => {
+    return new Promise<void>((resolve, reject) => {
+      modals.openConfirmModal({
+        title: t('stepUp.riskTitle'),
+        children: <Text size="sm">{t('stepUp.riskBody')}</Text>,
+        labels: { confirm: t('stepUp.riskConfirm'), cancel: t('common.cancel') },
+        confirmProps: { color: 'red' },
+        onConfirm: () => resolve(),
+        onCancel: () => reject(new StepUpAbortedError('cancelled')),
+        onClose: () => reject(new StepUpAbortedError('cancelled')),
+      });
+    });
+  }, [modals, t]);
+
   async function runWithStepUp<T>(
     action: () => Promise<T>,
     options?: StepUpRunOptions,
   ): Promise<T> {
+    if (!stepUpRequired) {
+      await confirmRiskyAction();
+      return await action();
+    }
     if (options?.requireUpfront) {
       await ensureStepUp();
     }
@@ -112,5 +133,5 @@ export function useStepUp(): UseStepUpResult {
     }
   }
 
-  return { isActive, expiresAt, remainingSeconds, ensureStepUp, runWithStepUp };
+  return { isActive, expiresAt, remainingSeconds, stepUpRequired, ensureStepUp, runWithStepUp };
 }
