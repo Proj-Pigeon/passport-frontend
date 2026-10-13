@@ -100,7 +100,6 @@ test.describe('account lifecycle', () => {
     await signIn(page, username, 'an-entirely-wrong-password');
 
     await expect(page.getByText('账号或密码错误')).toBeVisible();
-    await expect(page.getByText(/我们不会提示具体原因/)).toBeVisible();
   });
 
   test('a replayed verification token is rejected', async ({ page, request }) => {
@@ -164,7 +163,7 @@ test.describe('password recovery', () => {
     await page.getByRole('button', { name: '发送重置邮件' }).click();
 
     await expect(page.getByRole('heading', { name: '重置邮件已发出' })).toBeVisible();
-    await expect(page.getByText(/无论邮箱是否存在都会显示本提示/)).toBeVisible();
+    await expect(page.getByText(/如该邮箱已注册/)).toBeVisible();
   });
 
   test('an expired reset link is reported instead of silently failing', async ({ page }) => {

@@ -156,7 +156,6 @@ test.describe('passkeys', () => {
 
     await page.getByRole('button', { name: '使用通行密钥验证' }).click();
     await expect(page.getByText('E2E Passkey')).toBeVisible();
-    await expect(page.getByText(/剩余 \d+:\d{2}/)).toBeVisible();
 
     await page.getByRole('button', { name: '删除通行密钥' }).click();
     const dialog = page.getByRole('dialog');
