@@ -70,9 +70,7 @@ export function AuthorizePage() {
 
   const decision = useMutation({
     mutationFn: (choice: DecisionChoice) =>
-      choice === 'approve'
-        ? approveInteraction(interactionId)
-        : denyInteraction(interactionId),
+      choice === 'approve' ? approveInteraction(interactionId) : denyInteraction(interactionId),
     onMutate: () => {
       setDecisionError(null);
     },
@@ -159,8 +157,7 @@ export function AuthorizePage() {
   }
 
   const accountName = user?.display_name || user?.username || '';
-  const ambiguousFailure =
-    isApiError(decisionError) && decisionError.code === NETWORK_ERROR_CODE;
+  const ambiguousFailure = isApiError(decisionError) && decisionError.code === NETWORK_ERROR_CODE;
 
   return (
     <AuthLayout title={t('oauth.title')} subtitle={t('oauth.subtitle')}>
