@@ -3,6 +3,19 @@ import { createBrowserRouter, Navigate, type RouteObject } from 'react-router';
 import { AccountLayout } from '@/components/AccountLayout';
 import { NotFoundPage } from '@/components/NotFoundPage';
 import { RouteErrorPage } from '@/components/RouteErrorPage';
+import { AdminLayout } from '@/features/admin/AdminLayout';
+import { AdminLoginPage } from '@/features/admin/AdminLoginPage';
+import { AdminAuditEventsPage } from '@/features/admin/pages/AdminAuditEventsPage';
+import { AdminBackupExercisesPage } from '@/features/admin/pages/AdminBackupExercisesPage';
+import { AdminConfigurationVersionDetailPage } from '@/features/admin/pages/AdminConfigurationVersionDetailPage';
+import { AdminConfigurationVersionsPage } from '@/features/admin/pages/AdminConfigurationVersionsPage';
+import { AdminKeyRotationsPage } from '@/features/admin/pages/AdminKeyRotationsPage';
+import { AdminOverviewPage } from '@/features/admin/pages/AdminOverviewPage';
+import { AdminResourceDetailPage } from '@/features/admin/pages/AdminResourceDetailPage';
+import { AdminResourceListPage } from '@/features/admin/pages/AdminResourceListPage';
+import { AdminUserDetailPage } from '@/features/admin/pages/AdminUserDetailPage';
+import { AdminUsersPage } from '@/features/admin/pages/AdminUsersPage';
+import { AdminGuestOnly, RequireAdmin } from '@/features/admin/session/guards';
 import { OverviewPage } from '@/features/account/OverviewPage';
 import { ProfilePage } from '@/features/account/ProfilePage';
 import { SecurityPage } from '@/features/account/SecurityPage';
@@ -75,6 +88,59 @@ export const routes: RouteObject[] = [
           { index: true, element: <OverviewPage /> },
           { path: 'profile', element: <ProfilePage /> },
           { path: 'security', element: <SecurityPage /> },
+        ],
+      },
+
+      {
+        path: 'admin/login',
+        element: (
+          <AdminGuestOnly>
+            <AdminLoginPage />
+          </AdminGuestOnly>
+        ),
+      },
+      {
+        path: 'admin',
+        element: (
+          <RequireAdmin>
+            <AdminLayout />
+          </RequireAdmin>
+        ),
+        children: [
+          { index: true, element: <AdminOverviewPage /> },
+          { path: 'users', element: <AdminUsersPage /> },
+          { path: 'users/:userId', element: <AdminUserDetailPage /> },
+          { path: 'applications', element: <AdminResourceListPage kind="application" /> },
+          {
+            path: 'applications/:resourceId',
+            element: <AdminResourceDetailPage kind="application" />,
+          },
+          { path: 'oauth-clients', element: <Navigate to="/admin/applications" replace /> },
+          { path: 'oauth-clients/:resourceId', element: <AdminResourceDetailPage kind="oauth" /> },
+          {
+            path: 'saml-service-providers',
+            element: <Navigate to="/admin/applications" replace />,
+          },
+          {
+            path: 'saml-service-providers/:resourceId',
+            element: <AdminResourceDetailPage kind="saml" />,
+          },
+          {
+            path: 'federation-providers',
+            element: <AdminResourceListPage kind="federation" />,
+          },
+          {
+            path: 'federation-providers/:resourceId',
+            element: <AdminResourceDetailPage kind="federation" />,
+          },
+          { path: 'audit-events', element: <AdminAuditEventsPage /> },
+          { path: 'configuration-versions', element: <AdminConfigurationVersionsPage /> },
+          {
+            path: 'configuration-versions/:configurationId',
+            element: <AdminConfigurationVersionDetailPage />,
+          },
+          { path: 'key-rotation-requests', element: <AdminKeyRotationsPage /> },
+          { path: 'backup-exercises', element: <AdminBackupExercisesPage /> },
         ],
       },
 
