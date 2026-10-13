@@ -12,7 +12,9 @@ export default defineConfig(({ mode }) => {
 
   const proxy: Record<string, ProxyOptions> = {
     '/v1': api,
+    '/admin/v1': api,
     '/oauth2': api,
+    '/saml': api,
     '^/federation/(?!complete(?:[/?#]|$))': api,
     '/.well-known': api,
     '/jwks.json': api,

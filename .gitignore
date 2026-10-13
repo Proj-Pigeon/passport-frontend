@@ -24,6 +24,9 @@ coverage
 /blob-report/
 /playwright/.cache/
 
+# Validation artifacts
+/.validation/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
