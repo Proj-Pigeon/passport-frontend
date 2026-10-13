@@ -5,6 +5,12 @@ import {
   WebAuthnAbortService,
 } from '@simplewebauthn/browser';
 
+import {
+  adminPasskeyLoginOptions,
+  adminPasskeyLoginVerify,
+  adminStepUpOptions,
+  adminStepUpVerify,
+} from '@/api/endpoints/admin/session';
 import { passkeyRegistrationOptions, passkeyRegistrationVerify } from '@/api/endpoints/passkeys';
 import {
   passkeyLoginOptions,
@@ -87,6 +93,16 @@ export async function loginWithPasskey(): Promise<void> {
   await passkeyLoginVerify(assertion, ceremony.ceremony_id);
 }
 
+export async function adminLoginWithPasskey(identifier: string): Promise<void> {
+  const ceremony = await adminPasskeyLoginOptions(identifier);
+  const assertion = await startAuthentication({
+    optionsJSON: ceremony.options.publicKey,
+  }).catch((cause) => {
+    throw toPasskeyError(cause);
+  });
+  await adminPasskeyLoginVerify(assertion, ceremony.ceremony_id);
+}
+
 export async function stepUpWithPasskey(): Promise<void> {
   const ceremony = await stepUpPasskeyOptions();
   const assertion = await startAuthentication({
@@ -95,6 +111,16 @@ export async function stepUpWithPasskey(): Promise<void> {
     throw toPasskeyError(cause);
   });
   await stepUpPasskeyVerify(assertion, ceremony.ceremony_id);
+}
+
+export async function adminStepUpWithPasskey(): Promise<void> {
+  const ceremony = await adminStepUpOptions();
+  const assertion = await startAuthentication({
+    optionsJSON: ceremony.options.publicKey,
+  }).catch((cause) => {
+    throw toPasskeyError(cause);
+  });
+  await adminStepUpVerify(assertion, ceremony.ceremony_id);
 }
 
 export async function registerPasskey(): Promise<Passkey> {
