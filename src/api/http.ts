@@ -1,6 +1,6 @@
 import { env } from '@/lib/env';
 
-import { getCsrfToken, resetCsrfToken } from './csrf';
+import { getCsrfToken, resetCsrfToken, type ApiScope } from './csrf';
 import { abortedError, ApiError, apiErrorFromResponse, isApiError, networkError } from './errors';
 import { emitUnauthorized } from './unauthorized';
 
@@ -16,6 +16,7 @@ export interface ApiRequestOptions {
   accept?: string;
   headers?: Record<string, string>;
   signal?: AbortSignal;
+  scope?: ApiScope;
   skipCsrf?: boolean;
   suppressUnauthorized?: boolean;
 }
@@ -40,10 +41,11 @@ export function resolveAssetUrl(pathOrUrl: string | null | undefined): string | 
 
 async function exchange(path: string, options: ApiRequestOptions): Promise<Response> {
   const method = options.method ?? 'GET';
+  const scope = options.scope ?? 'account';
   let response = await send(path, method, options);
 
   if (response.status === 403 && isWriteMethod(method) && !options.skipCsrf) {
-    resetCsrfToken();
+    resetCsrfToken(scope);
     response = await send(path, method, options);
   }
 
@@ -54,7 +56,7 @@ async function exchange(path: string, options: ApiRequestOptions): Promise<Respo
   const requestId = headerOf(response, 'x-request-id');
   const error = apiErrorFromResponse(response, await readText(response), requestId);
   if (error.status === 401 && !options.suppressUnauthorized) {
-    emitUnauthorized({ path, method, requestId: error.requestId });
+    emitUnauthorized({ path, method, requestId: error.requestId, scope });
   }
   throw error;
 }
@@ -81,7 +83,7 @@ async function send(
   }
 
   if (write && !options.skipCsrf) {
-    headers.set('X-CSRF-Token', await getCsrfToken());
+    headers.set('X-CSRF-Token', await getCsrfToken(options.scope ?? 'account'));
   }
 
   try {
@@ -104,6 +106,27 @@ async function send(
 export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
   const response = await exchange(path, options);
   return (await readPayload(response, response.status, headerOf(response, 'x-request-id'))) as T;
+}
+
+export interface ApiResponseMeta {
+  etag: string | null;
+  requestId: string | null;
+}
+
+export async function apiGetWithMeta<T>(
+  path: string,
+  options: Omit<ApiRequestOptions, 'method' | 'body' | 'rawBody'> = {},
+): Promise<{ data: T; meta: ApiResponseMeta }> {
+  const response = await exchange(path, { ...options, method: 'GET' });
+  const data = (await readPayload(
+    response,
+    response.status,
+    headerOf(response, 'x-request-id'),
+  )) as T;
+  return {
+    data,
+    meta: { etag: headerOf(response, 'etag'), requestId: headerOf(response, 'x-request-id') },
+  };
 }
 
 export async function apiVoid(path: string, options: ApiRequestOptions = {}): Promise<void> {

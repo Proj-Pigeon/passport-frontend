@@ -15,6 +15,8 @@ export interface SessionUser {
   status: AccountStatus;
   email: string;
   email_verified: boolean;
+  roles?: string[];
+  step_up_required: boolean;
 }
 
 export interface SessionInfo {
@@ -40,6 +42,7 @@ export interface Profile {
   email_verified: boolean;
   status: AccountStatus;
   avatar_url: string | null;
+  step_up_required: boolean;
 }
 
 export interface RegistrationRequest {

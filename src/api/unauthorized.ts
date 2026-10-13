@@ -1,7 +1,10 @@
+import type { ApiScope } from './csrf';
+
 export interface UnauthorizedEvent {
   path: string;
   method: string;
   requestId: string | null;
+  scope: ApiScope;
 }
 
 type UnauthorizedHandler = (event: UnauthorizedEvent) => void;

@@ -10,6 +10,10 @@ export const API_ERROR_CODES = [
   'rate_limited',
   'dependency_unavailable',
   'internal_error',
+  'precondition_failed',
+  'precondition_required',
+  'key_manager_unavailable',
+  'key_job_pending',
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

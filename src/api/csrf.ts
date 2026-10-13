@@ -2,35 +2,54 @@ import { env } from '@/lib/env';
 
 import { ApiError, apiErrorFromResponse, networkError } from './errors';
 
-const CSRF_PATH = '/v1/auth/csrf';
+export type ApiScope = 'account' | 'admin';
 
-let cachedToken: string | null = null;
-let inflight: Promise<string> | null = null;
+const CSRF_PATHS: Record<ApiScope, string> = {
+  account: '/v1/auth/csrf',
+  admin: '/admin/v1/auth/csrf',
+};
 
-export function peekCsrfToken(): string | null {
-  return cachedToken;
+interface CsrfState {
+  token: string | null;
+  inflight: Promise<string> | null;
 }
 
-export function resetCsrfToken(): void {
-  cachedToken = null;
-}
+const STATES = new Map<ApiScope, CsrfState>();
 
-export async function getCsrfToken(): Promise<string> {
-  if (cachedToken) {
-    return cachedToken;
+function stateOf(scope: ApiScope): CsrfState {
+  let state = STATES.get(scope);
+  if (!state) {
+    state = { token: null, inflight: null };
+    STATES.set(scope, state);
   }
-  if (!inflight) {
-    inflight = requestToken().finally(() => {
-      inflight = null;
+  return state;
+}
+
+export function peekCsrfToken(scope: ApiScope = 'account'): string | null {
+  return stateOf(scope).token;
+}
+
+export function resetCsrfToken(scope: ApiScope = 'account'): void {
+  stateOf(scope).token = null;
+}
+
+export async function getCsrfToken(scope: ApiScope = 'account'): Promise<string> {
+  const state = stateOf(scope);
+  if (state.token) {
+    return state.token;
+  }
+  if (!state.inflight) {
+    state.inflight = requestToken(scope).finally(() => {
+      state.inflight = null;
     });
   }
-  return inflight;
+  return state.inflight;
 }
 
-async function requestToken(): Promise<string> {
+async function requestToken(scope: ApiScope): Promise<string> {
   let response: Response;
   try {
-    response = await fetch(`${env.apiBase}${CSRF_PATH}`, {
+    response = await fetch(`${env.apiBase}${CSRF_PATHS[scope]}`, {
       method: 'GET',
       credentials: 'include',
       cache: 'no-store',
@@ -66,7 +85,7 @@ async function requestToken(): Promise<string> {
     });
   }
 
-  cachedToken = token;
+  stateOf(scope).token = token;
   return token;
 }
 

@@ -11,6 +11,10 @@ export function updateDisplayName(displayName: string) {
   return apiPatch<Profile>('/v1/me', { display_name: displayName });
 }
 
+export function updateStepUpPreference(stepUpRequired: boolean) {
+  return apiPatch<Profile>('/v1/me', { step_up_required: stepUpRequired });
+}
+
 export function getAvatar() {
   return apiBlobOrNull(AVATAR_PATH, { accept: 'image/*' });
 }
