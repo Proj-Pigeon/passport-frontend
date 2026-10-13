@@ -17,7 +17,7 @@ export function AccountPageHeader({ title, subtitle }: AccountPageHeaderProps) {
         {title}
       </Title>
       {subtitle && (
-        <Text size="sm" c="dimmed">
+        <Text component="div" size="sm" c="dimmed">
           {subtitle}
         </Text>
       )}
@@ -27,9 +27,10 @@ export function AccountPageHeader({ title, subtitle }: AccountPageHeaderProps) {
 
 export interface SectionCardProps {
   title: string;
+  badge?: ReactNode;
   description?: ReactNode;
   action?: ReactNode;
-  children: ReactNode;
+  children?: ReactNode;
 }
 
 export function InfoItem({ label, children }: { label: string; children: ReactNode }) {
@@ -43,15 +44,18 @@ export function InfoItem({ label, children }: { label: string; children: ReactNo
   );
 }
 
-export function SectionCard({ title, description, action, children }: SectionCardProps) {
+export function SectionCard({ title, badge, description, action, children }: SectionCardProps) {
   return (
     <Paper p={{ base: 'md', sm: 'lg' }}>
       <Stack gap="md">
         <Group justify="space-between" align="flex-start" wrap="nowrap" gap="md">
           <Stack gap={2}>
-            <Title order={2} fz={16} fw={600}>
-              {title}
-            </Title>
+            <Group gap="xs" wrap="wrap">
+              <Title order={2} fz={16} fw={600}>
+                {title}
+              </Title>
+              {badge}
+            </Group>
             {description && (
               <Text size="sm" c="dimmed">
                 {description}

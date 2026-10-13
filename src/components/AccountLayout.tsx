@@ -11,6 +11,7 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
+  IconArrowsExchange,
   IconChevronDown,
   IconLayoutDashboard,
   IconLogout,
@@ -132,6 +133,17 @@ export function AccountLayout() {
                     {t(item.labelKey)}
                   </Menu.Item>
                 ))}
+                {user?.roles && user.roles.length > 0 && (
+                  <Menu.Item
+                    leftSection={<IconArrowsExchange size={14} stroke={1.5} />}
+                    onClick={() => {
+                      close();
+                      navigate('/admin');
+                    }}
+                  >
+                    {t('admin.switchToAdminView')}
+                  </Menu.Item>
+                )}
                 <Menu.Divider />
                 <Menu.Item
                   color="red"
