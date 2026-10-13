@@ -1,61 +1,55 @@
-import { Badge, Button, Group, Text } from '@mantine/core';
-import { useEffect, useState } from 'react';
+import { Alert, Badge, Switch } from '@mantine/core';
+import { useModals } from '@mantine/modals';
 import { useTranslation } from 'react-i18next';
 
 import { SectionCard } from '@/components/AccountSections';
-import { useCountdown } from '@/hooks/useCountdown';
-import { useStepUp } from '@/features/step-up/useStepUp';
-import { formatClock, secondsUntil } from '@/lib/format';
-import { isWebAuthnSupported } from '@/lib/webauthn';
+import { useUpdateStepUpPreference } from '@/features/account/useProfile';
+import { useSession } from '@/features/session/useSession';
 
 export function StepUpStatusCard() {
   const { t } = useTranslation();
-  const { isActive, expiresAt, ensureStepUp } = useStepUp();
-  const countdown = useCountdown();
-  const { start } = countdown;
-  const [pending, setPending] = useState(false);
+  const modals = useModals();
+  const { user } = useSession();
+  const updatePreference = useUpdateStepUpPreference();
 
-  useEffect(() => {
-    start(secondsUntil(expiresAt));
-  }, [expiresAt, start]);
+  const enabled = user?.step_up_required ?? true;
 
-  const verify = async () => {
-    setPending(true);
-    try {
-      await ensureStepUp({ force: true });
-    } catch {
-      // the modal already explained why verification did not complete
-    } finally {
-      setPending(false);
-    }
+  const disable = () => {
+    modals.openConfirmModal({
+      title: t('account.security.stepUpDisableTitle'),
+      children: (
+        <Alert color="red" variant="light">
+          {t('account.security.stepUpDisableBody')}
+        </Alert>
+      ),
+      labels: {
+        confirm: t('account.security.stepUpDisableConfirm'),
+        cancel: t('common.cancel'),
+      },
+      confirmProps: { color: 'red' },
+      onConfirm: () => updatePreference.mutate(false),
+    });
   };
 
   return (
     <SectionCard
       title={t('account.security.stepUpTitle')}
-      description={t('account.security.stepUpDescription')}
-      action={
-        <Button
-          size="xs"
-          variant="light"
-          onClick={() => void verify()}
-          loading={pending}
-          disabled={!isWebAuthnSupported()}
-        >
-          {t('account.security.stepUpVerify')}
-        </Button>
-      }
-    >
-      <Group gap="xs" wrap="wrap" align="center">
-        <Badge size="sm" variant="light" color={isActive ? 'teal' : 'gray'}>
-          {isActive ? t('account.security.stepUpActive') : t('account.security.stepUpInactive')}
+      badge={
+        <Badge size="sm" variant="light" color={enabled ? 'teal' : 'red'}>
+          {enabled ? t('common.enabled') : t('common.disabled')}
         </Badge>
-        <Text size="sm" c="dimmed">
-          {isActive
-            ? t('account.security.stepUpRemaining', { time: formatClock(countdown.remaining) })
-            : t('account.security.stepUpInactiveHint')}
-        </Text>
-      </Group>
-    </SectionCard>
+      }
+      action={
+        <Switch
+          size="sm"
+          aria-label={t('account.security.stepUpTitle')}
+          checked={enabled}
+          disabled={updatePreference.isPending}
+          onChange={(event) =>
+            event.currentTarget.checked ? updatePreference.mutate(true) : disable()
+          }
+        />
+      }
+    />
   );
 }

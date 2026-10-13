@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { getProfile, updateDisplayName } from '@/api/endpoints/me';
+import { getProfile, updateDisplayName, updateStepUpPreference } from '@/api/endpoints/me';
 import { isUnauthorized } from '@/api/errors';
 import { resolveAssetUrl } from '@/api/http';
 import type { Profile } from '@/api/types';
@@ -38,6 +38,22 @@ export function useProfile(): UseProfileResult {
 export function useDisplayName(): string {
   const { profile } = useProfile();
   return useMemo(() => profile?.display_name?.trim() || profile?.username || '', [profile]);
+}
+
+export function useUpdateStepUpPreference() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+
+  return useMutation({
+    mutationFn: (stepUpRequired: boolean) => updateStepUpPreference(stepUpRequired),
+    onSuccess: (profile) => {
+      queryClient.setQueryData(queryKeys.profile, profile);
+      queryClient.invalidateQueries({ queryKey: queryKeys.session });
+    },
+    onError: () => {
+      notifications.show({ color: 'red', message: t('account.security.stepUpSaveFailed') });
+    },
+  });
 }
 
 export function useAvatarUrl(): string | null {

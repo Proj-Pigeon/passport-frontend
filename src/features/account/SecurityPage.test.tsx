@@ -146,20 +146,6 @@ describe('SecurityPage passkey registration', () => {
     expect(mockDb.passkeys).toHaveLength(1);
   });
 
-  it('points at the passkey setup when step-up has no credential to use', async () => {
-    const account = seedUser(mockDb);
-    signIn(mockDb, account, 'pwd');
-    renderRoute(['/account/security']);
-    const user = userEvent.setup();
-
-    await user.click(await screen.findByRole('button', { name: '立即验证' }));
-    await user.click(await screen.findByRole('button', { name: '使用通行密钥验证' }));
-
-    expect(await screen.findByText(/没有可用的通行密钥/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '前往安全页' })).toBeInTheDocument();
-    expect(mockDb.session?.step_up_expires_at).toBeFalsy();
-  });
-
   it('reports an authenticator that is already registered', async () => {
     const account = seedUser(mockDb);
     signIn(mockDb, account, 'pwd');
@@ -255,40 +241,102 @@ describe('SecurityPage passkey maintenance', () => {
     const dialog = await screen.findByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: '删除' }));
 
-    expect(await screen.findByText('这是您唯一的登录方式，无法删除')).toBeInTheDocument();
+    expect(await screen.findByText('这是你唯一的登录方式，无法删除')).toBeInTheDocument();
     expect(mockDb.passkeys).toHaveLength(1);
   });
 });
 
-describe('SecurityPage step-up status', () => {
-  it('reports an inactive window by default', async () => {
+describe('SecurityPage step-up preference', () => {
+  it('is enabled by default', async () => {
     await openSecurityPage(seedUser(mockDb));
 
-    expect(await screen.findByText('未验证')).toBeInTheDocument();
-    expect(screen.getByText('执行敏感操作时会要求验证')).toBeInTheDocument();
+    const toggle = await screen.findByRole('switch', { name: '敏感操作验证' });
+    expect(toggle).toBeChecked();
+    expect(screen.getByText('已启用')).toBeInTheDocument();
   });
 
-  it('counts down an active window', async () => {
+  it('asks for confirmation before disabling and persists the choice', async () => {
     const account = seedUser(mockDb);
     signIn(mockDb, account, 'pwd');
-    grantStepUp(mockDb);
-    renderRoute(['/account/security']);
-
-    expect(await screen.findByText('已验证')).toBeInTheDocument();
-    expect(screen.getByText(/剩余 \d+:\d{2}/)).toBeInTheDocument();
-  });
-
-  it('opens a window from the status card', async () => {
-    const account = seedUser(mockDb);
-    signIn(mockDb, account, 'pwd');
-    seedPasskey(mockDb, { user_id: account.id });
     renderRoute(['/account/security']);
     const user = userEvent.setup();
 
-    await user.click(await screen.findByRole('button', { name: '立即验证' }));
-    await user.click(await screen.findByRole('button', { name: '使用通行密钥验证' }));
+    await user.click(await screen.findByRole('switch', { name: '敏感操作验证' }));
 
-    await waitFor(() => expect(mockDb.session?.step_up_expires_at).toBeTruthy());
-    expect(await screen.findByText('已验证')).toBeInTheDocument();
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(/不再进行身份验证，操作可能存在风险/)).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: '关闭验证' }));
+
+    await waitFor(() => expect(account.step_up_required).toBe(false));
+    expect(await screen.findByText('已禁用')).toBeInTheDocument();
+  });
+
+  it('keeps the preference enabled when the risk confirmation is cancelled', async () => {
+    const account = seedUser(mockDb);
+    signIn(mockDb, account, 'pwd');
+    renderRoute(['/account/security']);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('switch', { name: '敏感操作验证' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: '取消' }));
+
+    expect(account.step_up_required).toBe(true);
+    expect(await screen.findByText('已启用')).toBeInTheDocument();
+  });
+
+  it('re-enables without confirmation', async () => {
+    const account = seedUser(mockDb, { step_up_required: false });
+    signIn(mockDb, account, 'pwd');
+    renderRoute(['/account/security']);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('switch', { name: '敏感操作验证' }));
+
+    await waitFor(() => expect(account.step_up_required).toBe(true));
+    expect(await screen.findByText('已启用')).toBeInTheDocument();
+  });
+
+  it('skips passkey verification but warns before renaming when disabled', async () => {
+    const account = seedUser(mockDb, { step_up_required: false });
+    signIn(mockDb, account, 'pwd');
+    seedPasskey(mockDb, { user_id: account.id, label: 'MacBook' });
+    renderRoute(['/account/security']);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: '重命名' }));
+    const input = await screen.findByLabelText('名称');
+    await user.clear(input);
+    await user.type(input, '新名字');
+    await user.click(screen.getByRole('button', { name: '保存名称' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(/敏感操作验证已禁用/)).toBeInTheDocument();
+    expect(screen.queryByText('安全验证')).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: '继续操作' }));
+
+    await waitFor(() => expect(mockDb.passkeys[0]?.label).toBe('新名字'));
+    expect(webauthn.startAuthentication).not.toHaveBeenCalled();
+  });
+
+  it('aborts the sensitive action when the risk warning is dismissed', async () => {
+    const account = seedUser(mockDb, { step_up_required: false });
+    signIn(mockDb, account, 'pwd');
+    seedPasskey(mockDb, { user_id: account.id, label: 'MacBook' });
+    renderRoute(['/account/security']);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: '重命名' }));
+    const input = await screen.findByLabelText('名称');
+    await user.clear(input);
+    await user.type(input, '新名字');
+    await user.click(screen.getByRole('button', { name: '保存名称' }));
+
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: '取消' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(mockDb.passkeys[0]?.label).toBe('MacBook');
+    expect(webauthn.startAuthentication).not.toHaveBeenCalled();
   });
 });

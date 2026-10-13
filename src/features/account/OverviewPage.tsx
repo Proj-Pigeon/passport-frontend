@@ -21,7 +21,6 @@ import { PageState } from '@/components/PageState';
 import { usePasskeys } from '@/features/account/usePasskeys';
 import { useDisplayName, useProfile } from '@/features/account/useProfile';
 import { useSession } from '@/features/session/useSession';
-import { isStepUpActive } from '@/features/step-up/stepUp';
 import { describeApiError } from '@/i18n/errors';
 import { formatDateTime } from '@/lib/format';
 
@@ -53,7 +52,7 @@ export function OverviewPage() {
     .map((method: AuthenticationMethod) => t(`account.overview.amr.${method}`))
     .join(t('account.overview.methodSeparator'));
 
-  const stepUpActive = isStepUpActive(session?.step_up_expires_at);
+  const stepUpRequired = user.step_up_required;
   const email = profile.email || user.email;
 
   return (
@@ -75,13 +74,15 @@ export function OverviewPage() {
             </Text>
             <Group gap="xs" wrap="wrap">
               <Text size="sm" lineClamp={1}>
-                {email}
+                {email || t('account.overview.noEmail')}
               </Text>
-              <Badge size="sm" variant="light" color={profile.email_verified ? 'teal' : 'orange'}>
-                {profile.email_verified
-                  ? t('account.overview.emailVerified')
-                  : t('account.overview.emailUnverified')}
-              </Badge>
+              {email && (
+                <Badge size="sm" variant="light" color={profile.email_verified ? 'teal' : 'orange'}>
+                  {profile.email_verified
+                    ? t('account.overview.emailVerified')
+                    : t('account.overview.emailUnverified')}
+                </Badge>
+              )}
               {profile.status !== 'active' && (
                 <Badge size="sm" variant="light" color="red">
                   {t(`account.overview.status.${profile.status}`)}
@@ -119,10 +120,8 @@ export function OverviewPage() {
               </Text>
             </InfoItem>
             <InfoItem label={t('account.overview.stepUp')}>
-              <Badge size="sm" color={stepUpActive ? 'teal' : 'gray'} variant="light">
-                {stepUpActive
-                  ? t('account.overview.stepUpActive')
-                  : t('account.overview.stepUpInactive')}
+              <Badge size="sm" color={stepUpRequired ? 'teal' : 'red'} variant="light">
+                {stepUpRequired ? t('common.enabled') : t('common.disabled')}
               </Badge>
             </InfoItem>
             <InfoItem label={t('account.overview.passkeys')}>

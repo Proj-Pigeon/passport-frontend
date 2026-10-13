@@ -1,14 +1,7 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import {
-  grantStepUp,
-  mockDb,
-  seedPasskey,
-  seedUser,
-  signIn,
-  type MockUser,
-} from '@/test/mocks/server';
+import { mockDb, seedPasskey, seedUser, signIn, type MockUser } from '@/test/mocks/server';
 import { renderRoute } from '@/test/render';
 
 async function openOverview(user: MockUser) {
@@ -31,6 +24,15 @@ describe('OverviewPage', () => {
     expect(screen.getAllByText('Alice').length).toBeGreaterThan(0);
     expect(screen.getByText('alice@example.com')).toBeInTheDocument();
     expect(screen.getByText('邮箱已验证')).toBeInTheDocument();
+  });
+
+  it('renders a federation account without a mailbox', async () => {
+    const user = seedUser(mockDb, { email: '', email_verified: false });
+    signIn(mockDb, user, 'federation');
+    renderRoute(['/account']);
+
+    expect(await screen.findByText('未绑定邮箱')).toBeInTheDocument();
+    expect(screen.queryByText('邮箱未验证')).not.toBeInTheDocument();
   });
 
   it('falls back to the username when no display name is set', async () => {
@@ -75,20 +77,15 @@ describe('OverviewPage', () => {
     expect(screen.queryByText(/添加通行密钥后/)).not.toBeInTheDocument();
   });
 
-  it('shows the remaining time of an active step-up window', async () => {
-    const user = seedUser(mockDb);
-    signIn(mockDb, user, 'pwd');
-    grantStepUp(mockDb);
-    renderRoute(['/account']);
-    await screen.findByRole('heading', { name: '概览' });
-
-    expect(await screen.findByText('已验证')).toBeInTheDocument();
-    expect(screen.getAllByText(/\d+:\d{2}/).length).toBeGreaterThan(0);
-  });
-
-  it('shows the inactive step-up state by default', async () => {
+  it('marks sensitive-action verification as enabled by default', async () => {
     await openOverview(seedUser(mockDb));
 
-    expect(await screen.findByText('未验证')).toBeInTheDocument();
+    expect(await screen.findByText('已启用')).toBeInTheDocument();
+  });
+
+  it('marks sensitive-action verification as disabled when turned off', async () => {
+    await openOverview(seedUser(mockDb, { step_up_required: false }));
+
+    expect(await screen.findByText('已禁用')).toBeInTheDocument();
   });
 });

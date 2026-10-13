@@ -37,6 +37,14 @@ afterEach(() => {
 });
 
 describe('ProfilePage display name', () => {
+  it('renders a federation account without a mailbox', async () => {
+    signIn(mockDb, seedUser(mockDb, { email: '', email_verified: false }), 'federation');
+    await openProfilePage();
+
+    expect(screen.getByText('未绑定邮箱')).toBeInTheDocument();
+    expect(screen.queryByText('邮箱未验证')).not.toBeInTheDocument();
+  });
+
   it('saves a new display name', async () => {
     signIn(mockDb, seedUser(mockDb, { display_name: 'Alice' }), 'pwd');
     const user = userEvent.setup();

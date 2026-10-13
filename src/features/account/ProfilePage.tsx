@@ -65,13 +65,19 @@ export function ProfilePage() {
             <Stack gap={2}>
               <Group gap="xs" wrap="nowrap">
                 <Text size="sm" lineClamp={1}>
-                  {profile.email}
+                  {profile.email || t('account.overview.noEmail')}
                 </Text>
-                <Badge size="sm" variant="light" color={profile.email_verified ? 'teal' : 'orange'}>
-                  {profile.email_verified
-                    ? t('account.overview.emailVerified')
-                    : t('account.overview.emailUnverified')}
-                </Badge>
+                {profile.email && (
+                  <Badge
+                    size="sm"
+                    variant="light"
+                    color={profile.email_verified ? 'teal' : 'orange'}
+                  >
+                    {profile.email_verified
+                      ? t('account.overview.emailVerified')
+                      : t('account.overview.emailUnverified')}
+                  </Badge>
+                )}
               </Group>
               <Text size="xs" c="dimmed">
                 {t('account.profile.emailLocked')}
