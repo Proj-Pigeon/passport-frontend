@@ -3,10 +3,17 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { grantStepUp, mockDb, seedPasskey, seedUser, server, signIn } from '@/test/mocks/server';
+import {
+  grantStepUp,
+  mockDb,
+  seedLinkedExternalIdentity,
+  seedPasskey,
+  seedUser,
+  server,
+  signIn,
+} from '@/test/mocks/server';
 import { renderRoute } from '@/test/render';
 
-const envState = vi.hoisted(() => ({ providers: ['github', 'google'] as string[] }));
 const topLevel = vi.hoisted(() => ({ openTopLevel: vi.fn() }));
 
 const webauthn = vi.hoisted(() => ({
@@ -17,15 +24,6 @@ const webauthn = vi.hoisted(() => ({
   WebAuthnAbortService: { cancelCeremony: vi.fn(), createNewAbortSignal: vi.fn() },
 }));
 
-vi.mock('@/lib/env', () => ({
-  env: {
-    apiBase: '',
-    turnstileSiteKey: null,
-    get federationProviders() {
-      return envState.providers;
-    },
-  },
-}));
 vi.mock('@/lib/topLevelNavigation', () => ({ openTopLevel: topLevel.openTopLevel }));
 vi.mock('@simplewebauthn/browser', () => webauthn);
 
@@ -53,14 +51,23 @@ async function openProfilePage() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  envState.providers = ['github', 'google'];
+  server.use(
+    http.get('*/v1/federation/providers', () =>
+      HttpResponse.json({
+        providers: [
+          { slug: 'github', display_name: 'GitHub', type: 'oauth2' },
+          { slug: 'google', display_name: 'Google', type: 'oidc' },
+        ],
+      }),
+    ),
+  );
   webauthn.browserSupportsWebAuthn.mockReturnValue(true);
   webauthn.startAuthentication.mockResolvedValue(ASSERTION);
 });
 
 describe('LinkedIdentities', () => {
   it('is hidden when no provider is configured', async () => {
-    envState.providers = [];
+    server.use(http.get('*/v1/federation/providers', () => HttpResponse.json({ providers: [] })));
     await openProfilePage();
 
     expect(screen.queryByRole('heading', { name: '第三方身份' })).not.toBeInTheDocument();
@@ -135,5 +142,40 @@ describe('LinkedIdentities', () => {
 
     expect(await screen.findByText('该登录方式当前不可用，请稍后再试。')).toBeInTheDocument();
     expect(topLevel.openTopLevel).not.toHaveBeenCalled();
+  });
+
+  it('shows linked identities with an unbind action instead of a bind button', async () => {
+    seedLinkedExternalIdentity(mockDb, 'github', 'GitHub', 'pigeon@example.test');
+    await openProfilePage();
+
+    expect(await screen.findByText('已绑定')).toBeInTheDocument();
+    expect(screen.getByText('pigeon@example.test')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '绑定 GitHub' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '绑定 Google' })).toBeInTheDocument();
+  });
+
+  it('unbinds inside the step-up window and refreshes the list', async () => {
+    seedLinkedExternalIdentity(mockDb, 'github', 'GitHub', 'pigeon@example.test');
+    await openProfilePage();
+    grantStepUp(mockDb);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: '解绑 GitHub' }));
+
+    await waitFor(() => expect(mockDb.linkedExternalIdentities).toHaveLength(0));
+    expect(await screen.findByRole('button', { name: '绑定 GitHub' })).toBeInTheDocument();
+    expect(await screen.findByText('第三方账号解绑成功')).toBeInTheDocument();
+  });
+
+  it('asks for step-up before unlinking', async () => {
+    seedLinkedExternalIdentity(mockDb, 'github', 'GitHub', 'pigeon@example.test');
+    seedPasskey(mockDb);
+    await openProfilePage();
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: '解绑 GitHub' }));
+
+    expect(await screen.findByText('安全验证')).toBeInTheDocument();
+    expect(mockDb.linkedExternalIdentities).toHaveLength(1);
   });
 });

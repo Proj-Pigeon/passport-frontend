@@ -1,23 +1,14 @@
 import { Button, Divider, Stack } from '@mantine/core';
-import { IconBrandGithub, IconBrandGoogle, IconWorld } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
+import { rememberSamlRequest } from '@/lib/loginReturn';
 
 import { federationStartUrl } from '@/api/endpoints/federation';
-import { listFederationProviders, type FederationProvider } from '@/lib/federation';
-
-function providerIcon(slug: string, size: number) {
-  if (slug === 'github') {
-    return <IconBrandGithub size={size} stroke={1.5} />;
-  }
-  if (slug === 'google') {
-    return <IconBrandGoogle size={size} stroke={1.5} />;
-  }
-  return <IconWorld size={size} stroke={1.5} />;
-}
+import { FederationProviderIcon } from '@/components/FederationProviderIcon';
+import { useFederationProviders, type FederationProvider } from '@/lib/federation';
 
 export function FederationButtons() {
   const { t } = useTranslation();
-  const providers = listFederationProviders();
+  const providers = useFederationProviders().data?.providers ?? [];
 
   if (providers.length === 0) {
     return null;
@@ -32,12 +23,19 @@ export function FederationButtons() {
             key={provider.slug}
             component="a"
             href={federationStartUrl(provider.slug)}
+            onClick={() => rememberSamlRequest(window.location.search)}
             variant="default"
             size="md"
             fullWidth
-            leftSection={providerIcon(provider.slug, 16)}
+            leftSection={
+              <FederationProviderIcon
+                slug={provider.slug}
+                providerType={provider.provider_type}
+                size={16}
+              />
+            }
           >
-            {t('federation.loginWith', { name: provider.name })}
+            {t('federation.loginWith', { name: provider.display_name })}
           </Button>
         ))}
       </Stack>
