@@ -1,12 +1,13 @@
 import { schemaResolver, useForm } from '@mantine/form';
-import { Anchor, Button, Group, PasswordInput, Stack, TextInput } from '@mantine/core';
+import { Alert, Anchor, Button, Group, PasswordInput, Stack, TextInput } from '@mantine/core';
 import { IconAt, IconLock } from '@tabler/icons-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 
 import { resetCsrfToken } from '@/api/csrf';
+import { getComplianceDocuments } from '@/api/endpoints/compliance';
 import { loginWithPassword } from '@/api/endpoints/session';
 import { isApiError } from '@/api/errors';
 import { AuthLayout } from '@/components/AuthLayout';
@@ -20,6 +21,7 @@ import { FederationButtons } from './components/FederationButtons';
 import { PasskeyLoginButton } from './components/PasskeyLoginButton';
 import { SubmitErrorAlert } from './components/SubmitErrorAlert';
 import { TurnstileField, type TurnstileFieldHandle } from './components/TurnstileField';
+import { ComplianceConsent } from './components/ComplianceConsent';
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -33,6 +35,9 @@ export function LoginPage() {
   const [submitError, setSubmitError] = useState<unknown>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileError, setTurnstileError] = useState<string | null>(null);
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [consentError, setConsentError] = useState<string | null>(null);
+  const documentsQuery = useQuery({ queryKey: ['compliance-documents'], queryFn: ({ signal }) => getComplianceDocuments(signal), staleTime: 60_000 });
 
   const form = useForm({
     initialValues: { identifier: '', password: '' },
@@ -47,6 +52,7 @@ export function LoginPage() {
         identifier: values.identifier.trim(),
         password: values.password,
         ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
+        compliance_versions: { terms: documentsQuery.data?.version ?? 0, privacy: documentsQuery.data?.version ?? 0, ...(documentsQuery.data?.cross_border_enabled ? { cross_border: documentsQuery.data.version } : {}) },
       }),
     onSuccess: () => {
       resetCsrfToken();
@@ -67,6 +73,11 @@ export function LoginPage() {
 
   const handleSubmit = form.onSubmit((values) => {
     setSubmitError(null);
+    if (!consentChecked || !documentsQuery.data) {
+      setConsentError(documentsQuery.data ? t('compliance.required') : t('compliance.loadError'));
+      return;
+    }
+    setConsentError(null);
     if (isTurnstileEnabled() && !turnstileToken) {
       setTurnstileError(t('turnstile.required'));
       return;
@@ -147,6 +158,8 @@ export function LoginPage() {
               error={turnstileError}
             />
 
+            {documentsQuery.isError ? <Alert color="red">{t('compliance.loadError')}</Alert> : documentsQuery.data ? <ComplianceConsent documents={documentsQuery.data} checked={consentChecked} onChange={(checked) => { setConsentChecked(checked); if (checked) setConsentError(null); }} error={consentError} disabled={mutation.isPending} /> : <Alert color="blue">{t('compliance.loading')}</Alert>}
+
             <Button
               type="submit"
               size="md"
@@ -159,9 +172,9 @@ export function LoginPage() {
           </Stack>
         </form>
 
-        <PasskeyLoginButton />
+        {documentsQuery.data && <PasskeyLoginButton complianceVersions={{ terms: documentsQuery.data.version, privacy: documentsQuery.data.version, ...(documentsQuery.data.cross_border_enabled ? { cross_border: documentsQuery.data.version } : {}) }} consented={consentChecked} onRequireConsent={() => setConsentError(t('compliance.required'))} />}
 
-        {!reauthRequired && <FederationButtons />}
+        {!reauthRequired && documentsQuery.data && <FederationButtons consented={consentChecked} complianceVersions={{ terms: documentsQuery.data.version, privacy: documentsQuery.data.version, ...(documentsQuery.data.cross_border_enabled ? { cross_border: documentsQuery.data.version } : {}) }} onRequireConsent={() => setConsentError(t('compliance.required'))} />}
       </>
     </AuthLayout>
   );

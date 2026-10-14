@@ -22,6 +22,7 @@ export type AdminCapability =
   | 'audit:read'
   | 'audit:resolve'
   | 'config:read'
+  | 'config:write'
   | 'keys:write'
   | 'keys:approve'
   | 'operations:read';
@@ -126,6 +127,17 @@ export interface AdminConfigurationVersion {
 export interface AdminConfigurationVersionDetail extends AdminConfigurationVersion {
   document: Record<string, unknown>;
 }
+
+export interface AdminComplianceDocuments {
+  version: number;
+  terms_markdown: string;
+  privacy_markdown: string;
+  cross_border_enabled: boolean;
+  cross_border_markdown: string;
+  updated_at: string;
+}
+
+export type AdminComplianceDocumentsInput = Omit<AdminComplianceDocuments, 'version' | 'updated_at'>;
 
 export type AdminKeyRotationProtocol = 'oidc' | 'saml';
 export type AdminKeyRotationState = 'staged' | 'published' | 'active' | 'retiring';

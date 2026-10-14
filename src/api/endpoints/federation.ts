@@ -1,8 +1,12 @@
 import { apiUrl, apiPost, apiGet, apiDelete } from '../http';
 import type { LinkTransaction } from '../types';
 
-export function federationStartUrl(providerSlug: string): string {
-  return apiUrl(`/federation/${encodeURIComponent(providerSlug)}/start`);
+export function federationStartUrl(providerSlug: string, complianceVersions: Record<string, number> = {}): string {
+	if (Object.keys(complianceVersions).length === 0) {
+		return apiUrl(`/federation/${encodeURIComponent(providerSlug)}/start`);
+	}
+	const query = new URLSearchParams({ compliance_versions: JSON.stringify(complianceVersions) });
+	return apiUrl(`/federation/${encodeURIComponent(providerSlug)}/start?${query.toString()}`);
 }
 
 export function createLinkTransaction(providerSlug: string) {

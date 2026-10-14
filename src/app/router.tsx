@@ -9,6 +9,7 @@ import { AdminAuditEventsPage } from '@/features/admin/pages/AdminAuditEventsPag
 import { AdminBackupExercisesPage } from '@/features/admin/pages/AdminBackupExercisesPage';
 import { AdminConfigurationVersionDetailPage } from '@/features/admin/pages/AdminConfigurationVersionDetailPage';
 import { AdminConfigurationVersionsPage } from '@/features/admin/pages/AdminConfigurationVersionsPage';
+import { AdminComplianceDocumentsPage } from '@/features/admin/pages/AdminComplianceDocumentsPage';
 import { AdminKeyRotationsPage } from '@/features/admin/pages/AdminKeyRotationsPage';
 import { AdminOverviewPage } from '@/features/admin/pages/AdminOverviewPage';
 import { AdminResourceDetailPage } from '@/features/admin/pages/AdminResourceDetailPage';
@@ -135,6 +136,7 @@ export const routes: RouteObject[] = [
           },
           { path: 'audit-events', element: <AdminAuditEventsPage /> },
           { path: 'configuration-versions', element: <AdminConfigurationVersionsPage /> },
+          { path: 'compliance-documents', element: <AdminComplianceDocumentsPage /> },
           {
             path: 'configuration-versions/:configurationId',
             element: <AdminConfigurationVersionDetailPage />,

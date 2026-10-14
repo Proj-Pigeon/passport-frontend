@@ -4,7 +4,7 @@ import type {
 } from '@simplewebauthn/browser';
 
 import { apiDelete, apiGet, apiPost, apiVoid } from '../http';
-import type { CurrentSessionResponse, PasswordLoginRequest, WebAuthnCeremony } from '../types';
+import type { ComplianceVersions, CurrentSessionResponse, PasswordLoginRequest, WebAuthnCeremony } from '../types';
 
 export type PasskeyAuthenticationCeremony = WebAuthnCeremony<PublicKeyCredentialRequestOptionsJSON>;
 
@@ -29,11 +29,11 @@ export function passkeyLoginOptions() {
   return apiPost<PasskeyAuthenticationCeremony>('/v1/sessions/passkey/options');
 }
 
-export function passkeyLoginVerify(assertion: AuthenticationResponseJSON, ceremonyId: string) {
+export function passkeyLoginVerify(assertion: AuthenticationResponseJSON, ceremonyId: string, complianceVersions: ComplianceVersions) {
   return apiVoid('/v1/sessions/passkey/verify', {
     method: 'POST',
     body: assertion,
-    headers: { 'X-Passkey-Ceremony': ceremonyId },
+    headers: { 'X-Passkey-Ceremony': ceremonyId, 'X-Compliance-Versions': JSON.stringify(complianceVersions) },
   });
 }
 

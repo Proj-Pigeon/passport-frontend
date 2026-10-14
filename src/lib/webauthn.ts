@@ -18,7 +18,7 @@ import {
   stepUpPasskeyOptions,
   stepUpPasskeyVerify,
 } from '@/api/endpoints/session';
-import type { Passkey } from '@/api/types';
+import type { ComplianceVersions, Passkey } from '@/api/types';
 
 export type PasskeyErrorKind = 'cancelled' | 'unsupported' | 'failed';
 
@@ -83,14 +83,14 @@ function toPasskeyError(cause: unknown): PasskeyError {
   return new PasskeyError('failed', message);
 }
 
-export async function loginWithPasskey(): Promise<void> {
+export async function loginWithPasskey(complianceVersions: ComplianceVersions = {}): Promise<void> {
   const ceremony = await passkeyLoginOptions();
   const assertion = await startAuthentication({
     optionsJSON: ceremony.options.publicKey,
   }).catch((cause) => {
     throw toPasskeyError(cause);
   });
-  await passkeyLoginVerify(assertion, ceremony.ceremony_id);
+  await passkeyLoginVerify(assertion, ceremony.ceremony_id, complianceVersions);
 }
 
 export async function adminLoginWithPasskey(identifier: string): Promise<void> {

@@ -15,6 +15,7 @@ import {
   IconArrowsExchange,
   IconApps,
   IconChevronDown,
+  IconFileText,
   IconKey,
   IconLayoutDashboard,
   IconListSearch,
@@ -84,6 +85,12 @@ const NAV_SECTIONS: NavSection[] = [
   {
     labelKey: 'admin.nav.sectionSystem',
     items: [
+      {
+        to: '/admin/compliance-documents',
+        labelKey: 'admin.nav.complianceDocuments',
+        icon: IconFileText,
+        anyOf: ['config:read'],
+      },
       {
         to: '/admin/configuration-versions',
         labelKey: 'admin.nav.configurationVersions',

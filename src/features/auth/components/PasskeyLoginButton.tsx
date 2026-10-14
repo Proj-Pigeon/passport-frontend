@@ -6,13 +6,14 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router';
 
 import { resetCsrfToken } from '@/api/csrf';
+import type { ComplianceVersions } from '@/api/types';
 import { useRetryAfter } from '@/hooks/useRetryAfter';
 import { completeLogin } from '@/lib/loginReturn';
 import { isPasskeyCancelled, isWebAuthnSupported, loginWithPasskey } from '@/lib/webauthn';
 
 import { SubmitErrorAlert } from './SubmitErrorAlert';
 
-export function PasskeyLoginButton() {
+export function PasskeyLoginButton({ complianceVersions, consented, onRequireConsent }: { complianceVersions: ComplianceVersions; consented: boolean; onRequireConsent: () => void }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -23,7 +24,7 @@ export function PasskeyLoginButton() {
   const supported = isWebAuthnSupported();
 
   const mutation = useMutation({
-    mutationFn: () => loginWithPasskey(),
+    mutationFn: () => loginWithPasskey(complianceVersions),
     onSuccess: () => {
       resetCsrfToken();
       queryClient.clear();
@@ -51,6 +52,10 @@ export function PasskeyLoginButton() {
         size="md"
         fullWidth
         onClick={() => {
+          if (!consented) {
+            onRequireConsent();
+            return;
+          }
           setError(null);
           mutation.mutate();
         }}

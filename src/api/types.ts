@@ -8,6 +8,17 @@ export interface CsrfTokenResponse {
   token: string;
 }
 
+export interface ComplianceDocuments {
+  version: number;
+  terms_markdown: string;
+  privacy_markdown: string;
+  cross_border_enabled: boolean;
+  cross_border_markdown: string;
+  updated_at: string;
+}
+
+export type ComplianceVersions = Record<string, number>;
+
 export interface SessionUser {
   id: string;
   username: string;
@@ -51,6 +62,7 @@ export interface RegistrationRequest {
   password: string;
   display_name?: string;
   turnstile_token?: string;
+  compliance_versions: ComplianceVersions;
 }
 
 export interface RegistrationResponse {
@@ -62,6 +74,7 @@ export interface PasswordLoginRequest {
   identifier: string;
   password: string;
   turnstile_token?: string;
+  compliance_versions: ComplianceVersions;
 }
 
 export interface RecoveryRequestInput {

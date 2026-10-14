@@ -32,6 +32,10 @@ async function fillForm(
   if (values.displayName !== undefined) {
     await user.type(screen.getByLabelText(/^昵称/), values.displayName);
   }
+  const consent = await screen.findByRole('checkbox');
+  if (!(consent as HTMLInputElement).checked) {
+    await user.click(consent);
+  }
 }
 
 describe('RegisterPage', () => {
@@ -61,7 +65,28 @@ describe('RegisterPage', () => {
       username: 'alice.smith',
       email: 'alice@example.com',
       password: PASSWORD,
+      compliance_versions: { terms: 1, privacy: 1 },
     });
+  });
+
+  it('requires consent before submitting', async () => {
+    const user = userEvent.setup();
+    let called = false;
+    server.use(
+      http.post('*/v1/registrations', () => {
+        called = true;
+        return HttpResponse.json({ status: 'pending_verification' }, { status: 201 });
+      }),
+    );
+
+    await openRegisterPage();
+    await user.type(screen.getByLabelText(/^用户名/), 'alice');
+    await user.type(screen.getByLabelText(/^邮箱/), 'alice@example.com');
+    await user.type(screen.getByLabelText(/^密码/), PASSWORD);
+    await user.click(screen.getByRole('button', { name: '注册' }));
+
+    expect(called).toBe(false);
+    expect(screen.getAllByText('请先勾选并同意相关文件')).toHaveLength(1);
   });
 
   it('includes the display name when provided', async () => {

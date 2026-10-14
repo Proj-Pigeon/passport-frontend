@@ -154,6 +154,16 @@
     "required": "请先完成人机验证",
     "unavailable": "人机验证组件加载失败，请刷新页面重试"
   },
+  "compliance": {
+    "consentPrefix": "我已阅读并同意",
+    "and": "和",
+    "terms": "《用户协议》",
+    "privacy": "《隐私政策》",
+    "crossBorder": "《跨境数据传输声明》",
+    "required": "请先勾选并同意相关文件",
+    "loading": "正在加载用户协议与隐私政策…",
+    "loadError": "用户协议与隐私政策暂时无法加载，请稍后重试"
+  },
   "auth": {
     "login": {
       "title": "登录",
@@ -428,6 +438,7 @@
       "auditEvents": "操作审计",
       "configurationVersions": "配置历史",
       "keyRotations": "密钥轮换",
+      "complianceDocuments": "合规文档",
       "backupExercises": "灾备演练记录",
       "sectionPeople": "用户与安全",
       "sectionAccess": "应用接入",
@@ -726,6 +737,16 @@
       "detailTitle": "配置快照 v{{version}}",
       "metaCard": "版本信息",
       "documentCard": "配置文档"
+    },
+    "compliance": {
+      "title": "合规文档",
+      "subtitle": "管理登录与注册时展示的 Markdown 用户协议、隐私政策和跨境数据传输声明。",
+      "termsTitle": "用户协议",
+      "privacyTitle": "隐私政策",
+      "crossBorderTitle": "跨境数据传输声明",
+      "crossBorderHint": "启用后，登录和注册必须额外同意此声明。",
+      "crossBorderEnabled": "启用跨境数据传输声明",
+      "markdownHint": "支持 Markdown 文本。保存后版本号递增，用户需要重新同意。"
     },
     "keys": {
       "title": "签名密钥轮换",

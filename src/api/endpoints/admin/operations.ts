@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from '../../http';
+import { apiGet, apiPatch, apiPost } from '../../http';
 import { buildAdminSearch } from './query';
 import type {
   AdminAuditEvent,
@@ -7,11 +7,21 @@ import type {
   AdminBackupExerciseStatus,
   AdminConfigurationVersion,
   AdminConfigurationVersionDetail,
+  AdminComplianceDocuments,
+  AdminComplianceDocumentsInput,
   AdminKeyRotationApprovalInput,
   AdminKeyRotationCreateInput,
   AdminKeyRotationRequest,
   AdminPage,
 } from './types';
+
+export function getAdminComplianceDocuments(signal?: AbortSignal) {
+  return apiGet<AdminComplianceDocuments>('/admin/v1/compliance-documents', { signal, scope: 'admin' });
+}
+
+export function updateAdminComplianceDocuments(input: AdminComplianceDocumentsInput) {
+  return apiPatch<AdminComplianceDocuments>('/admin/v1/compliance-documents', input, { scope: 'admin' });
+}
 
 export function listAdminAuditEvents(query: AdminAuditQuery = {}, signal?: AbortSignal) {
   const search = buildAdminSearch({

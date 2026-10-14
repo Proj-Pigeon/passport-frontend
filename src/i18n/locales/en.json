@@ -154,6 +154,16 @@
     "required": "Please complete the human verification challenge",
     "unavailable": "The verification widget failed to load. Please refresh the page."
   },
+  "compliance": {
+    "consentPrefix": "I have read and agree to",
+    "and": " and ",
+    "terms": "the User Agreement",
+    "privacy": "the Privacy Policy",
+    "crossBorder": "the Cross-border Data Transfer Statement",
+    "required": "Please agree to the required documents before continuing",
+    "loading": "Loading the User Agreement and Privacy Policy…",
+    "loadError": "The User Agreement and Privacy Policy could not be loaded. Please try again."
+  },
   "auth": {
     "login": {
       "title": "Sign in",
@@ -428,6 +438,7 @@
       "auditEvents": "Audit log",
       "configurationVersions": "Configuration history",
       "keyRotations": "Key rotations",
+      "complianceDocuments": "Compliance documents",
       "backupExercises": "DR drill records",
       "sectionPeople": "People & security",
       "sectionAccess": "App access",
@@ -726,6 +737,16 @@
       "detailTitle": "Configuration snapshot v{{version}}",
       "metaCard": "Version details",
       "documentCard": "Configuration document"
+    },
+    "compliance": {
+      "title": "Compliance documents",
+      "subtitle": "Manage the Markdown documents shown during sign-in and sign-up.",
+      "termsTitle": "User Agreement",
+      "privacyTitle": "Privacy Policy",
+      "crossBorderTitle": "Cross-border Data Transfer Statement",
+      "crossBorderHint": "When enabled, users must also agree to this statement.",
+      "crossBorderEnabled": "Enable the cross-border statement",
+      "markdownHint": "Markdown is supported. Saving creates a new version and requires users to agree again."
     },
     "keys": {
       "title": "Signing key rotation",

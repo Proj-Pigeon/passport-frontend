@@ -6,7 +6,7 @@ import { federationStartUrl } from '@/api/endpoints/federation';
 import { FederationProviderIcon } from '@/components/FederationProviderIcon';
 import { useFederationProviders, type FederationProvider } from '@/lib/federation';
 
-export function FederationButtons() {
+export function FederationButtons({ consented = true, complianceVersions = {}, onRequireConsent = () => undefined }: { consented?: boolean; complianceVersions?: Record<string, number>; onRequireConsent?: () => void }) {
   const { t } = useTranslation();
   const providers = useFederationProviders().data?.providers ?? [];
 
@@ -22,8 +22,15 @@ export function FederationButtons() {
           <Button
             key={provider.slug}
             component="a"
-            href={federationStartUrl(provider.slug)}
-            onClick={() => rememberSamlRequest(window.location.search)}
+            href={federationStartUrl(provider.slug, complianceVersions)}
+            onClick={(event) => {
+              if (!consented) {
+                event.preventDefault();
+                onRequireConsent();
+                return;
+              }
+              rememberSamlRequest(window.location.search);
+            }}
             variant="default"
             size="md"
             fullWidth

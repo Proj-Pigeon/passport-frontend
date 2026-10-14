@@ -19,6 +19,10 @@ async function submitCredentials(
   identifier: string,
   password: string,
 ) {
+  const consent = await screen.findByRole('checkbox');
+  if (!(consent as HTMLInputElement).checked) {
+    await user.click(consent);
+  }
   await user.type(screen.getByLabelText(/^用户名或邮箱/), identifier);
   await user.type(screen.getByLabelText(/^密码/), password);
   await user.click(screen.getByRole('button', { name: '登录' }));
@@ -112,6 +116,8 @@ describe('LoginPage', () => {
     );
     const user = userEvent.setup();
     await openLoginPage();
+
+    await user.click(await screen.findByRole('checkbox'));
 
     await user.click(screen.getByRole('button', { name: '登录' }));
 
