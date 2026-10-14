@@ -1,6 +1,6 @@
 import { Alert, Button, Group, Stack, Switch, Textarea } from '@mantine/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getAdminComplianceDocuments, updateAdminComplianceDocuments } from '@/api/endpoints/admin/operations';
@@ -17,19 +17,14 @@ export function AdminComplianceDocumentsPage() {
   const { data: session } = useAdminSession();
   const stepUp = useAdminStepUp();
   const query = useQuery({ queryKey: ['admin-compliance-documents'], queryFn: ({ signal }) => getAdminComplianceDocuments(signal) });
-  const [terms, setTerms] = useState('');
-  const [privacy, setPrivacy] = useState('');
-  const [crossBorder, setCrossBorder] = useState('');
-  const [crossBorderEnabled, setCrossBorderEnabled] = useState(false);
-
-  useEffect(() => {
-    if (query.data) {
-      setTerms(query.data.terms_markdown);
-      setPrivacy(query.data.privacy_markdown);
-      setCrossBorder(query.data.cross_border_markdown);
-      setCrossBorderEnabled(query.data.cross_border_enabled);
-    }
-  }, [query.data]);
+  const [termsDraft, setTerms] = useState<string | null>(null);
+  const [privacyDraft, setPrivacy] = useState<string | null>(null);
+  const [crossBorderDraft, setCrossBorder] = useState<string | null>(null);
+  const [crossBorderEnabledDraft, setCrossBorderEnabled] = useState<boolean | null>(null);
+  const terms = termsDraft ?? query.data?.terms_markdown ?? '';
+  const privacy = privacyDraft ?? query.data?.privacy_markdown ?? '';
+  const crossBorder = crossBorderDraft ?? query.data?.cross_border_markdown ?? '';
+  const crossBorderEnabled = crossBorderEnabledDraft ?? query.data?.cross_border_enabled ?? false;
 
   const mutation = useMutation({
     mutationFn: () => stepUp.runWithAdminStepUp(() => updateAdminComplianceDocuments({ terms_markdown: terms, privacy_markdown: privacy, cross_border_enabled: crossBorderEnabled, cross_border_markdown: crossBorder })),
