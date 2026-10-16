@@ -116,6 +116,57 @@ export interface AdminAuditEvent {
   metadata?: Record<string, unknown>;
 }
 
+export interface AdminHttpAccess {
+  id: string;
+  method: string;
+  route: string;
+  status_code: number;
+  duration_ms: number;
+  request_media_type: string | null;
+  request_body: string | null;
+  request_truncated: boolean;
+  response_media_type: string | null;
+  response_body: string | null;
+  response_truncated: boolean;
+}
+
+export interface AdminAuditEventDetail extends AdminAuditEvent {
+  http: AdminHttpAccess | null;
+}
+
+export interface AdminHttpAccessQuery {
+  limit?: number;
+  cursor?: string;
+  method?: string;
+  status?: number;
+  route?: string;
+  actor_id?: string;
+  from?: string;
+  until?: string;
+}
+
+export interface AdminHttpAccessRecord {
+  id: string;
+  occurred_at: string;
+  actor_type: string;
+  method: string;
+  route: string;
+  status_code: number;
+  duration_ms: number;
+  request_id: string | null;
+  actor_id?: string;
+}
+
+export interface AdminHttpAccessRecordDetail extends AdminHttpAccessRecord {
+  actor_ref: string | null;
+  request_media_type: string | null;
+  request_body: string | null;
+  request_truncated: boolean;
+  response_media_type: string | null;
+  response_body: string | null;
+  response_truncated: boolean;
+}
+
 export interface AdminConfigurationVersion {
   id: string;
   version: number;

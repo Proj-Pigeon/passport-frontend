@@ -931,6 +931,91 @@ export function createAdminHandlers(db: MockDb): RequestHandler[] {
       return pageJson(page, nextCursor);
     }),
 
+    http.get('*/admin/v1/audit-events/:eventId', ({ params, request }) => {
+      const guard = adminGuard(db, request, { capability: 'audit:read' });
+      if (guard) {
+        return guard;
+      }
+      const event = db.adminAuditEvents.find((entry) => entry.id === str(params['eventId']));
+      if (!event) {
+        return notFound();
+      }
+      const access = db.adminHttpAccessRecords.find(
+        (entry) => entry.request_id !== null && entry.request_id === event.request_id,
+      );
+      const http = access
+        ? {
+            id: access.id,
+            method: access.method,
+            route: access.route,
+            status_code: access.status_code,
+            duration_ms: access.duration_ms,
+            request_media_type: access.request_media_type,
+            request_body: access.request_body,
+            request_truncated: access.request_truncated,
+            response_media_type: access.response_media_type,
+            response_body: access.response_body,
+            response_truncated: access.response_truncated,
+          }
+        : null;
+      return HttpResponse.json({ ...event, http }, { headers: { 'X-Request-ID': REQUEST_ID } });
+    }),
+
+    http.get('*/admin/v1/http-access-records', ({ request }) => {
+      const guard = adminGuard(db, request, { capability: 'audit:read' });
+      if (guard) {
+        return guard;
+      }
+      const url = new URL(request.url);
+      const method = str(url.searchParams.get('method'));
+      const statusRaw = str(url.searchParams.get('status'));
+      const route = str(url.searchParams.get('route'));
+      const actorId = str(url.searchParams.get('actor_id'));
+      const status = /^\d+$/.test(statusRaw) ? Number(statusRaw) : null;
+      const filtered = db.adminHttpAccessRecords.filter((record) => {
+        if (method.length > 0 && record.method !== method) {
+          return false;
+        }
+        if (status !== null && record.status_code !== status) {
+          return false;
+        }
+        if (route.length > 0 && record.route !== route) {
+          return false;
+        }
+        if (actorId.length > 0 && record.actor_id !== actorId) {
+          return false;
+        }
+        return true;
+      });
+      const { page, nextCursor } = paginate(filtered, request);
+      const items = page.map((record) => ({
+        id: record.id,
+        occurred_at: record.occurred_at,
+        actor_type: record.actor_type,
+        method: record.method,
+        route: record.route,
+        status_code: record.status_code,
+        duration_ms: record.duration_ms,
+        request_id: record.request_id,
+        actor_id: record.actor_id,
+      }));
+      return pageJson(items, nextCursor);
+    }),
+
+    http.get('*/admin/v1/http-access-records/:recordId', ({ params, request }) => {
+      const guard = adminGuard(db, request, { capability: 'audit:read' });
+      if (guard) {
+        return guard;
+      }
+      const record = db.adminHttpAccessRecords.find(
+        (entry) => entry.id === str(params['recordId']),
+      );
+      if (!record) {
+        return notFound();
+      }
+      return HttpResponse.json(record, { headers: { 'X-Request-ID': REQUEST_ID } });
+    }),
+
     http.get('*/admin/v1/configuration-versions', ({ request }) => {
       const guard = adminGuard(db, request, { capability: 'config:read' });
       if (guard) {

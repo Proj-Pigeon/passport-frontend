@@ -2,6 +2,7 @@ import { apiGet, apiPatch, apiPost } from '../../http';
 import { buildAdminSearch } from './query';
 import type {
   AdminAuditEvent,
+  AdminAuditEventDetail,
   AdminAuditQuery,
   AdminBackupExercise,
   AdminBackupExerciseStatus,
@@ -9,6 +10,9 @@ import type {
   AdminConfigurationVersionDetail,
   AdminComplianceDocuments,
   AdminComplianceDocumentsInput,
+  AdminHttpAccessQuery,
+  AdminHttpAccessRecord,
+  AdminHttpAccessRecordDetail,
   AdminKeyRotationApprovalInput,
   AdminKeyRotationCreateInput,
   AdminKeyRotationRequest,
@@ -40,6 +44,37 @@ export function listAdminAuditEvents(query: AdminAuditQuery = {}, signal?: Abort
     until: query.until,
   });
   return apiGet<AdminPage<AdminAuditEvent>>(`/admin/v1/audit-events${search}`, {
+    signal,
+    scope: 'admin',
+  });
+}
+
+export function getAdminAuditEvent(eventId: string, signal?: AbortSignal) {
+  return apiGet<AdminAuditEventDetail>(`/admin/v1/audit-events/${eventId}`, {
+    signal,
+    scope: 'admin',
+  });
+}
+
+export function listAdminHttpAccessRecords(query: AdminHttpAccessQuery = {}, signal?: AbortSignal) {
+  const search = buildAdminSearch({
+    limit: query.limit,
+    cursor: query.cursor,
+    method: query.method,
+    status: query.status,
+    route: query.route,
+    actor_id: query.actor_id,
+    from: query.from,
+    until: query.until,
+  });
+  return apiGet<AdminPage<AdminHttpAccessRecord>>(`/admin/v1/http-access-records${search}`, {
+    signal,
+    scope: 'admin',
+  });
+}
+
+export function getAdminHttpAccessRecord(recordId: string, signal?: AbortSignal) {
+  return apiGet<AdminHttpAccessRecordDetail>(`/admin/v1/http-access-records/${recordId}`, {
     signal,
     scope: 'admin',
   });

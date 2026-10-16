@@ -6,6 +6,7 @@ import type {
   AdminChangeAction,
   AdminChangeRequest,
   AdminConfigurationVersion,
+  AdminHttpAccessRecordDetail,
   AdminKeyRotationRequest,
   AdminResourceKind,
   AdminResourceStatus,
@@ -136,6 +137,7 @@ export interface MockDb {
   adminUsers: MockAdminUser[];
   adminResources: MockAdminResource[];
   adminAuditEvents: AdminAuditEvent[];
+  adminHttpAccessRecords: AdminHttpAccessRecordDetail[];
   adminConfigVersions: AdminConfigurationVersion[];
   adminKeyRotations: AdminKeyRotationRequest[];
   adminBackupExercises: AdminBackupExercise[];
@@ -212,6 +214,7 @@ export function createMockDb(): MockDb {
     adminUsers: [],
     adminResources: [],
     adminAuditEvents: [],
+    adminHttpAccessRecords: [],
     adminConfigVersions: [],
     adminKeyRotations: [],
     adminBackupExercises: [],
@@ -483,6 +486,54 @@ export function seedAdminChangeRequest(
   };
   resource.change_requests.push(change);
   return change;
+}
+
+export function seedAdminAuditEvent(
+  db: MockDb,
+  overrides: Partial<AdminAuditEvent> = {},
+): AdminAuditEvent {
+  const event: AdminAuditEvent = {
+    id: `evt_${db.adminAuditEvents.length + 1}`,
+    occurred_at: '2026-01-01T00:00:00Z',
+    actor_type: 'admin',
+    action: 'admin.user.suspended',
+    target_type: 'user',
+    result: 'success',
+    request_id: `req_audit_${db.adminAuditEvents.length + 1}`,
+    actor_id: 'adu_1',
+    resource_id: 'usr_target',
+    metadata: { reason: 'mock reason' },
+    ...overrides,
+  };
+  db.adminAuditEvents.push(event);
+  return event;
+}
+
+export function seedAdminHttpAccessRecord(
+  db: MockDb,
+  overrides: Partial<AdminHttpAccessRecordDetail> = {},
+): AdminHttpAccessRecordDetail {
+  const record: AdminHttpAccessRecordDetail = {
+    id: `acc_${db.adminHttpAccessRecords.length + 1}`,
+    occurred_at: '2026-01-01T00:00:00Z',
+    actor_type: 'admin',
+    actor_ref: null,
+    method: 'POST',
+    route: '/v1/sessions/password',
+    status_code: 201,
+    duration_ms: 42,
+    request_id: `req_audit_${db.adminHttpAccessRecords.length + 1}`,
+    request_media_type: 'application/json',
+    request_body: '{"identifier":"alice@example.com"}',
+    request_truncated: false,
+    response_media_type: 'application/json',
+    response_body: '{"result":"ok"}',
+    response_truncated: false,
+    actor_id: 'adu_1',
+    ...overrides,
+  };
+  db.adminHttpAccessRecords.push(record);
+  return record;
 }
 
 export function adminResourceView(
