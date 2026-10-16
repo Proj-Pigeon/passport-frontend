@@ -35,11 +35,10 @@ export function AuthLayout({
       <Box
         component="header"
         py="md"
-        px="lg"
         style={{ borderBottom: '1px solid var(--mantine-color-default-border)' }}
         bg="var(--mantine-color-body)"
       >
-        <Container size="lg" fluid>
+        <Container w="100%" maw={maxWidth}>
           <Group justify="space-between" wrap="nowrap">
             <BrandMark to="/" size="md" />
             <Group gap="xs" wrap="nowrap">

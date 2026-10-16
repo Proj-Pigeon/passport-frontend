@@ -22,7 +22,7 @@ export function BrandMark({ to = '/', size = 'md', showText = true }: BrandMarkP
         <IconFeather size={ICON_SIZES[size]} stroke={1.5} />
       </ThemeIcon>
       {showText && (
-        <Text fw={600} size={TEXT_SIZES[size]}>
+        <Text fw={600} size={TEXT_SIZES[size]} style={{ whiteSpace: 'nowrap' }}>
           {t('common.appName')}
         </Text>
       )}
