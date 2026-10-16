@@ -51,7 +51,11 @@ export function RegisterPage() {
   const [turnstileError, setTurnstileError] = useState<string | null>(null);
   const [consentChecked, setConsentChecked] = useState(false);
   const [consentError, setConsentError] = useState<string | null>(null);
-  const documentsQuery = useQuery({ queryKey: ['compliance-documents'], queryFn: ({ signal }) => getComplianceDocuments(signal), staleTime: 60_000 });
+  const documentsQuery = useQuery({
+    queryKey: ['compliance-documents'],
+    queryFn: ({ signal }) => getComplianceDocuments(signal),
+    staleTime: 60_000,
+  });
 
   const form = useForm({
     initialValues: {
@@ -72,7 +76,13 @@ export function RegisterPage() {
         password: values.password,
         ...(displayName ? { display_name: displayName } : {}),
         ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
-        compliance_versions: { terms: documentsQuery.data?.version ?? 0, privacy: documentsQuery.data?.version ?? 0, ...(documentsQuery.data?.cross_border_enabled ? { cross_border: documentsQuery.data.version } : {}) },
+        compliance_versions: {
+          terms: documentsQuery.data?.version ?? 0,
+          privacy: documentsQuery.data?.version ?? 0,
+          ...(documentsQuery.data?.cross_border_enabled
+            ? { cross_border: documentsQuery.data.version }
+            : {}),
+        },
       });
     },
     onSuccess: (_data, values) => {
@@ -219,7 +229,22 @@ export function RegisterPage() {
             error={turnstileError}
           />
 
-          {documentsQuery.isError ? <Alert color="red">{t('compliance.loadError')}</Alert> : documentsQuery.data ? <ComplianceConsent documents={documentsQuery.data} checked={consentChecked} onChange={(checked) => { setConsentChecked(checked); if (checked) setConsentError(null); }} error={consentError} disabled={mutation.isPending} /> : <Alert color="blue">{t('compliance.loading')}</Alert>}
+          {documentsQuery.isError ? (
+            <Alert color="red">{t('compliance.loadError')}</Alert>
+          ) : documentsQuery.data ? (
+            <ComplianceConsent
+              documents={documentsQuery.data}
+              checked={consentChecked}
+              onChange={(checked) => {
+                setConsentChecked(checked);
+                if (checked) setConsentError(null);
+              }}
+              error={consentError}
+              disabled={mutation.isPending}
+            />
+          ) : (
+            <Alert color="blue">{t('compliance.loading')}</Alert>
+          )}
 
           <Button
             type="submit"

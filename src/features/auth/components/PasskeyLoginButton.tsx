@@ -13,7 +13,15 @@ import { isPasskeyCancelled, isWebAuthnSupported, loginWithPasskey } from '@/lib
 
 import { SubmitErrorAlert } from './SubmitErrorAlert';
 
-export function PasskeyLoginButton({ complianceVersions, consented, onRequireConsent }: { complianceVersions: ComplianceVersions; consented: boolean; onRequireConsent: () => void }) {
+export function PasskeyLoginButton({
+  complianceVersions,
+  consented,
+  onRequireConsent,
+}: {
+  complianceVersions: ComplianceVersions;
+  consented: boolean;
+  onRequireConsent: () => void;
+}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();

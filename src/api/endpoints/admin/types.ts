@@ -137,7 +137,10 @@ export interface AdminComplianceDocuments {
   updated_at: string;
 }
 
-export type AdminComplianceDocumentsInput = Omit<AdminComplianceDocuments, 'version' | 'updated_at'>;
+export type AdminComplianceDocumentsInput = Omit<
+  AdminComplianceDocuments,
+  'version' | 'updated_at'
+>;
 
 export type AdminKeyRotationProtocol = 'oidc' | 'saml';
 export type AdminKeyRotationState = 'staged' | 'published' | 'active' | 'retiring';

@@ -6,7 +6,15 @@ import { federationStartUrl } from '@/api/endpoints/federation';
 import { FederationProviderIcon } from '@/components/FederationProviderIcon';
 import { useFederationProviders, type FederationProvider } from '@/lib/federation';
 
-export function FederationButtons({ consented = true, complianceVersions = {}, onRequireConsent = () => undefined }: { consented?: boolean; complianceVersions?: Record<string, number>; onRequireConsent?: () => void }) {
+export function FederationButtons({
+  consented = true,
+  complianceVersions = {},
+  onRequireConsent = () => undefined,
+}: {
+  consented?: boolean;
+  complianceVersions?: Record<string, number>;
+  onRequireConsent?: () => void;
+}) {
   const { t } = useTranslation();
   const providers = useFederationProviders().data?.providers ?? [];
 

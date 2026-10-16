@@ -16,11 +16,16 @@ import type {
 } from './types';
 
 export function getAdminComplianceDocuments(signal?: AbortSignal) {
-  return apiGet<AdminComplianceDocuments>('/admin/v1/compliance-documents', { signal, scope: 'admin' });
+  return apiGet<AdminComplianceDocuments>('/admin/v1/compliance-documents', {
+    signal,
+    scope: 'admin',
+  });
 }
 
 export function updateAdminComplianceDocuments(input: AdminComplianceDocumentsInput) {
-  return apiPatch<AdminComplianceDocuments>('/admin/v1/compliance-documents', input, { scope: 'admin' });
+  return apiPatch<AdminComplianceDocuments>('/admin/v1/compliance-documents', input, {
+    scope: 'admin',
+  });
 }
 
 export function listAdminAuditEvents(query: AdminAuditQuery = {}, signal?: AbortSignal) {

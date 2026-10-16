@@ -173,7 +173,16 @@ import { createAdminHandlers } from './adminHandlers';
 
 export function createHandlers(db: MockDb): RequestHandler[] {
   return [
-    http.get('*/v1/compliance-documents', () => HttpResponse.json({ version: 1, terms_markdown: '# 用户协议\n\n请阅读用户协议。', privacy_markdown: '# 隐私政策\n\n请阅读隐私政策。', cross_border_enabled: false, cross_border_markdown: '', updated_at: '2026-10-14T00:00:00Z' })),
+    http.get('*/v1/compliance-documents', () =>
+      HttpResponse.json({
+        version: 1,
+        terms_markdown: '# 用户协议\n\n请阅读用户协议。',
+        privacy_markdown: '# 隐私政策\n\n请阅读隐私政策。',
+        cross_border_enabled: false,
+        cross_border_markdown: '',
+        updated_at: '2026-10-14T00:00:00Z',
+      }),
+    ),
     http.get('*/v1/federation/providers', () => HttpResponse.json({ providers: [] })),
     ...createAdminHandlers(db),
     http.get('*/v1/auth/csrf', () =>

@@ -13,7 +13,13 @@ interface ComplianceConsentProps {
   disabled?: boolean;
 }
 
-export function ComplianceConsent({ documents, checked, onChange, error, disabled }: ComplianceConsentProps) {
+export function ComplianceConsent({
+  documents,
+  checked,
+  onChange,
+  error,
+  disabled,
+}: ComplianceConsentProps) {
   const { t } = useTranslation();
   const [active, setActive] = useState<{ title: string; content: string } | null>(null);
   const openDocument = (event: MouseEvent, title: string, content: string) => {
@@ -30,19 +36,66 @@ export function ComplianceConsent({ documents, checked, onChange, error, disable
         label={
           <>
             {t('compliance.consentPrefix')}{' '}
-            <Anchor inherit component="button" type="button" onClick={(event) => openDocument(event, t('compliance.terms'), documents.terms_markdown)}>{t('compliance.terms')}</Anchor>
+            <Anchor
+              inherit
+              component="button"
+              type="button"
+              onClick={(event) =>
+                openDocument(event, t('compliance.terms'), documents.terms_markdown)
+              }
+            >
+              {t('compliance.terms')}
+            </Anchor>
             {t('compliance.and')}
-            <Anchor inherit component="button" type="button" onClick={(event) => openDocument(event, t('compliance.privacy'), documents.privacy_markdown)}>{t('compliance.privacy')}</Anchor>
-            {documents.cross_border_enabled && <>
-              {t('compliance.and')}
-              <Anchor inherit component="button" type="button" onClick={(event) => openDocument(event, t('compliance.crossBorder'), documents.cross_border_markdown)}>{t('compliance.crossBorder')}</Anchor>
-            </>}
+            <Anchor
+              inherit
+              component="button"
+              type="button"
+              onClick={(event) =>
+                openDocument(event, t('compliance.privacy'), documents.privacy_markdown)
+              }
+            >
+              {t('compliance.privacy')}
+            </Anchor>
+            {documents.cross_border_enabled && (
+              <>
+                {t('compliance.and')}
+                <Anchor
+                  inherit
+                  component="button"
+                  type="button"
+                  onClick={(event) =>
+                    openDocument(
+                      event,
+                      t('compliance.crossBorder'),
+                      documents.cross_border_markdown,
+                    )
+                  }
+                >
+                  {t('compliance.crossBorder')}
+                </Anchor>
+              </>
+            )}
           </>
         }
       />
-      {error && <Text size="sm" c="red">{error}</Text>}
-      <Modal opened={active !== null} onClose={() => setActive(null)} title={active?.title} size="lg" centered>
-        {active && <div className="compliance-markdown" style={{ maxHeight: '65vh', overflowY: 'auto' }}><ReactMarkdown>{active.content}</ReactMarkdown></div>}
+      {error && (
+        <Text size="sm" c="red">
+          {error}
+        </Text>
+      )}
+      <Modal
+        opened={active !== null}
+        onClose={() => setActive(null)}
+        title={active?.title}
+        size="lg"
+        centered
+      >
+        {active && (
+          <div className="compliance-markdown" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
+            <ReactMarkdown>{active.content}</ReactMarkdown>
+          </div>
+        )}
       </Modal>
     </>
   );
