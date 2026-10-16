@@ -1,5 +1,6 @@
 import {
   AppShell,
+  Box,
   Burger,
   Group,
   Menu,
@@ -8,20 +9,28 @@ import {
   Stack,
   Text,
   UnstyledButton,
+  useMantineColorScheme,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   IconArrowsExchange,
+  IconCheck,
   IconChevronDown,
+  IconDeviceDesktop,
+  IconLanguage,
   IconLayoutDashboard,
   IconLogout,
+  IconMoon,
   IconShieldLock,
+  IconSun,
+  IconSunHigh,
   IconUserCircle,
 } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 
+import { SUPPORTED_LANGUAGES, applyLanguage } from '@/i18n';
 import { useLogout } from '@/features/session/useLogout';
 import { useSession } from '@/features/session/useSession';
 
@@ -43,12 +52,13 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export function AccountLayout() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, isLoading } = useSession();
   const logout = useLogout();
   const navigate = useNavigate();
   const location = useLocation();
   const [navOpened, { toggle, close }] = useDisclosure();
+  const { colorScheme, setColorScheme } = useMantineColorScheme();
 
   const displayName = user?.display_name?.trim() || user?.username || '';
 
@@ -79,8 +89,12 @@ export function AccountLayout() {
           </Group>
 
           <Group gap="xs" wrap="nowrap">
-            <LanguageSwitch />
-            <ColorSchemeToggle />
+            <Box visibleFrom="sm">
+              <LanguageSwitch />
+            </Box>
+            <Box visibleFrom="sm">
+              <ColorSchemeToggle />
+            </Box>
             <Menu position="bottom-end" width={240} shadow="md">
               <Menu.Target>
                 <UnstyledButton
@@ -144,6 +158,65 @@ export function AccountLayout() {
                     {t('admin.switchToAdminView')}
                   </Menu.Item>
                 )}
+                <Menu.Divider hiddenFrom="sm" />
+                <Menu.Sub hiddenFrom="sm">
+                  <Menu.Sub.Target>
+                    <Menu.Sub.Item leftSection={<IconSunHigh size={14} stroke={1.5} />}>
+                      {t('common.colorScheme')}
+                    </Menu.Sub.Item>
+                  </Menu.Sub.Target>
+                  <Menu.Sub.Dropdown>
+                    <Menu.Item
+                      leftSection={<IconDeviceDesktop size={14} stroke={1.5} />}
+                      rightSection={
+                        colorScheme === 'auto' ? <IconCheck size={14} stroke={1.5} /> : null
+                      }
+                      onClick={() => setColorScheme('auto')}
+                    >
+                      {t('common.autoMode')}
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconSun size={14} stroke={1.5} />}
+                      rightSection={
+                        colorScheme === 'light' ? <IconCheck size={14} stroke={1.5} /> : null
+                      }
+                      onClick={() => setColorScheme('light')}
+                    >
+                      {t('common.lightMode')}
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconMoon size={14} stroke={1.5} />}
+                      rightSection={
+                        colorScheme === 'dark' ? <IconCheck size={14} stroke={1.5} /> : null
+                      }
+                      onClick={() => setColorScheme('dark')}
+                    >
+                      {t('common.darkMode')}
+                    </Menu.Item>
+                  </Menu.Sub.Dropdown>
+                </Menu.Sub>
+                <Menu.Sub hiddenFrom="sm">
+                  <Menu.Sub.Target>
+                    <Menu.Sub.Item leftSection={<IconLanguage size={14} stroke={1.5} />}>
+                      {t('common.language')}
+                    </Menu.Sub.Item>
+                  </Menu.Sub.Target>
+                  <Menu.Sub.Dropdown>
+                    {SUPPORTED_LANGUAGES.map((language) => (
+                      <Menu.Item
+                        key={language.code}
+                        rightSection={
+                          i18n.language === language.code ? (
+                            <IconCheck size={14} stroke={1.5} />
+                          ) : null
+                        }
+                        onClick={() => applyLanguage(language.code)}
+                      >
+                        {language.label}
+                      </Menu.Item>
+                    ))}
+                  </Menu.Sub.Dropdown>
+                </Menu.Sub>
                 <Menu.Divider />
                 <Menu.Item
                   color="red"
