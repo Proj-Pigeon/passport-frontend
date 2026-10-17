@@ -26,7 +26,10 @@ export function passkeyRegistrationVerify(
 }
 
 export function renamePasskey(passkeyId: string, label: string) {
-  return apiPatch<Passkey>(`/v1/me/passkeys/${encodeURIComponent(passkeyId)}`, { label });
+  return apiPatch<Pick<Passkey, 'id' | 'label'> & Partial<Passkey>>(
+    `/v1/me/passkeys/${encodeURIComponent(passkeyId)}`,
+    { label },
+  );
 }
 
 export function deletePasskey(passkeyId: string) {

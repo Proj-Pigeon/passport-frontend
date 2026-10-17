@@ -75,7 +75,9 @@ export function useRenamePasskey() {
       }),
     onSuccess: (updated) => {
       queryClient.setQueryData<Passkey[]>(queryKeys.passkeys, (current = []) =>
-        current.map((passkey) => (passkey.id === updated.id ? updated : passkey)),
+        current.map((passkey) =>
+          passkey.id === updated.id ? { ...passkey, ...updated } : passkey,
+        ),
       );
       notifications.show({ color: 'teal', message: t('account.security.renameSuccess') });
     },

@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { http, HttpResponse } from 'msw';
 
 import {
   grantStepUp,
@@ -8,6 +9,7 @@ import {
   seedPasskey,
   seedUser,
   signIn,
+  server,
   type MockUser,
 } from '@/test/mocks/server';
 import { renderRoute } from '@/test/render';
@@ -174,6 +176,27 @@ describe('SecurityPage passkey registration', () => {
 });
 
 describe('SecurityPage passkey maintenance', () => {
+  it('preserves credential metadata when renaming returns a partial object', async () => {
+    const account = seedUser(mockDb);
+    signIn(mockDb, account, 'pwd');
+    grantStepUp(mockDb);
+    const passkey = seedPasskey(mockDb, { user_id: account.id, label: 'MacBook' });
+    server.use(
+      http.patch('*/v1/me/passkeys/:id', () =>
+        HttpResponse.json({ id: passkey.id, label: 'ThinkPad' }),
+      ),
+    );
+    renderRoute(['/account/security']);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: '重命名' }));
+    const input = await screen.findByLabelText('名称');
+    await user.clear(input);
+    await user.type(input, 'ThinkPad');
+    await user.click(screen.getByRole('button', { name: '保存名称' }));
+    expect(await screen.findByText('ThinkPad')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '安全' })).toBeInTheDocument();
+  });
+
   it('renames a credential inline while the step-up window is open', async () => {
     const account = seedUser(mockDb);
     signIn(mockDb, account, 'pwd');
