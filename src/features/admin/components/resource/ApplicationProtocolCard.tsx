@@ -9,6 +9,7 @@ import { PageState } from '@/components/PageState';
 import { describeApiError } from '@/i18n/errors';
 import { formatDateTime } from '@/lib/format';
 
+import type { ApplicationPreset } from './applicationPresets';
 import { adminKeys } from '../../keys';
 import { AdminStatusBadge } from '../AdminStatusBadge';
 import { CreateResourceModal } from './CreateResourceModal';
@@ -22,9 +23,11 @@ const DETAIL_PATHS: Record<'oauth' | 'saml', (id: string) => string> = {
 export function ApplicationProtocolCard({
   kind,
   applicationId,
+  applicationType,
 }: {
   kind: 'oauth' | 'saml';
   applicationId: string;
+  applicationType?: ApplicationPreset;
 }) {
   const { t } = useTranslation();
   const { data: session } = useAdminSession();
@@ -38,7 +41,9 @@ export function ApplicationProtocolCard({
     placeholderData: keepPreviousData,
   });
 
-  const canWrite = hasAdminCapability(session, 'applications:write');
+  const canWrite =
+    hasAdminCapability(session, 'applications:write') &&
+    (!applicationType || (applicationType === 'saml' ? kind === 'saml' : kind === 'oauth'));
   const emptyKey =
     kind === 'oauth'
       ? 'admin.applicationProtocols.clientsEmpty'
@@ -120,6 +125,7 @@ export function ApplicationProtocolCard({
       <CreateResourceModal
         kind={kind}
         fixedApplicationId={applicationId}
+        applicationType={applicationType}
         opened={createOpened}
         onClose={() => setCreateOpened(false)}
       />

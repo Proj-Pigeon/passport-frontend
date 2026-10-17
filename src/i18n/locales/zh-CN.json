@@ -921,15 +921,17 @@
         "spa": "单页应用 · OIDC + PKCE",
         "native": "原生应用 · OIDC + PKCE",
         "saml": "SAML 2.0 服务提供方",
-        "blank": "仅创建应用"
+        "device": "设备授权"
       },
       "hints": {
         "web": "适合有后端的 Web 应用，使用客户端密钥。",
         "spa": "适合浏览器单页应用，使用 PKCE S256，无客户端密钥。",
         "native": "适合桌面或移动应用，使用 PKCE S256，回调为 HTTPS 或本机 HTTP。",
         "saml": "让应用通过 SAML 登录 Passport，填写对方 SP 的 Entity ID 和 ACS。",
-        "blank": "先建立应用，再按需添加 OIDC 客户端或 SAML 服务提供方。"
+        "device": "通过浏览器代码批准登录的桌面或无界面应用，无需跳转地址和密钥。"
       },
+      "deviceRequiresType": "设备授权需先将所属应用分类为“设备授权”，并完成审批发布。",
+      "classifyApplication": "前往应用详情",
       "description": "应用说明",
       "owner": "所有者用户 ID",
       "ownerHint": "默认为你，也可填写其他用户的 usr_ ID。",
@@ -957,5 +959,40 @@
       "partialHint": "协议配置保存失败，修正后重试将继续使用同一份草稿。",
       "viewDraft": "查看已创建的应用草稿"
     }
+  },
+  "devices": {
+    "title": "设备",
+    "listHint": "管理已登录的浏览器和已授权的应用，撤销后立即终止访问。",
+    "empty": "暂无活动设备。",
+    "application": "应用",
+    "browser": "浏览器",
+    "current": "当前会话",
+    "lastActive": "最近活动：{{time}}",
+    "more": "加载更多",
+    "revoke": "撤销访问",
+    "revokeCurrent": "撤销并退出",
+    "revokeWarning": "撤销 {{name}} 的访问权限？该设备需要重新登录。",
+    "currentWarning": "当前浏览器会立即退出登录。",
+    "password": "密码",
+    "passwordWrong": "密码错误，请重试。",
+    "verify": "验证身份",
+    "passkeyMissing": "请先前往安全页注册通行密钥，再授权或管理其他设备。",
+    "openSecurity": "前往安全设置",
+    "authorizeTitle": "授权设备",
+    "authorizeHint": "输入需要登录的应用中显示的代码。",
+    "code": "设备代码",
+    "lookup": "查询代码",
+    "expired": "代码无效、已过期或已使用，请在应用中重新获取。",
+    "expires": "过期时间：{{time}}",
+    "phishing": "仅在你主动登录此设备时批准，请勿批准他人发送的代码。",
+    "approve": "批准登录",
+    "deny": "拒绝",
+    "approved": "设备已授权，请返回 GuEarth 或相应应用完成登录。",
+    "denied": "已拒绝登录，可以关闭此页面。",
+    "unclassified": "未分类",
+    "applicationType": "应用类型",
+    "typeLocked": "应用类型已锁定，配置变更仍需经过现有审批与发布流程。",
+    "typeHint": "选择兼容类型，现有子协议必须匹配，指定后无法修改。混合应用须保持未分类。",
+    "integrationHint": "此公开客户端使用设备授权，无需跳转地址或客户端密钥。获取设备代码、打开验证页，再按返回的间隔查询结果。账号信息、令牌刷新和退出沿用现有接口。"
   }
 }

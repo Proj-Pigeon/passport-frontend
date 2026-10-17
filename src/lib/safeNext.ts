@@ -1,4 +1,4 @@
-export const NEXT_ALLOW_LIST = ['/account', '/authorize', '/admin'] as const;
+export const NEXT_ALLOW_LIST = ['/account', '/authorize', '/admin', '/device'] as const;
 
 const MAX_NEXT_LENGTH = 2048;
 

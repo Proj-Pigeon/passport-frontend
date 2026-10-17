@@ -26,6 +26,7 @@ import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPage } from '@/features/auth/RegisterPage';
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage';
 import { VerifyEmailPage } from '@/features/auth/VerifyEmailPage';
+import { DevicePage } from '@/features/devices/DevicePage';
 import { AuthorizePage } from '@/features/oauth/AuthorizePage';
 import { GuestOnly, RequireAuth } from '@/features/session/guards';
 
@@ -68,6 +69,14 @@ export const routes: RouteObject[] = [
       {
         path: 'federation/complete',
         element: <FederationCompletePage />,
+      },
+      {
+        path: 'device',
+        element: (
+          <RequireAuth>
+            <DevicePage />
+          </RequireAuth>
+        ),
       },
       {
         path: 'authorize',

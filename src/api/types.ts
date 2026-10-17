@@ -28,6 +28,7 @@ export interface SessionUser {
   email_verified: boolean;
   roles?: string[];
   step_up_required: boolean;
+  has_password?: boolean;
 }
 
 export interface SessionInfo {
@@ -38,6 +39,7 @@ export interface SessionInfo {
   idle_expires_at: string;
   expires_at: string;
   step_up_expires_at?: string;
+  step_up_method?: 'passkey' | 'password';
 }
 
 export interface CurrentSessionResponse {

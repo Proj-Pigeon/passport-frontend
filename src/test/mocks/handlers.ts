@@ -173,6 +173,12 @@ import { createAdminHandlers } from './adminHandlers';
 
 export function createHandlers(db: MockDb): RequestHandler[] {
   return [
+    http.get('*/v1/me/devices', () =>
+      db.session ? HttpResponse.json({ items: [], next_cursor: null }) : unauthorized(),
+    ),
+    http.get('*/admin/v1/users/:userId/devices', () =>
+      HttpResponse.json({ items: [], next_cursor: null }),
+    ),
     http.get('*/v1/compliance-documents', () =>
       HttpResponse.json({
         version: 1,
@@ -289,6 +295,7 @@ export function createHandlers(db: MockDb): RequestHandler[] {
             status: user.status,
             email: user.email,
             email_verified: user.email_verified,
+            has_password: user.has_password,
             step_up_required: user.step_up_required,
           },
         },

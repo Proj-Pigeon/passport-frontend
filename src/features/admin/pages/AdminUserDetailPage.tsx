@@ -16,6 +16,7 @@ import { PageState } from '@/components/PageState';
 import { describeApiError } from '@/i18n/errors';
 import { formatDateTime } from '@/lib/format';
 
+import { DevicesCard } from '@/features/devices/DevicesCard';
 import { adminKeys } from '../keys';
 import { AdminStatusBadge } from '../components/AdminStatusBadge';
 import { ReasonModal } from '../components/ReasonModal';
@@ -55,6 +56,7 @@ export function AdminUserDetailPage() {
       setAction(null);
       await queryClient.invalidateQueries({ queryKey: adminKeys.user(userId) });
       await queryClient.invalidateQueries({ queryKey: adminKeys.users });
+      await queryClient.invalidateQueries({ queryKey: ['devices', userId] });
     },
   });
 
@@ -207,6 +209,8 @@ export function AdminUserDetailPage() {
           </Stack>
         )}
       </SectionCard>
+
+      <DevicesCard userId={userId} canWrite={canWrite} />
 
       <ReasonModal
         opened={action !== null}

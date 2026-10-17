@@ -39,7 +39,12 @@ interface RedirectEntry {
   uri: string;
 }
 
-export function OauthClientSections({ resource, etag, refresh }: ResourceSectionProps) {
+export function OauthClientSections({
+  resource,
+  etag,
+  refresh,
+  device = false,
+}: ResourceSectionProps & { device?: boolean }) {
   const { t } = useTranslation();
   const stepUp = useAdminStepUp();
   const { data: session } = useAdminSession();
@@ -155,59 +160,61 @@ export function OauthClientSections({ resource, etag, refresh }: ResourceSection
 
   return (
     <>
-      <SectionCard
-        title={t('admin.oauth.redirectCard')}
-        description={t('admin.oauth.redirectHint')}
-      >
-        <Stack gap="xs">
-          {redirectUris.length === 0 && (
-            <Text size="sm" c="dimmed">
-              {t('admin.oauth.noRedirects')}
-            </Text>
-          )}
-          {redirectUris.map((entry) => (
-            <Group key={entry.id} justify="space-between" gap="sm" wrap="nowrap">
-              <Code style={{ wordBreak: 'break-all' }}>{entry.uri}</Code>
-              {canWrite && (
-                <ActionIcon
-                  color="red"
-                  variant="light"
-                  size="sm"
-                  aria-label={t('admin.oauth.removeRedirect')}
-                  onClick={() => setRemoveTarget(entry)}
-                >
-                  ×
-                </ActionIcon>
-              )}
-            </Group>
-          ))}
-          {canWrite && (
-            <>
-              <Divider my={4} />
-              <Group gap="sm" wrap="nowrap">
-                <TextInput
-                  value={newUri}
-                  onChange={(event) => setNewUri(event.currentTarget.value)}
-                  placeholder="https://client.example/callback"
-                  style={{ flex: 1 }}
-                />
-                <Button
-                  size="xs"
-                  variant="light"
-                  disabled={newUri.trim().length === 0 || addMutation.isPending}
-                  onClick={() => {
-                    addMutation.reset();
-                    setAddModal(true);
-                  }}
-                >
-                  {t('admin.oauth.addRedirect')}
-                </Button>
+      {!device && (
+        <SectionCard
+          title={t('admin.oauth.redirectCard')}
+          description={t('admin.oauth.redirectHint')}
+        >
+          <Stack gap="xs">
+            {redirectUris.length === 0 && (
+              <Text size="sm" c="dimmed">
+                {t('admin.oauth.noRedirects')}
+              </Text>
+            )}
+            {redirectUris.map((entry) => (
+              <Group key={entry.id} justify="space-between" gap="sm" wrap="nowrap">
+                <Code style={{ wordBreak: 'break-all' }}>{entry.uri}</Code>
+                {canWrite && (
+                  <ActionIcon
+                    color="red"
+                    variant="light"
+                    size="sm"
+                    aria-label={t('admin.oauth.removeRedirect')}
+                    onClick={() => setRemoveTarget(entry)}
+                  >
+                    ×
+                  </ActionIcon>
+                )}
               </Group>
-              <SubmitInlineError error={addMutation.error} />
-            </>
-          )}
-        </Stack>
-      </SectionCard>
+            ))}
+            {canWrite && (
+              <>
+                <Divider my={4} />
+                <Group gap="sm" wrap="nowrap">
+                  <TextInput
+                    value={newUri}
+                    onChange={(event) => setNewUri(event.currentTarget.value)}
+                    placeholder="https://client.example/callback"
+                    style={{ flex: 1 }}
+                  />
+                  <Button
+                    size="xs"
+                    variant="light"
+                    disabled={newUri.trim().length === 0 || addMutation.isPending}
+                    onClick={() => {
+                      addMutation.reset();
+                      setAddModal(true);
+                    }}
+                  >
+                    {t('admin.oauth.addRedirect')}
+                  </Button>
+                </Group>
+                <SubmitInlineError error={addMutation.error} />
+              </>
+            )}
+          </Stack>
+        </SectionCard>
+      )}
 
       <SectionCard title={t('admin.oauth.grantsCard')} description={t('admin.oauth.grantsHint')}>
         <Stack gap="sm">

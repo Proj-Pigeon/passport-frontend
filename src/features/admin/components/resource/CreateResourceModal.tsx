@@ -1,3 +1,4 @@
+import type { ApplicationPreset } from './applicationPresets';
 import type { AdminResourceKind } from '@/api/endpoints/admin/types';
 import { FederationPresetCreateModal } from '@/features/admin/federation/FederationPresetCreateModal';
 
@@ -8,6 +9,7 @@ interface Props {
   opened: boolean;
   onClose: () => void;
   fixedApplicationId?: string;
+  applicationType?: ApplicationPreset;
 }
 
 export function CreateResourceModal({ kind, ...props }: Props) {

@@ -49,6 +49,11 @@ import { AdminStatusBadge } from '../components/AdminStatusBadge';
 import { ChangeRequestsCard } from '../components/ChangeRequestsCard';
 import { JsonConfigEditor } from '../components/JsonConfigEditor';
 import { ReasonModal } from '../components/ReasonModal';
+import {
+  ApplicationTypeBadge,
+  ApplicationTypeCard,
+} from '../components/resource/ApplicationTypeCard';
+import { applicationType } from '../components/resource/applicationPresets';
 import { ApplicationProtocolCard } from '../components/resource/ApplicationProtocolCard';
 import { OauthClientSections } from '../components/resource/OauthClientSections';
 import { SamlProviderSections } from '../components/resource/SamlProviderSections';
@@ -134,6 +139,9 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
     queryFn: ({ signal }) => getAdminResource('application', parentApplicationId ?? '', signal),
     enabled: parentApplicationId !== null,
   });
+
+  const rootType = applicationType(resource.configuration['application_type']);
+  const isDevice = parentQuery.data?.resource.configuration['application_type'] === 'device';
 
   const refresh = async () => {
     await queryClient.invalidateQueries({ queryKey: adminKeys.resource(kind, resourceId) });
@@ -228,6 +236,7 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
         subtitle={
           <Group gap="sm">
             <AdminStatusBadge status={resource.status} />
+            {kind === 'application' && <ApplicationTypeBadge value={rootType} />}
             <span>{resource.id}</span>
             {resource.client_id && (
               <span>
@@ -302,11 +311,16 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
         </SectionCard>
       )}
 
-      {kind === 'oauth' && (
+      {kind === 'oauth' && !isDevice && (
         <OidcConnectivityGuideCard
           clientId={resource.client_id}
           scopes={resource.configuration['allowed_scopes']}
         />
+      )}
+      {kind === 'oauth' && isDevice && (
+        <SectionCard title={t('devices.authorizeTitle')}>
+          <Text size="sm">{t('devices.integrationHint')}</Text>
+        </SectionCard>
       )}
       {kind === 'saml' && <SamlConnectivityGuideCard configuration={resource.configuration} />}
 
@@ -353,17 +367,26 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
 
       {kind === 'application' && (
         <>
+          <ApplicationTypeCard {...sectionProps} canWrite={canWrite} />
           <SectionCard
             title={t('admin.applicationProtocols.clientsCard')}
             description={t('admin.applicationProtocols.clientsHint')}
           >
-            <ApplicationProtocolCard kind="oauth" applicationId={resource.id} />
+            <ApplicationProtocolCard
+              kind="oauth"
+              applicationId={resource.id}
+              applicationType={rootType}
+            />
           </SectionCard>
           <SectionCard
             title={t('admin.applicationProtocols.samlCard')}
             description={t('admin.applicationProtocols.samlHint')}
           >
-            <ApplicationProtocolCard kind="saml" applicationId={resource.id} />
+            <ApplicationProtocolCard
+              kind="saml"
+              applicationId={resource.id}
+              applicationType={rootType}
+            />
           </SectionCard>
         </>
       )}
@@ -405,7 +428,9 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
         </SectionCard>
       )}
 
-      {kind === 'oauth' && <OauthClientSections {...sectionProps} canWrite={canWrite} />}
+      {kind === 'oauth' && (
+        <OauthClientSections {...sectionProps} canWrite={canWrite} device={isDevice} />
+      )}
       {kind === 'saml' && <SamlProviderSections {...sectionProps} canWrite={canWrite} />}
       {(kind === 'saml' || kind === 'federation') && canWrite && (
         <MetadataImportCard kind={kind} {...sectionProps} canWrite={canWrite} />

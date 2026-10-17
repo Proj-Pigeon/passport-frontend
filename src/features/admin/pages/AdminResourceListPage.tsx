@@ -11,6 +11,7 @@ import { PageState } from '@/components/PageState';
 import { describeApiError } from '@/i18n/errors';
 import { formatDateTime } from '@/lib/format';
 
+import { ApplicationTypeBadge } from '../components/resource/ApplicationTypeCard';
 import { adminKeys } from '../keys';
 import { AdminSearchInput, CursorNav } from '../components/AdminListControls';
 import { AdminStatusBadge } from '../components/AdminStatusBadge';
@@ -109,6 +110,7 @@ export function AdminResourceListPage({ kind }: { kind: 'application' | 'federat
                     {kind === 'application' && (
                       <Table.Th>{t('admin.applicationProtocols.colProtocols')}</Table.Th>
                     )}
+                    {kind === 'application' && <Table.Th>{t('devices.applicationType')}</Table.Th>}
                     <Table.Th>{t('admin.resources.colStatus')}</Table.Th>
                     <Table.Th>{t('admin.resources.colVersion')}</Table.Th>
                     <Table.Th>{t('admin.resources.colUpdatedAt')}</Table.Th>
@@ -142,6 +144,13 @@ export function AdminResourceListPage({ kind }: { kind: 'application' | 'federat
                               {t('admin.applicationProtocols.protocolsNone')}
                             </Text>
                           )}
+                        </Table.Td>
+                      )}
+                      {kind === 'application' && (
+                        <Table.Td>
+                          <ApplicationTypeBadge
+                            value={resource.configuration['application_type']}
+                          />
                         </Table.Td>
                       )}
                       <Table.Td>

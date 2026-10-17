@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { AccountPageHeader } from '@/components/AccountSections';
 
+import { DevicesCard } from '@/features/devices/DevicesCard';
 import { PasskeySection } from './components/PasskeySection';
 import { StepUpStatusCard } from './components/StepUpStatusCard';
 
@@ -17,6 +18,7 @@ export function SecurityPage() {
       />
       <PasskeySection />
       <StepUpStatusCard />
+      <DevicesCard />
     </Stack>
   );
 }

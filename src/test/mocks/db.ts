@@ -34,6 +34,7 @@ export interface MockSession {
   idle_expires_at: string;
   expires_at: string;
   step_up_expires_at?: string;
+  step_up_method?: 'passkey' | 'password';
 }
 
 export interface MockPasskey {
@@ -341,6 +342,7 @@ export function stepUpSatisfied(db: MockDb): boolean {
 export function grantStepUp(db: MockDb, ttlMs = STEP_UP_TTL_MS): void {
   if (db.session) {
     db.session.step_up_expires_at = new Date(Date.now() + ttlMs).toISOString();
+    db.session.step_up_method = 'passkey';
   }
 }
 

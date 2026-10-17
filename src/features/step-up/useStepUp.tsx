@@ -49,7 +49,7 @@ export function useStepUp(): UseStepUpResult {
   const { session, user } = useSession();
 
   const expiresAt = session?.step_up_expires_at ?? null;
-  const isActive = isStepUpActive(expiresAt);
+  const isActive = session?.step_up_method !== 'password' && isStepUpActive(expiresAt);
   const remainingSeconds = secondsUntil(expiresAt);
   const stepUpRequired = user?.step_up_required ?? true;
 
@@ -57,7 +57,10 @@ export function useStepUp(): UseStepUpResult {
     (options?: { force?: boolean }): Promise<void> => {
       if (!options?.force) {
         const cached = queryClient.getQueryData<CurrentSessionResponse>(queryKeys.session);
-        if (isStepUpActive(cached?.session.step_up_expires_at)) {
+        if (
+          cached?.session.step_up_method !== 'password' &&
+          isStepUpActive(cached?.session.step_up_expires_at)
+        ) {
           return Promise.resolve();
         }
       }

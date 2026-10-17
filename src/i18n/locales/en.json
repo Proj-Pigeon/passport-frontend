@@ -921,15 +921,17 @@
         "spa": "Single-page application · OIDC + PKCE",
         "native": "Native application · OIDC + PKCE",
         "saml": "SAML 2.0 service provider",
-        "blank": "Application only"
+        "device": "Device authorization"
       },
       "hints": {
         "web": "For web applications with a backend, using a client secret.",
         "spa": "For browser applications using PKCE S256 without a client secret.",
         "native": "Desktop or mobile apps using PKCE S256 with HTTPS or loopback callbacks.",
         "saml": "Let your application sign in through Passport using its SP Entity ID and ACS.",
-        "blank": "Create an application first, then add OIDC clients or SAML service providers."
+        "device": "Public desktop or headless application using a browser approval code. No redirect address or secret."
       },
+      "deviceRequiresType": "For device authorization, first assign the parent application the Device authorization type and publish it through approval.",
+      "classifyApplication": "Open application details",
       "description": "Application description",
       "owner": "Owner user ID",
       "ownerHint": "Defaults to you. Enter another usr_ ID to assign a different owner.",
@@ -957,5 +959,40 @@
       "partialHint": "The protocol configuration was not saved. Retry to continue with this draft.",
       "viewDraft": "View the created application draft"
     }
+  },
+  "devices": {
+    "title": "Devices",
+    "listHint": "Manage signed-in browsers and authorized applications. Revocation immediately ends their access.",
+    "empty": "No active devices.",
+    "application": "Application",
+    "browser": "Browser",
+    "current": "Current session",
+    "lastActive": "Last active: {{time}}",
+    "more": "Load more",
+    "revoke": "Revoke access",
+    "revokeCurrent": "Revoke and sign out",
+    "revokeWarning": "Revoke access for {{name}}? This device will need to sign in again.",
+    "currentWarning": "This browser will be signed out immediately.",
+    "password": "Password",
+    "passwordWrong": "The password is incorrect. Try again.",
+    "verify": "Verify your identity",
+    "passkeyMissing": "Register a passkey on the security page before authorizing or managing other devices.",
+    "openSecurity": "Open security settings",
+    "authorizeTitle": "Authorize a device",
+    "authorizeHint": "Enter the code shown in the application you want to sign in to.",
+    "code": "Device code",
+    "lookup": "Check code",
+    "expired": "This code is invalid, expired, or already used. Request a new code in the application.",
+    "expires": "Expires: {{time}}",
+    "phishing": "Only approve if you started signing in on this device. Never approve a code sent by someone else.",
+    "approve": "Approve sign-in",
+    "deny": "Deny",
+    "approved": "Device authorized. Return to GuEarth or the application to finish signing in.",
+    "denied": "Sign-in denied. You can close this page.",
+    "unclassified": "Unclassified",
+    "applicationType": "Application type",
+    "typeLocked": "The application type is locked. Changes still use the normal approval and publishing process.",
+    "typeHint": "Choose a compatible type. Existing protocols must match, and the type cannot be changed once assigned. Mixed applications must remain unclassified.",
+    "integrationHint": "Use device authorization with this public client. Do not configure a redirect address or client secret. Request a device code, open the verification page, then poll at the returned interval. Use the existing userinfo, refresh and revoke endpoints."
   }
 }

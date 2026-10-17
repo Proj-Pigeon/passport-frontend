@@ -12,6 +12,7 @@ export interface ReasonModalProps {
   confirmLabel: string;
   confirmColor?: string;
   pending?: boolean;
+  required?: boolean;
   error?: unknown;
   errorHint?: ReactNode;
   extraFields?: ReactNode;
@@ -34,6 +35,7 @@ function ReasonForm({
   confirmLabel,
   confirmColor,
   pending,
+  required,
   error,
   errorHint,
   extraFields,
@@ -44,7 +46,7 @@ function ReasonForm({
   const [reason, setReason] = useState('');
 
   const trimmed = reason.trim();
-  const invalid = [...trimmed].length > MAX_REASON_LENGTH;
+  const invalid = [...trimmed].length > MAX_REASON_LENGTH || (required && trimmed.length === 0);
 
   return (
     <Stack gap="sm">
@@ -60,6 +62,7 @@ function ReasonForm({
         minRows={2}
         maxRows={6}
         data-autofocus
+        required={required}
       />
       <SubmitErrorAlert error={error} hint={errorHint} />
       <Group justify="flex-end" gap="sm">

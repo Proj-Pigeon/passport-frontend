@@ -23,6 +23,7 @@ import { SubmitErrorAlert } from '@/features/auth/components/SubmitErrorAlert';
 import { adminKeys } from '../../keys';
 import { useAdminSession } from '../../session/useAdminSession';
 import { useAdminStepUp } from '../../step-up/useAdminStepUp';
+import { applicationType } from './applicationPresets';
 import {
   protocolConfiguration,
   validUris,
@@ -43,6 +44,7 @@ interface Props {
   opened: boolean;
   onClose: () => void;
   fixedApplicationId?: string;
+  applicationType?: ApplicationPreset;
 }
 
 export function ApplicationCreateModal({ opened, ...props }: Props) {
@@ -69,6 +71,7 @@ export function ApplicationCreateModal({ opened, ...props }: Props) {
 function ApplicationCreateForm({
   kind,
   fixedApplicationId,
+  applicationType: fixedType,
   onClose,
   onPending,
 }: Omit<Props, 'opened'> & { onPending: (pending: boolean) => void }) {
@@ -77,7 +80,7 @@ function ApplicationCreateForm({
   const queryClient = useQueryClient();
   const stepUp = useAdminStepUp();
   const { data: session } = useAdminSession();
-  const [preset, setPreset] = useState<ApplicationPreset>(kind === 'saml' ? 'saml' : 'web');
+  const [selectedPreset, setPreset] = useState<ApplicationPreset>(kind === 'saml' ? 'saml' : 'web');
   const [displayName, setDisplayName] = useState('');
   const [description, setDescription] = useState('');
   const [owner, setOwner] = useState<string | null>(null);
@@ -106,6 +109,22 @@ function ApplicationCreateForm({
     queryFn: ({ signal }) => listAdminResources('application', { limit: 100 }, signal),
     enabled: kind !== 'application' && !fixedApplicationId,
   });
+  const parentType =
+    fixedType ??
+    applicationType(
+      applications.data?.items.find((item) => item.id === applicationId)?.configuration[
+        'application_type'
+      ],
+    );
+  const presets: ApplicationPreset[] =
+    parentType && kind !== 'application'
+      ? [parentType]
+      : kind === 'application'
+        ? ['web', 'spa', 'native', 'device', 'saml']
+        : kind === 'oauth'
+          ? ['web', 'spa', 'native']
+          : ['saml'];
+  const preset = presets.includes(selectedPreset) ? selectedPreset : (presets[0] ?? 'web');
   const mutation = useMutation({
     mutationFn: async () => {
       onPending(true);
@@ -120,6 +139,7 @@ function ApplicationCreateForm({
                 description: description.trim(),
                 owner_user_id: ownerId.trim(),
                 risk,
+                application_type: preset,
               },
             });
             parentId = application.id;
@@ -129,7 +149,7 @@ function ApplicationCreateForm({
               queryKey: adminKeys.resourceKind('application'),
             });
           }
-          if (preset !== 'blank') {
+          {
             await createAdminResource(preset === 'saml' ? 'saml' : 'oauth', {
               reason: reason.trim(),
               application_id: parentId ?? undefined,
@@ -172,8 +192,8 @@ function ApplicationCreateForm({
         next['entityId'] = invalid;
       if (!validUris(fields.acsUrls, true))
         next['acsUrls'] = t('admin.applicationCreate.urisInvalid');
-    } else if (preset !== 'blank') {
-      if (!validUris(fields.redirectUris, true))
+    } else {
+      if (preset !== 'device' && !validUris(fields.redirectUris, true))
         next['redirectUris'] = t('admin.applicationCreate.urisInvalid');
       if (
         !fields.scopes.includes('openid') ||
@@ -185,12 +205,6 @@ function ApplicationCreateForm({
     setErrors(next);
     if (Object.keys(next).length === 0 && !mutation.isPending) mutation.mutate();
   };
-  const presets: ApplicationPreset[] =
-    kind === 'application'
-      ? ['web', 'spa', 'native', 'saml', 'blank']
-      : kind === 'oauth'
-        ? ['web', 'spa', 'native']
-        : ['saml'];
   return (
     <form onSubmit={submit}>
       <Stack gap="sm">
@@ -242,6 +256,19 @@ function ApplicationCreateForm({
                   </Button>
                 )}
               </>
+            )}
+            {kind === 'oauth' && applicationId && !parentType && (
+              <Alert color="blue">
+                <Text size="sm">{t('admin.applicationCreate.deviceRequiresType')}</Text>
+                <Anchor
+                  component={Link}
+                  to={'/admin/applications/' + encodeURIComponent(applicationId)}
+                  onClick={onClose}
+                  size="sm"
+                >
+                  {t('admin.applicationCreate.classifyApplication')}
+                </Anchor>
+              </Alert>
             )}
             <TextInput
               label={t('admin.resources.displayName')}
@@ -302,20 +329,22 @@ function ApplicationCreateForm({
         )}
         <Fieldset disabled={mutation.isPending} p={0} style={{ border: 0 }}>
           <Stack gap="sm">
-            {preset !== 'blank' && preset !== 'saml' && (
+            {preset !== 'saml' && (
               <>
-                <Textarea
-                  label={t('admin.applicationCreate.redirectUris')}
-                  description={t('admin.applicationCreate.urisHint')}
-                  placeholder="https://app.example.com/callback"
-                  value={fields.redirectUris}
-                  onChange={(event) => update('redirectUris', event.currentTarget.value)}
-                  autosize
-                  minRows={2}
-                  maxRows={5}
-                  required
-                  error={errors['redirectUris']}
-                />
+                {preset !== 'device' && (
+                  <Textarea
+                    label={t('admin.applicationCreate.redirectUris')}
+                    description={t('admin.applicationCreate.urisHint')}
+                    placeholder="https://app.example.com/callback"
+                    value={fields.redirectUris}
+                    onChange={(event) => update('redirectUris', event.currentTarget.value)}
+                    autosize
+                    minRows={2}
+                    maxRows={5}
+                    required
+                    error={errors['redirectUris']}
+                  />
+                )}
                 <TagsInput
                   label={t('admin.applicationCreate.scopes')}
                   data={['openid', 'profile', 'email', 'offline_access']}

@@ -9,6 +9,7 @@ describe('safeNext', () => {
     expect(safeNext('/account', ORIGIN)).toBe('/account');
     expect(safeNext('/account/security', ORIGIN)).toBe('/account/security');
     expect(safeNext('/authorize?interaction=int_1', ORIGIN)).toBe('/authorize?interaction=int_1');
+    expect(safeNext('/device?user_code=BCDF-GHJK', ORIGIN)).toBe('/device?user_code=BCDF-GHJK');
   });
 
   it('preserves hash on allow-listed paths', () => {

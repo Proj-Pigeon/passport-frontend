@@ -1,4 +1,4 @@
-export type ApplicationPreset = 'web' | 'spa' | 'native' | 'saml' | 'blank';
+export type ApplicationPreset = 'web' | 'spa' | 'native' | 'saml' | 'device';
 
 export interface ProtocolDraft {
   redirectUris: string;
@@ -51,7 +51,7 @@ export function validUris(value: string, required: boolean) {
 }
 
 export function protocolConfiguration(
-  preset: Exclude<ApplicationPreset, 'blank'>,
+  preset: ApplicationPreset,
   fields: ProtocolDraft,
   displayName: string,
 ): Record<string, unknown> {
@@ -74,6 +74,16 @@ export function protocolConfiguration(
     subject_type: fields.subjectType,
     allowed_scopes: fields.scopes,
     require_consent: true,
-    redirect_uris: uriLines(fields.redirectUris).map((uri) => ({ uri })),
+    redirect_uris: (preset === 'device' ? [] : uriLines(fields.redirectUris)).map((uri) => ({
+      uri,
+    })),
   };
+}
+
+export const APPLICATION_TYPES: ApplicationPreset[] = ['web', 'spa', 'native', 'device', 'saml'];
+
+export function applicationType(value: unknown): ApplicationPreset | undefined {
+  return APPLICATION_TYPES.includes(value as ApplicationPreset)
+    ? (value as ApplicationPreset)
+    : undefined;
 }
