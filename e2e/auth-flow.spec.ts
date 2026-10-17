@@ -23,6 +23,7 @@ async function register(page: Page, username: string, email: string) {
   await page.getByLabel(/^用户名/).fill(username);
   await page.getByLabel(/^邮箱/).fill(email);
   await page.getByLabel(/^密码/).fill(PASSWORD);
+  await page.getByRole('checkbox').check();
   await page.getByRole('button', { name: '注册' }).click();
   await expect(page.getByRole('heading', { name: '请查收验证邮件' })).toBeVisible();
 }
@@ -30,7 +31,8 @@ async function register(page: Page, username: string, email: string) {
 async function signIn(page: Page, identifier: string, password: string) {
   await page.getByLabel(/^用户名或邮箱/).fill(identifier);
   await page.getByLabel(/^密码/).fill(password);
-  await page.getByRole('button', { name: '登录' }).click();
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button', { name: '登录', exact: true }).click();
 }
 
 test.describe('account lifecycle', () => {

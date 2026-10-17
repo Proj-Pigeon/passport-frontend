@@ -65,6 +65,14 @@ async function fixture(page: Page, options: { authenticated?: boolean; providers
     const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
       route.fulfill({ status, json: body, headers });
     if (path.endsWith('/auth/csrf')) return json({ token: 'browser-test-csrf' });
+    if (path === '/v1/compliance-documents')
+      return json({
+        version: 1,
+        terms_markdown: '# Terms',
+        privacy_markdown: '# Privacy',
+        cross_border_enabled: false,
+        cross_border_markdown: '',
+      });
     if (path === '/v1/federation/providers') return json({ providers });
     if (path === '/v1/sessions/current')
       return db.session
@@ -139,6 +147,7 @@ test('dynamic login providers and a top-level upstream SAML navigation at 390px'
   await expect(page.getByRole('link', { name: 'GitHub Corporate' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Partner SAML Login' })).toBeVisible();
   await expectNoPageOverflow(page);
+  await page.getByRole('checkbox').check();
   await page.getByRole('link', { name: 'Partner SAML Login' }).click();
   await expect(page.getByRole('heading', { name: 'Upstream SAML started' })).toBeVisible();
   expect(await page.evaluate(() => sessionStorage.getItem('passport.samlRequest'))).toBe(requestId);
@@ -153,6 +162,7 @@ test('password login resumes SAML and permits fresh login with an existing sessi
   await expect(page.getByRole('heading', { name: '登录', exact: true })).toBeVisible();
   await page.getByLabel(/^用户名或邮箱/).fill('alice');
   await page.getByLabel(/^密码/).fill('correct-horse-battery');
+  await page.getByRole('checkbox').check();
   await page.getByRole('button', { name: '登录', exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/saml/idp/sso/resume/${requestId}$`));
   await expect(page.getByRole('heading', { name: 'SAML resumed' })).toBeVisible();

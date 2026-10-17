@@ -24,7 +24,8 @@ test.beforeEach(async ({ request }) => {
 async function signInWithPassword(page: Page, username: string, password = PASSWORD) {
   await page.getByLabel(/^用户名或邮箱/).fill(username);
   await page.getByLabel(/^密码/).fill(password);
-  await page.getByRole('button', { name: '登录' }).click();
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button', { name: '登录', exact: true }).click();
   await expect(page.getByRole('heading', { name: '概览' })).toBeVisible();
 }
 
@@ -36,6 +37,7 @@ async function createVerifiedAccount(page: Page, request: APIRequestContext) {
   await page.getByLabel(/^用户名/).fill(username);
   await page.getByLabel(/^邮箱/).fill(email);
   await page.getByLabel(/^密码/).fill(PASSWORD);
+  await page.getByRole('checkbox').check();
   await page.getByRole('button', { name: '注册' }).click();
   await expect(page.getByRole('heading', { name: '请查收验证邮件' })).toBeVisible();
 
@@ -128,7 +130,7 @@ test.describe('account profile', () => {
     await expect(page.getByRole('heading', { name: '概览' })).toBeVisible();
     await expect(page.getByText(email)).toBeVisible();
     await expect(page.getByText('邮箱已验证')).toBeVisible();
-    await expect(page.getByText('密码')).toBeVisible();
+    await expect(page.getByText('密码', { exact: true })).toBeVisible();
     await expect(page.getByText('尚未添加')).toBeVisible();
     await expect(page.getByText(/添加通行密钥后/)).toBeVisible();
   });
@@ -150,7 +152,7 @@ test.describe('passkeys', () => {
     await expect(page.getByText('未命名密钥')).toBeVisible();
 
     await page.getByRole('button', { name: '重命名' }).click();
-    await page.getByLabel('名称').fill('E2E Passkey');
+    await page.getByRole('textbox', { name: '名称', exact: true }).fill('E2E Passkey');
     await page.getByRole('button', { name: '保存名称' }).click();
     await expect(page.getByText('安全验证')).toBeVisible();
 
@@ -178,6 +180,7 @@ test.describe('passkeys', () => {
     await page.getByRole('menuitem', { name: '退出登录' }).click();
     await expect(page.getByRole('heading', { name: '登录' })).toBeVisible();
 
+    await page.getByRole('checkbox').check();
     await page.getByRole('button', { name: '使用通行密钥登录' }).click();
     await expect(page.getByRole('heading', { name: '概览' })).toBeVisible();
     await expect(page).toHaveURL(/\/account$/);
