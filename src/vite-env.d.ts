@@ -8,3 +8,10 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+interface Window {
+  __PASSPORT_CONFIG__?: {
+    apiBase?: string;
+    turnstileSiteKey?: string;
+  };
+}

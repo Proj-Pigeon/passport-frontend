@@ -89,9 +89,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    env:
-      VITE_API_BASE: ${{ vars.VITE_API_BASE }}
-      VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - name: log in to ghcr
@@ -101,8 +98,6 @@ jobs:
         run: |
           image=ghcr.io/${GITHUB_REPOSITORY,,}
           docker build \
-            --build-arg VITE_API_BASE="${VITE_API_BASE}" \
-            --build-arg VITE_TURNSTILE_SITE_KEY="${VITE_TURNSTILE_SITE_KEY}" \
             --tag "$image:latest" \
             --tag "$image:sha-${GITHUB_SHA::7}" \
             .

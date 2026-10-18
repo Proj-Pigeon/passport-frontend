@@ -72,14 +72,16 @@ Put new server interactions in typed endpoint modules, not ad-hoc `fetch` calls 
 - Every user-facing string is an i18next key. Update **both** `src/i18n/locales/en.json` and `zh-CN.json`; tests enforce key parity across locales and that every literal `t()` key exists in both files. Default language is `zh-CN`. Never hardcode copy in components.
 - User-facing and legal copy uses plain language — no technical jargon (no algorithm, header, or crypto names); keep statutory legal terms as-is.
 
-## Environment and build-time config
+## Environment and runtime config
 
 - `.env` based on `.env.example`: `VITE_API_BASE` (empty in dev for same-origin proxying), `VITE_TURNSTILE_SITE_KEY`, `VITE_FEDERATION_PROVIDERS`, and `PASSPORT_API_TARGET` (dev proxy target only, not a runtime variable).
-- `VITE_*` values are baked in at build time. The production image receives them as Docker build args (CI `image` job), so changing them requires a rebuild.
+- Development and non-container builds read `VITE_API_BASE` / `VITE_TURNSTILE_SITE_KEY` from `.env` at build time.
+- The production image reads both values at container start: `docker-entrypoint.d/40-runtime-config.sh` writes `/config.js` from the container environment, and `index.html` loads it before the app bundle. Runtime values override build-time values; changing them requires restarting the container, not rebuilding the image.
 
 ## Deployment
 
-- Multi-stage `Dockerfile`: pnpm build stage, then `nginxinc/nginx-unprivileged:alpine` serving `dist/` on port 8080 with `nginx.prod.conf` (immutable `/assets/` caching, no-cache `index.html`, SPA fallback).
+- Multi-stage `Dockerfile`: pnpm build stage, then `nginxinc/nginx-unprivileged:alpine` serving `dist/` on port 8080 with `nginx.prod.conf` (immutable `/assets/` caching, no-cache `index.html` and `/config.js`, SPA fallback).
+- The image ships `docker-entrypoint.d/40-runtime-config.sh`, which renders `/config.js` from `VITE_API_BASE` and `VITE_TURNSTILE_SITE_KEY` at container start; these are runtime environment variables, not Docker build args.
 - CI (`.github/workflows/ci.yml`) runs independent lowercase jobs: `lint`, `format`, `typecheck`, `test`, `build` (uploads `dist`), and `image` (builds and pushes to ghcr on push to main). Keep jobs small and separate; do not merge them into combined jobs.
 
 ## Commits
