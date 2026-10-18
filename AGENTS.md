@@ -82,7 +82,7 @@ Put new server interactions in typed endpoint modules, not ad-hoc `fetch` calls 
 
 - Multi-stage `Dockerfile`: pnpm build stage, then `nginxinc/nginx-unprivileged:alpine` serving `dist/` on port 8080 with `nginx.prod.conf` (immutable `/assets/` caching, no-cache `index.html` and `/config.js`, SPA fallback).
 - The image ships `docker-entrypoint.d/40-runtime-config.sh`, which renders `/config.js` from `VITE_API_BASE` and `VITE_TURNSTILE_SITE_KEY` at container start; these are runtime environment variables, not Docker build args.
-- CI (`.github/workflows/ci.yml`) runs independent lowercase jobs: `lint`, `format`, `typecheck`, `test`, `build` (uploads `dist`), and `image` (builds and pushes to ghcr on push to main). Keep jobs small and separate; do not merge them into combined jobs.
+- CI (`.github/workflows/ci.yml`) runs independent lowercase jobs: `lint`, `format`, `typecheck`, `test`, `build` (uploads `dist`), and `image` (builds and pushes a multi-arch `linux/amd64` + `linux/arm64` image to ghcr on push to main). Keep jobs small and separate; do not merge them into combined jobs.
 
 ## Commits
 
