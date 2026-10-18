@@ -56,6 +56,7 @@ export function TurnstileField({ ref, onTokenChange, onStatusChange, error }: Tu
           appearance: 'always',
           retry: 'auto',
           refreshExpired: 'auto',
+          action: env.turnstileAction,
         }}
         onSuccess={(token) => {
           onTokenChange(token);

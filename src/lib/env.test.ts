@@ -7,6 +7,7 @@ describe('parseEnv', () => {
     expect(parseEnv({})).toEqual({
       apiBase: '',
       turnstileSiteKey: null,
+      turnstileAction: 'auth',
     });
   });
 
@@ -19,6 +20,7 @@ describe('parseEnv', () => {
     ).toEqual({
       apiBase: 'https://account.example',
       turnstileSiteKey: '0x4AAA',
+      turnstileAction: 'auth',
     });
   });
 
@@ -28,15 +30,18 @@ describe('parseEnv', () => {
         {
           VITE_API_BASE: 'https://build.example',
           VITE_TURNSTILE_SITE_KEY: '0xBUILD',
+          VITE_TURNSTILE_ACTION: 'build-action',
         },
         {
           apiBase: ' https://runtime.example/ ',
           turnstileSiteKey: ' 0x4RUNTIME ',
+          turnstileAction: ' runtime-action ',
         },
       ),
     ).toEqual({
       apiBase: 'https://runtime.example',
       turnstileSiteKey: '0x4RUNTIME',
+      turnstileAction: 'runtime-action',
     });
   });
 
@@ -47,11 +52,12 @@ describe('parseEnv', () => {
           VITE_API_BASE: 'https://build.example',
           VITE_TURNSTILE_SITE_KEY: '0xBUILD',
         },
-        { apiBase: '', turnstileSiteKey: '' },
+        { apiBase: '', turnstileSiteKey: '', turnstileAction: '' },
       ),
     ).toEqual({
       apiBase: '',
       turnstileSiteKey: null,
+      turnstileAction: 'auth',
     });
   });
 });
