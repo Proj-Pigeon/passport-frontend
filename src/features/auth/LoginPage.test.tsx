@@ -90,7 +90,7 @@ describe('LoginPage', () => {
     expect(await screen.findByText('账号或密码错误')).toBeInTheDocument();
   });
 
-  it('shows the same generic message for an unverified account', async () => {
+  it('shows the not-activated message for an unverified account', async () => {
     seedUser(mockDb, {
       username: 'alice',
       email: 'alice@example.com',
@@ -103,7 +103,9 @@ describe('LoginPage', () => {
 
     await submitCredentials(user, 'alice', PASSWORD);
 
-    expect(await screen.findByText('账号或密码错误')).toBeInTheDocument();
+    expect(await screen.findByText('邮箱未激活')).toBeInTheDocument();
+    expect(await screen.findByText(/请先点击邮件中的验证链接完成邮箱验证/)).toBeInTheDocument();
+    expect(mockDb.currentUserId).toBeNull();
   });
 
   it('blocks submission when the identifier is empty', async () => {

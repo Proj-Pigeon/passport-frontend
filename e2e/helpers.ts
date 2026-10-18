@@ -31,6 +31,7 @@ interface MailpitSummary {
 
 interface MailpitMessage {
   Text?: string;
+  HTML?: string;
 }
 
 export async function readMailToken(
@@ -56,8 +57,9 @@ export async function readMailToken(
     throw new Error(`Mailpit message ${match.ID} returned ${detail.status()}`);
   }
 
-  const { Text: text } = (await detail.json()) as MailpitMessage;
-  const token = /token: (\S+)/.exec(text ?? '')?.[1];
+  const { Text, HTML } = (await detail.json()) as MailpitMessage;
+  const token =
+    /token: (\S+)/.exec(Text ?? '')?.[1] ?? /token=([A-Za-z0-9_-]+)/.exec(HTML ?? '')?.[1];
   if (!token) {
     throw new Error(`no token found in the "${subject}" email body`);
   }

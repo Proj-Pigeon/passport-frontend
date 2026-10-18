@@ -78,14 +78,14 @@ test.describe('account lifecycle', () => {
     expect(page.url()).not.toContain('token=');
   });
 
-  test('an unverified account cannot log in and the reason is not disclosed', async ({ page }) => {
+  test('an unverified account is told to activate the email', async ({ page }) => {
     const username = uniqueUsername();
     await register(page, username, emailFor(username));
 
     await page.goto('/login');
     await signIn(page, username, PASSWORD);
 
-    await expect(page.getByText('账号或密码错误')).toBeVisible();
+    await expect(page.getByText('邮箱未激活')).toBeVisible();
     await expect(page).toHaveURL(/\/login$/);
   });
 

@@ -272,6 +272,13 @@ export function createHandlers(db: MockDb): RequestHandler[] {
       if (!user || user.password !== str(body['password'])) {
         return unauthorized();
       }
+      if (user.status === 'pending_verification' && !user.email_verified) {
+        return envelope(
+          403,
+          'email_not_verified',
+          'The email address for this account has not been verified.',
+        );
+      }
       if (!user.email_verified || user.status !== 'active') {
         return unauthorized();
       }

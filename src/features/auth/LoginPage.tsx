@@ -97,6 +97,7 @@ export function LoginPage() {
   });
 
   const apiError = isApiError(submitError) ? submitError : null;
+  const emailNotVerified = apiError?.code === 'email_not_verified';
   const credentialFailure = apiError?.status === 401;
   const rateLimited = retryAfter.running;
   const submitLabel = rateLimited
@@ -123,8 +124,15 @@ export function LoginPage() {
           <Stack gap="md">
             <SubmitErrorAlert
               error={submitError}
-              message={credentialFailure ? t('auth.login.failed') : undefined}
-              color={apiError?.status === 429 ? 'orange' : 'red'}
+              message={
+                emailNotVerified
+                  ? t('auth.login.emailNotVerified')
+                  : credentialFailure
+                    ? t('auth.login.failed')
+                    : undefined
+              }
+              hint={emailNotVerified ? t('auth.login.emailNotVerifiedHint') : undefined}
+              color={apiError?.status === 429 ? 'orange' : emailNotVerified ? 'yellow' : 'red'}
             />
 
             <TextInput

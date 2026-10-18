@@ -3,6 +3,7 @@ export const API_ERROR_CODES = [
   'validation_failed',
   'unauthorized',
   'forbidden',
+  'email_not_verified',
   'not_found',
   'method_not_allowed',
   'conflict',

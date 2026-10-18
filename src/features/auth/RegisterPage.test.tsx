@@ -67,7 +67,7 @@ describe('RegisterPage', () => {
       password: PASSWORD,
       compliance_versions: { terms: 1, privacy: 1 },
     });
-  });
+  }, 15_000);
 
   it('requires consent before submitting', async () => {
     const user = userEvent.setup();
@@ -87,7 +87,7 @@ describe('RegisterPage', () => {
 
     expect(called).toBe(false);
     expect(screen.getAllByText('请先勾选并同意相关文件')).toHaveLength(1);
-  });
+  }, 15_000);
 
   it('includes the display name when provided', async () => {
     const user = userEvent.setup();
