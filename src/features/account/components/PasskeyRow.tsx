@@ -1,12 +1,22 @@
-import { ActionIcon, Badge, Group, Stack, Text, TextInput, Tooltip } from '@mantine/core';
-import { IconCheck, IconPencil, IconTrash, IconX } from '@tabler/icons-react';
+import { ActionIcon, Badge, Box, Group, Stack, Text, TextInput, Tooltip } from '@mantine/core';
+import {
+  IconCheck,
+  IconCloud,
+  IconCloudCheck,
+  IconPencil,
+  IconTrash,
+  IconX,
+} from '@tabler/icons-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Passkey } from '@/api/types';
 import { useFieldErrorText } from '@/i18n/errors';
 import { formatDateTime } from '@/lib/format';
+import { identifyPasskeyAuthenticator } from '@/lib/passkeyAuthenticator';
 import { passkeyLabelSchema } from '@/lib/validators';
+
+import { PasskeyAuthenticatorIcon } from './PasskeyAuthenticatorIcon';
 
 export interface PasskeyRowProps {
   passkey: Passkey;
@@ -21,6 +31,12 @@ export function PasskeyRow({ passkey, busy, onRename, onDelete }: PasskeyRowProp
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(passkey.label);
   const [saving, setSaving] = useState(false);
+  const authenticator = identifyPasskeyAuthenticator(passkey);
+  const deviceName = authenticator.name ?? t(`account.security.deviceKind.${authenticator.kind}`);
+  const CloudIcon = passkey.backup_state ? IconCloudCheck : IconCloud;
+  const backupLabel = passkey.backup_state
+    ? t('account.security.synced')
+    : t('account.security.syncEligible');
 
   const startEdit = () => {
     setDraft(passkey.label);
@@ -48,7 +64,7 @@ export function PasskeyRow({ passkey, busy, onRename, onDelete }: PasskeyRowProp
   };
 
   return (
-    <Stack gap={6} py="sm">
+    <Stack gap={6}>
       <Group justify="space-between" align="flex-start" wrap="nowrap" gap="sm">
         <Stack gap={4} style={{ minWidth: 0, flex: 1 }}>
           {editing ? (
@@ -99,10 +115,43 @@ export function PasskeyRow({ passkey, busy, onRename, onDelete }: PasskeyRowProp
               }}
             />
           ) : (
-            <Text size="sm" fw={500} lineClamp={1}>
-              {passkey.label.trim().length > 0 ? passkey.label : t('account.security.unnamed')}
-            </Text>
+            <Group gap="xs" wrap="nowrap">
+              <PasskeyAuthenticatorIcon authenticator={authenticator} />
+              <Text size="sm" fw={500} lineClamp={1} style={{ minWidth: 0 }}>
+                {passkey.label.trim().length > 0
+                  ? passkey.label
+                  : (authenticator.name ?? t('account.security.unnamed'))}
+              </Text>
+              {passkey.backup_eligible && (
+                <Tooltip
+                  label={
+                    passkey.backup_state
+                      ? t('account.security.cloudBackedUpHint')
+                      : t('account.security.cloudBackupHint')
+                  }
+                  multiline
+                  w={280}
+                  withArrow
+                  events={{ hover: true, focus: true, touch: true }}
+                >
+                  <Box
+                    component="span"
+                    tabIndex={0}
+                    role="img"
+                    aria-label={backupLabel}
+                    c="dimmed"
+                    style={{ display: 'inline-flex', flexShrink: 0 }}
+                  >
+                    <CloudIcon size={17} stroke={1.5} aria-hidden="true" />
+                  </Box>
+                </Tooltip>
+              )}
+            </Group>
           )}
+
+          <Text size="xs" c="dimmed">
+            {t('account.security.deviceType', { device: deviceName })}
+          </Text>
 
           <Group gap="xs" wrap="wrap">
             <Text size="xs" c="dimmed">
@@ -119,20 +168,15 @@ export function PasskeyRow({ passkey, busy, onRename, onDelete }: PasskeyRowProp
             )}
           </Group>
 
-          <Group gap={4} wrap="wrap">
-            {passkey.backup_eligible && (
-              <Badge size="xs" variant="light" color="blue">
-                {passkey.backup_state
-                  ? t('account.security.synced')
-                  : t('account.security.syncEligible')}
-              </Badge>
-            )}
-            {passkey.transports.map((transport) => (
-              <Badge key={transport} size="xs" variant="outline" color="gray">
-                {t(`account.security.transport.${transport}`)}
-              </Badge>
-            ))}
-          </Group>
+          {(passkey.transports?.length ?? 0) > 0 && (
+            <Group gap={4} wrap="wrap">
+              {passkey.transports?.map((transport) => (
+                <Badge key={transport} size="xs" variant="outline" color="gray">
+                  {t(`account.security.transport.${transport}`)}
+                </Badge>
+              ))}
+            </Group>
+          )}
         </Stack>
 
         <Group gap={4} wrap="nowrap">

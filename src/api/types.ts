@@ -110,7 +110,9 @@ export interface Passkey {
   last_used_at: string | null;
   backup_eligible: boolean;
   backup_state: boolean;
-  transports: AuthenticatorTransport[];
+  aaguid?: string;
+  authenticator_attachment?: AuthenticatorAttachment;
+  transports?: AuthenticatorTransport[];
 }
 
 export interface WebAuthnCeremony<TOptions = Record<string, unknown>> {

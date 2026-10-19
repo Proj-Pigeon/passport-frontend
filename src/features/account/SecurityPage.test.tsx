@@ -83,10 +83,68 @@ describe('SecurityPage passkey list', () => {
     expect(await screen.findByText('MacBook Pro')).toBeInTheDocument();
     expect(screen.getByText(/创建于/)).toBeInTheDocument();
     expect(screen.getByText(/最近使用/)).toBeInTheDocument();
-    expect(screen.getByText('已同步')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '已云备份' })).toBeInTheDocument();
     expect(screen.getByText('内置')).toBeInTheDocument();
     expect(screen.getByText('混合')).toBeInTheDocument();
   });
+
+  it.each([
+    ['bada5566-a7aa-401f-bd96-45619a55120d', '1Password'],
+    ['d548826e-79b4-db40-a3d8-11116f7e8349', 'Bitwarden'],
+    ['ea9b8d66-4d01-1d21-3ce4-b6b48cb575d4', 'Google Password Manager'],
+  ])('renders a provider icon and backup hint for %s', async (aaguid, name) => {
+    const account = seedUser(mockDb);
+    seedPasskey(mockDb, {
+      user_id: account.id,
+      aaguid,
+      backup_eligible: true,
+      backup_state: false,
+    });
+    await openSecurityPage(account);
+
+    const title = await screen.findByText(name);
+    const icon = title.parentElement?.querySelector('img');
+    expect(icon).toHaveAttribute('src', expect.stringMatching(/^data:image\/svg\+xml;base64,/));
+    expect(screen.getByText(`设备类型：${name}`)).toBeInTheDocument();
+    const user = userEvent.setup();
+    await user.hover(screen.getByRole('img', { name: '支持云备份' }));
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('目前尚未确认已备份');
+  });
+
+  it('shows a confirmed cloud backup hint on focus', async () => {
+    const account = seedUser(mockDb);
+    seedPasskey(mockDb, { user_id: account.id, backup_eligible: true, backup_state: true });
+    await openSecurityPage(account);
+    const cloud = await screen.findByRole('img', { name: '已云备份' });
+    cloud.focus();
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('已云备份，可以在多台设备上使用');
+  });
+
+  it.each([
+    ['08987058-cadc-4b81-b6e1-30de50dcbe96', [], 'Windows Hello'],
+    ['b93fd961-f2e6-462f-b122-82002247de78', [], 'Android'],
+    ['', ['usb', 'nfc'], '外接硬件密钥'],
+    ['', undefined, '设备密钥'],
+  ] as const)(
+    'renders device metadata without a cloud indicator for %s',
+    async (aaguid, transports, name) => {
+      const account = seedUser(mockDb);
+      seedPasskey(mockDb, { user_id: account.id, aaguid, backup_eligible: false, label: 'My key' });
+      server.use(
+        http.get('*/v1/me/passkeys', () =>
+          HttpResponse.json([
+            {
+              ...mockDb.passkeys[0],
+              transports,
+            },
+          ]),
+        ),
+      );
+      await openSecurityPage(account);
+      expect(await screen.findByText(`设备类型：${name}`)).toBeInTheDocument();
+      expect(screen.queryByRole('img', { name: /云备份/ })).not.toBeInTheDocument();
+    },
+  );
 
   it('falls back to a placeholder for an unnamed credential', async () => {
     const user = seedUser(mockDb);

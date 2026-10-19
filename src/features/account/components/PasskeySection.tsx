@@ -1,4 +1,4 @@
-import { Button, Divider, Skeleton, Stack, Text, Tooltip } from '@mantine/core';
+import { Button, Paper, Skeleton, Stack, Text, Tooltip } from '@mantine/core';
 import { useModals } from '@mantine/modals';
 import { IconKey, IconPlus } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
@@ -93,17 +93,16 @@ export function PasskeySection() {
     );
   } else {
     body = (
-      <Stack gap={0}>
-        {passkeys.map((passkey, index) => (
-          <Stack key={passkey.id} gap={0}>
-            {index > 0 && <Divider />}
+      <Stack gap="sm">
+        {passkeys.map((passkey) => (
+          <Paper key={passkey.id} withBorder p="md" radius="md" style={{ minWidth: 0 }}>
             <PasskeyRow
               passkey={passkey}
               busy={rename.isPending || remove.isPending || register.isPending}
               onRename={(label) => rename.mutateAsync({ passkeyId: passkey.id, label })}
               onDelete={() => confirmDelete(passkey)}
             />
-          </Stack>
+          </Paper>
         ))}
       </Stack>
     );

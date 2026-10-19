@@ -106,6 +106,8 @@ function passkeyOf(passkey: MockPasskey) {
     ...(passkey.last_used_at ? { last_used_at: passkey.last_used_at } : {}),
     backup_eligible: passkey.backup_eligible,
     backup_state: passkey.backup_state,
+    aaguid: passkey.aaguid,
+    authenticator_attachment: passkey.authenticator_attachment,
     transports: passkey.transports,
   };
 }
