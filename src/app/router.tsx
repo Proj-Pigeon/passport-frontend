@@ -20,8 +20,9 @@ import { AdminGuestOnly, RequireAdmin } from '@/features/admin/session/guards';
 import { OverviewPage } from '@/features/account/OverviewPage';
 import { ProfilePage } from '@/features/account/ProfilePage';
 import { SecurityPage } from '@/features/account/SecurityPage';
-import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage';
+import { ConfirmEmailChangePage } from '@/features/auth/ConfirmEmailChangePage';
 import { FederationCompletePage } from '@/features/auth/FederationCompletePage';
+import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPage } from '@/features/auth/RegisterPage';
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage';
@@ -65,6 +66,7 @@ export const routes: RouteObject[] = [
       },
       { path: 'reset-password', element: <ResetPasswordPage /> },
       { path: 'verify-email', element: <VerifyEmailPage /> },
+      { path: 'confirm-email-change', element: <ConfirmEmailChangePage /> },
 
       {
         path: 'federation/complete',

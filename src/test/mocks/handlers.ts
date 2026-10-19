@@ -7,6 +7,8 @@ import {
   currentUser,
   findUserByIdentifier,
   grantStepUp,
+  hasStepUp,
+  passkeyStepUpRequired,
   passkeysOf,
   signIn,
   signOut,
@@ -115,6 +117,7 @@ function profileOf(db: MockDb, user: MockUser) {
     display_name: user.display_name,
     email: user.email,
     email_verified: user.email_verified,
+    ...(user.pending_email ? { pending_email: user.pending_email } : {}),
     status: user.status,
     avatar_url: db.avatar ? '/v1/me/avatar' : null,
     step_up_required: user.step_up_required,
@@ -303,6 +306,7 @@ export function createHandlers(db: MockDb): RequestHandler[] {
             email: user.email,
             email_verified: user.email_verified,
             has_password: user.has_password,
+            has_passkey: passkeysOf(db, user.id).length > 0,
             step_up_required: user.step_up_required,
           },
         },
@@ -591,6 +595,101 @@ export function createHandlers(db: MockDb): RequestHandler[] {
     http.post('*/oauth2/authorize/interactions/:interactionId/deny', ({ params, request }) =>
       interactionDecision(db, params, request, 'deny'),
     ),
+
+    http.post('*/v1/email-changes/confirm', async ({ request }) => {
+      const csrf = csrfFailure(db, request);
+      if (csrf) {
+        return csrf;
+      }
+      const body = await readJson(request);
+      const token = str(body?.['token']);
+      if (token.length < 20) {
+        return envelope(400, 'invalid_request', 'The token is invalid.');
+      }
+      const userId = db.emailChangeTokens.get(token);
+      if (!userId) {
+        return envelope(400, 'invalid_request', 'The token is invalid or has expired.');
+      }
+      db.emailChangeTokens.delete(token);
+      const user = db.users.find((entry) => entry.id === userId);
+      if (user?.pending_email) {
+        user.email = user.pending_email;
+        user.email_verified = true;
+        user.pending_email = undefined;
+      }
+      return new HttpResponse(null, { status: 204, headers: { 'X-Request-ID': REQUEST_ID } });
+    }),
+
+    http.post('*/v1/email-change-requests', async ({ request }) => {
+      const csrf = csrfFailure(db, request);
+      if (csrf) {
+        return csrf;
+      }
+      const user = currentUser(db);
+      if (!db.session || !user) {
+        return unauthorized();
+      }
+      const body = await readJson(request);
+      const newEmail = str(body?.['new_email']).trim().toLowerCase();
+      const currentPassword = str(body?.['current_password']);
+      const invalid = (name: string, code: string) =>
+        envelope(422, 'validation_failed', 'The request is not valid.', [{ name, code }]);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+        return invalid('new_email', 'invalid_format');
+      }
+      if (newEmail === user.email) {
+        return invalid('new_email', 'unchanged');
+      }
+      if (db.users.some((entry) => entry.id !== user.id && entry.email === newEmail)) {
+        return invalid('new_email', 'already_in_use');
+      }
+      if (passkeyStepUpRequired(db, user)) {
+        if (!hasStepUp(db)) {
+          return envelope(403, 'forbidden', 'A recent passkey step-up is required.');
+        }
+      } else if (currentPassword.length === 0) {
+        return invalid('current_password', 'required');
+      } else if (currentPassword !== user.password) {
+        return invalid('current_password', 'incorrect');
+      }
+      const token = `emc_${'x'.repeat(24)}_${db.emailChangeTokens.size + 1}`;
+      db.emailChangeTokens.set(token, user.id);
+      user.pending_email = newEmail;
+      return new HttpResponse(null, { status: 202, headers: { 'X-Request-ID': REQUEST_ID } });
+    }),
+
+    http.post('*/v1/me/password', async ({ request }) => {
+      const csrf = csrfFailure(db, request);
+      if (csrf) {
+        return csrf;
+      }
+      const user = currentUser(db);
+      if (!db.session || !user) {
+        return unauthorized();
+      }
+      const body = await readJson(request);
+      const currentPassword = str(body?.['current_password']);
+      const newPassword = str(body?.['new_password']);
+      const invalid = (name: string, code: string) =>
+        envelope(422, 'validation_failed', 'The request is not valid.', [{ name, code }]);
+      if (newPassword.length < 12) {
+        return invalid('new_password', 'invalid_format');
+      }
+      if (currentPassword.length === 0) {
+        return invalid('current_password', 'required');
+      }
+      if (currentPassword === newPassword) {
+        return invalid('new_password', 'unchanged');
+      }
+      if (currentPassword !== user.password) {
+        return invalid('current_password', 'incorrect');
+      }
+      if (passkeyStepUpRequired(db, user) && !hasStepUp(db)) {
+        return envelope(403, 'forbidden', 'A recent passkey step-up is required.');
+      }
+      user.password = newPassword;
+      return new HttpResponse(null, { status: 204, headers: { 'X-Request-ID': REQUEST_ID } });
+    }),
 
     http.get('*/v1/me/passkeys', () => {
       const user = currentUser(db);

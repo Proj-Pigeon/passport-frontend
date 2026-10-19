@@ -156,10 +156,53 @@ export const resetPasswordSchema = z
     }
   });
 
+export const changePasswordSchema = z
+  .object({
+    current_password: nonEmptyPasswordSchema,
+    new_password: passwordSchema,
+    confirm_password: z.string(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.confirm_password.length === 0) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['confirm_password'],
+        message: 'validation.confirm_password.required',
+      });
+      return;
+    }
+    if (value.new_password !== value.confirm_password) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['confirm_password'],
+        message: 'validation.confirm_password.mismatch',
+      });
+      return;
+    }
+    if (value.new_password === value.current_password) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['new_password'],
+        message: 'validation.password.unchanged',
+      });
+    }
+  });
+
+export const emailChangePasswordSchema = z.object({
+  new_email: emailSchema,
+  current_password: nonEmptyPasswordSchema,
+});
+
+export const emailChangePasskeySchema = z.object({
+  new_email: emailSchema,
+});
+
 export type RegistrationFormValues = z.infer<typeof registrationSchema>;
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
+export type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
+export type EmailChangeFormValues = z.infer<typeof emailChangePasswordSchema>;
 export type ProfileFormValues = z.infer<typeof profileSchema>;
 
 export function passwordStrengthScore(password: string): number {

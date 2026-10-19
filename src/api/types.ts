@@ -29,6 +29,7 @@ export interface SessionUser {
   roles?: string[];
   step_up_required: boolean;
   has_password?: boolean;
+  has_passkey?: boolean;
 }
 
 export interface SessionInfo {
@@ -53,6 +54,7 @@ export interface Profile {
   display_name: string;
   email: string;
   email_verified: boolean;
+  pending_email?: string;
   status: AccountStatus;
   avatar_url: string | null;
   step_up_required: boolean;

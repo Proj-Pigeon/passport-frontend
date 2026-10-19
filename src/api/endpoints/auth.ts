@@ -13,6 +13,10 @@ export function confirmEmailVerification(token: string) {
   return apiVoid('/v1/email-verifications/confirm', { method: 'POST', body: { token } });
 }
 
+export function confirmEmailChange(token: string) {
+  return apiVoid('/v1/email-changes/confirm', { method: 'POST', body: { token } });
+}
+
 export function requestEmailVerificationEmail() {
   return apiVoid('/v1/email-verification-requests', { method: 'POST' });
 }

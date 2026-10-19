@@ -100,7 +100,7 @@ describe('ProfilePage display name', () => {
 
     expect(screen.getByText('@alice')).toBeInTheDocument();
     expect(screen.getByText('用户名暂不支持修改')).toBeInTheDocument();
-    expect(screen.getByText('邮箱暂不支持修改')).toBeInTheDocument();
+    expect(screen.getByText('可在「安全」页修改邮箱')).toBeInTheDocument();
   });
 
   it('hides the external identities section when no provider is configured', async () => {

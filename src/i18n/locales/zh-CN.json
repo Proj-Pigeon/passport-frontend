@@ -83,6 +83,19 @@
       "label": {
         "invalid_format": "名称格式不正确。"
       },
+      "current_password": {
+        "required": "请填写当前密码。",
+        "incorrect": "当前密码不正确。"
+      },
+      "new_password": {
+        "invalid_format": "密码不符合要求（至少 12 个字符）。",
+        "unchanged": "新密码不能与当前密码相同。"
+      },
+      "new_email": {
+        "invalid_format": "邮箱格式不正确。",
+        "unchanged": "新邮箱不能与当前邮箱相同。",
+        "already_in_use": "该邮箱已被其他账号使用。"
+      },
       "token": {
         "invalid": "链接无效或已过期，请重新获取邮件。"
       },
@@ -114,7 +127,8 @@
     "password": {
       "required": "请填写密码",
       "too_short": "密码至少需要 12 个字符",
-      "too_long": "密码过长，最多 1024 个字符"
+      "too_long": "密码过长，最多 1024 个字符",
+      "unchanged": "新密码不能与当前密码相同"
     },
     "display_name": {
       "too_long": "昵称最多 80 个字符",
@@ -230,6 +244,18 @@
       "successTitle": "密码已重置",
       "successBody": "所有设备已登出，请使用新密码重新登录。",
       "successAction": "去登录"
+    },
+    "confirmEmailChange": {
+      "title": "确认新邮箱",
+      "confirming": "正在确认新邮箱…",
+      "successTitle": "邮箱已更新",
+      "successBody": "新的邮箱地址已生效，之后请使用新邮箱登录。",
+      "successAction": "返回安全设置",
+      "invalidTitle": "链接无效或已过期",
+      "invalidBody": "该确认链接已失效，请回到安全页重新发起修改。",
+      "invalidAction": "前往安全设置",
+      "missingTitle": "缺少确认信息",
+      "missingBody": "请通过新邮箱收到的确认邮件打开本页面。"
     },
     "verifyEmail": {
       "title": "邮箱验证",
@@ -351,7 +377,7 @@
       "username": "用户名",
       "usernameLocked": "用户名暂不支持修改",
       "email": "邮箱",
-      "emailLocked": "邮箱暂不支持修改",
+      "emailLocked": "可在「安全」页修改邮箱",
       "saveSuccess": "资料已更新",
       "saveFailed": "保存失败，请重试"
     },
@@ -369,7 +395,7 @@
     },
     "security": {
       "title": "安全",
-      "subtitle": "通行密钥与敏感操作验证",
+      "subtitle": "密码、邮箱与账号安全设置",
       "passkeyTitle": "通行密钥",
       "passkeyDescription": "用于免密码登录与敏感操作验证。",
       "add": "添加",
@@ -393,7 +419,29 @@
       "lastUsedAt": "最近使用 {{time}}",
       "synced": "已同步",
       "syncEligible": "可同步",
+      "accountSecurityTitle": "账户安全",
+      "accountSecurityDescription": "管理你的各项账户安全设置。",
+      "passwordTitle": "密码",
+      "passwordDescription": "定期更换密码可以降低账号被盗用的风险。",
+      "changePassword": "修改密码",
+      "changePasswordTitle": "修改密码",
+      "currentPassword": "当前密码",
+      "newPassword": "新密码",
+      "confirmNewPassword": "确认新密码",
+      "savePassword": "保存新密码",
+      "passwordChanged": "密码已更新",
+      "emailTitle": "邮箱地址",
+      "changeEmail": "修改邮箱",
+      "changeEmailTitle": "修改邮箱地址",
+      "changeEmailHint": "确认链接会发送到新邮箱，点击后修改才会生效。",
+      "newEmail": "新邮箱地址",
+      "sendEmailChange": "发送确认邮件",
+      "emailChangeSent": "确认邮件已发送至 {{email}}，请点击邮件中的链接完成修改。",
+      "emailPending": "待确认：{{email}}。请打开该邮箱中的确认链接完成修改。",
+      "verifyPasswordHint": "为确认本次操作由你本人发起，请输入当前密码。",
+      "verifyPasskeyHint": "为确认本次操作由你本人发起，将使用通行密钥验证身份。",
       "stepUpTitle": "敏感操作验证",
+      "stepUpDescription": "执行修改密码、管理密钥等敏感操作时需进行二次身份验证。",
       "stepUpDisableTitle": "关闭敏感操作验证",
       "stepUpDisableBody": "关闭后，执行敏感操作时将不再进行身份验证，操作可能存在风险。",
       "stepUpDisableConfirm": "关闭验证",

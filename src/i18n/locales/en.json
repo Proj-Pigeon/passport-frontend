@@ -83,6 +83,19 @@
       "label": {
         "invalid_format": "The label format is invalid."
       },
+      "current_password": {
+        "required": "Please enter your current password.",
+        "incorrect": "The current password is incorrect."
+      },
+      "new_password": {
+        "invalid_format": "The password does not meet the requirements (at least 12 characters).",
+        "unchanged": "The new password must differ from the current password."
+      },
+      "new_email": {
+        "invalid_format": "The email address format is invalid.",
+        "unchanged": "The new email address must differ from the current one.",
+        "already_in_use": "That email address is already used by another account."
+      },
       "token": {
         "invalid": "The link is invalid or has expired. Please request a new email."
       },
@@ -114,7 +127,8 @@
     "password": {
       "required": "Please enter a password",
       "too_short": "Passwords must be at least 12 characters",
-      "too_long": "The password is too long (1024 characters max)"
+      "too_long": "The password is too long (1024 characters max)",
+      "unchanged": "The new password must differ from the current password"
     },
     "display_name": {
       "too_long": "Display names must be 80 characters or fewer",
@@ -230,6 +244,18 @@
       "successTitle": "Password reset",
       "successBody": "All devices were signed out. Sign in again with your new password.",
       "successAction": "Sign in"
+    },
+    "confirmEmailChange": {
+      "title": "Confirm new email",
+      "confirming": "Confirming your new email…",
+      "successTitle": "Email address updated",
+      "successBody": "Your new email address is now active; use it the next time you sign in.",
+      "successAction": "Back to security",
+      "invalidTitle": "The link is invalid or has expired",
+      "invalidBody": "This confirmation link no longer works. Start the change again from the security page.",
+      "invalidAction": "Go to security",
+      "missingTitle": "Confirmation details missing",
+      "missingBody": "Open this page from the confirmation email sent to your new address."
     },
     "verifyEmail": {
       "title": "Email verification",
@@ -351,7 +377,7 @@
       "username": "Username",
       "usernameLocked": "Usernames cannot be changed yet",
       "email": "Email",
-      "emailLocked": "Email addresses cannot be changed yet",
+      "emailLocked": "Change it from the Security page",
       "saveSuccess": "Profile updated",
       "saveFailed": "Could not save. Please try again."
     },
@@ -369,7 +395,7 @@
     },
     "security": {
       "title": "Security",
-      "subtitle": "Passkeys and sensitive-action verification",
+      "subtitle": "Password, email and account security",
       "passkeyTitle": "Passkeys",
       "passkeyDescription": "Sign in without a password and verify sensitive actions.",
       "add": "Add",
@@ -393,7 +419,29 @@
       "lastUsedAt": "Last used {{time}}",
       "synced": "Synced",
       "syncEligible": "Syncable",
+      "accountSecurityTitle": "Account security",
+      "accountSecurityDescription": "Manage your password, email address, and sensitive-action verification.",
+      "passwordTitle": "Password",
+      "passwordDescription": "Changing your password regularly reduces the risk of a stolen account.",
+      "changePassword": "Change password",
+      "changePasswordTitle": "Change password",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "confirmNewPassword": "Confirm new password",
+      "savePassword": "Save new password",
+      "passwordChanged": "Password updated",
+      "emailTitle": "Email address",
+      "changeEmail": "Change email",
+      "changeEmailTitle": "Change email address",
+      "changeEmailHint": "A confirmation link goes to the new address; nothing changes until you open it.",
+      "newEmail": "New email address",
+      "sendEmailChange": "Send confirmation email",
+      "emailChangeSent": "Confirmation sent to {{email}}. Open the link in that email to finish.",
+      "emailPending": "Waiting for confirmation: {{email}}. Open the confirmation link in that inbox.",
+      "verifyPasswordHint": "To confirm this is really you, enter your current password.",
+      "verifyPasskeyHint": "To confirm this is really you, we will verify with your passkey.",
       "stepUpTitle": "Sensitive-action verification",
+      "stepUpDescription": "Require identity verification when performing sensitive actions.",
       "stepUpDisableTitle": "Turn off sensitive-action verification",
       "stepUpDisableBody": "Sensitive actions will no longer require identity verification and may be risky.",
       "stepUpDisableConfirm": "Turn off",

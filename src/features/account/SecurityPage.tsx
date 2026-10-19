@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { AccountPageHeader } from '@/components/AccountSections';
 
 import { DevicesCard } from '@/features/devices/DevicesCard';
+import { AccountSecurityCard } from './components/AccountSecurityCard';
 import { PasskeySection } from './components/PasskeySection';
-import { StepUpStatusCard } from './components/StepUpStatusCard';
 
 export function SecurityPage() {
   const { t } = useTranslation();
@@ -16,8 +16,8 @@ export function SecurityPage() {
         title={t('account.security.title')}
         subtitle={t('account.security.subtitle')}
       />
+      <AccountSecurityCard />
       <PasskeySection />
-      <StepUpStatusCard />
       <DevicesCard />
     </Stack>
   );

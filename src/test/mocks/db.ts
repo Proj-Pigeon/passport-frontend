@@ -24,6 +24,7 @@ export interface MockUser {
   status: AccountStatus;
   has_password: boolean;
   step_up_required: boolean;
+  pending_email?: string;
 }
 
 export interface MockSession {
@@ -122,6 +123,7 @@ export interface MockDb {
   users: MockUser[];
   verificationTokens: Map<string, string>;
   resetTokens: Map<string, string>;
+  emailChangeTokens: Map<string, string>;
   session: MockSession | null;
   currentUserId: string | null;
   csrfToken: string;
@@ -199,6 +201,7 @@ export function createMockDb(): MockDb {
     users: [],
     verificationTokens: new Map(),
     resetTokens: new Map(),
+    emailChangeTokens: new Map(),
     session: null,
     currentUserId: null,
     csrfToken: MOCK_CSRF_TOKEN,
@@ -348,6 +351,19 @@ export function grantStepUp(db: MockDb, ttlMs = STEP_UP_TTL_MS): void {
 
 export function passkeysOf(db: MockDb, userId: string): MockPasskey[] {
   return db.passkeys.filter((passkey) => passkey.user_id === userId);
+}
+
+export function passkeyStepUpRequired(db: MockDb, user: MockUser): boolean {
+  return user.step_up_required && passkeysOf(db, user.id).length > 0;
+}
+
+export function seedEmailChangeToken(
+  db: MockDb,
+  userId: string,
+  token = `emc_${'x'.repeat(24)}`,
+): string {
+  db.emailChangeTokens.set(token, userId);
+  return token;
 }
 
 export function startCeremony(db: MockDb, kind: CeremonyKind): string {
