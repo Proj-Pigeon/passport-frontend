@@ -52,6 +52,7 @@ interface ChecklistInput {
   canRequestActivation: boolean;
   onRequestActivation: () => void;
   activationPending: boolean;
+  activationBlocked?: boolean;
 }
 
 export function FederationChecklistCard({
@@ -65,6 +66,7 @@ export function FederationChecklistCard({
   canRequestActivation,
   onRequestActivation,
   activationPending,
+  activationBlocked = false,
 }: ChecklistInput) {
   const { t } = useTranslation();
   const secretsDone = secretConfigured || secretRefConfigured;
@@ -94,10 +96,20 @@ export function FederationChecklistCard({
           />
         )}
         {canRequestActivation && (
-          <Group>
-            <Button size="xs" loading={activationPending} onClick={onRequestActivation}>
+          <Group gap="sm">
+            <Button
+              size="xs"
+              loading={activationPending}
+              disabled={activationBlocked}
+              onClick={onRequestActivation}
+            >
               {t('admin.resources.requestActivate')}
             </Button>
+            {activationBlocked && (
+              <Text size="sm" c="dimmed">
+                {t('admin.resources.activationPendingHint')}
+              </Text>
+            )}
           </Group>
         )}
       </Stack>

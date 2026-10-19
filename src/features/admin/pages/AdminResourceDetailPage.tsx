@@ -11,6 +11,7 @@ import {
   Text,
 } from '@mantine/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { notifications } from '@mantine/notifications';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
@@ -158,11 +159,28 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
   const canWrite = hasAdminCapability(session, writeCapability);
   const canApprove = hasAdminCapability(session, 'applications:approve');
   const approvable = kind === 'application' || kind === 'federation';
+  const pendingChangeActions = new Set(
+    (resource.change_requests ?? [])
+      .filter((request) => request.status === 'pending')
+      .map((request) => request.action),
+  );
+  const lifecycleAction = resource.status === 'active' ? 'deactivate' : 'activate';
+  const lifecycleBlocked = approvable && pendingChangeActions.has(lifecycleAction);
 
   const configMutation = useMutation({
     mutationFn: async (input: { reason: string; configuration: Record<string, unknown> }) =>
       stepUp.runWithAdminStepUp(() => patchAdminResource(kind, resourceId, input, data.etag)),
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      if (result.change_request_id) {
+        notifications.show({
+          color: 'teal',
+          message: t(
+            result.change_request_status === 'pending'
+              ? 'admin.resources.changeSubmitted'
+              : 'admin.resources.changeAutoApproved',
+          ),
+        });
+      }
       await refresh();
     },
   });
@@ -172,8 +190,16 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
       stepUp.runWithAdminStepUp(() =>
         requestAdminActivation(kind as AdminApprovableKind, resourceId, input, data.etag),
       ),
-    onSuccess: async () => {
+    onSuccess: async (result) => {
       setActivationModal(null);
+      notifications.show({
+        color: 'teal',
+        message: t(
+          result.status === 'pending'
+            ? 'admin.resources.activationSubmitted'
+            : 'admin.resources.activationAutoApproved',
+        ),
+      });
       await refresh();
     },
   });
@@ -267,17 +293,33 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
           title={t('admin.resources.lifecycleCard')}
           description={t('admin.resources.lifecycleHint')}
         >
-          <Group gap="sm">
-            {resource.status === 'active' ? (
-              <Button color="red" variant="light" onClick={() => setActivationModal('deactivate')}>
-                {t('admin.resources.requestDeactivate')}
-              </Button>
-            ) : (
-              <Button variant="light" onClick={() => setActivationModal('activate')}>
-                {t('admin.resources.requestActivate')}
-              </Button>
+          <Stack gap="xs">
+            <Group gap="sm">
+              {resource.status === 'active' ? (
+                <Button
+                  color="red"
+                  variant="light"
+                  disabled={lifecycleBlocked}
+                  onClick={() => setActivationModal('deactivate')}
+                >
+                  {t('admin.resources.requestDeactivate')}
+                </Button>
+              ) : (
+                <Button
+                  variant="light"
+                  disabled={lifecycleBlocked}
+                  onClick={() => setActivationModal('activate')}
+                >
+                  {t('admin.resources.requestActivate')}
+                </Button>
+              )}
+            </Group>
+            {lifecycleBlocked && (
+              <Text size="sm" c="dimmed">
+                {t('admin.resources.activationPendingHint')}
+              </Text>
             )}
-          </Group>
+          </Stack>
         </SectionCard>
       )}
 
@@ -292,11 +334,12 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
         >
           {canWrite ? (
             <Stack gap="sm">
-              {configMutation.data?.change_request_id && (
-                <Alert color="green" variant="light">
-                  {t('admin.resources.changeSubmitted')}
-                </Alert>
-              )}
+              {configMutation.data?.change_request_id &&
+                configMutation.data.change_request_status === 'pending' && (
+                  <Alert color="green" variant="light">
+                    {t('admin.resources.changeSubmitted')}
+                  </Alert>
+                )}
               <JsonConfigEditor
                 key={data.etag}
                 initial={resource.configuration}
@@ -354,6 +397,7 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
             canRequestActivation={approvable && canWrite}
             onRequestActivation={() => setActivationModal('activate')}
             activationPending={activationMutation.isPending}
+            activationBlocked={pendingChangeActions.has('activate')}
           />
           <UpstreamSpGuideCard
             spEntityId={resource.sp_entity_id}
@@ -408,11 +452,12 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
                 <Text size="xs" c="dimmed">
                   {t('admin.federation.advancedHint')}
                 </Text>
-                {configMutation.data?.change_request_id && (
-                  <Alert color="green" variant="light">
-                    {t('admin.resources.changeSubmitted')}
-                  </Alert>
-                )}
+                {configMutation.data?.change_request_id &&
+                  configMutation.data.change_request_status === 'pending' && (
+                    <Alert color="green" variant="light">
+                      {t('admin.resources.changeSubmitted')}
+                    </Alert>
+                  )}
                 <JsonConfigEditor
                   key={data.etag}
                   initial={resource.configuration}

@@ -11,6 +11,7 @@ import type {
 import {
   adminResourceView,
   adminRolesFor,
+  capabilitiesForRoles,
   consumeCeremony,
   findUserByIdentifier,
   grantAdminStepUp,
@@ -149,6 +150,20 @@ function newChangeRequest(
   };
   resource.change_requests.push(change);
   return change;
+}
+
+function soleApproverSession(db: MockDb): boolean {
+  const session = db.adminSession;
+  if (!session || !session.capabilities.includes('applications:approve')) {
+    return false;
+  }
+  const approverIds = new Set(
+    [...db.adminRolesOf.entries()]
+      .filter(([, roles]) => capabilitiesForRoles(roles).includes('applications:approve'))
+      .map(([userId]) => userId),
+  );
+  approverIds.add(session.user_id);
+  return approverIds.size === 1;
 }
 
 function adminSessionView(db: MockDb) {
@@ -579,12 +594,34 @@ export function createAdminHandlers(db: MockDb): RequestHandler[] {
         if (targetResourceId && !targetResource) {
           return envelope(422, 'validation_failed', 'The target resource does not exist.');
         }
+        const target = targetResource ?? resource;
+        const duplicated = target.change_requests.some(
+          (entry) => entry.status === 'pending' && entry.action === action,
+        );
+        if (duplicated) {
+          return envelope(
+            409,
+            'conflict',
+            'A pending change request already exists for this resource and action.',
+          );
+        }
         const change = newChangeRequest(
-          targetResource ?? resource,
+          target,
           action as AdminChangeRequest['action'],
           reason,
           db.adminSession?.user_id ?? 'unknown',
         );
+        if (soleApproverSession(db)) {
+          change.status =
+            action === 'create_secret' || action === 'rotate_secret' ? 'approved' : 'applied';
+          if (action === 'activate') {
+            target.status = 'active';
+            target.published_configuration = { ...target.configuration };
+          }
+          if (action === 'deactivate') {
+            target.status = 'disabled';
+          }
+        }
         return HttpResponse.json(
           {
             id: change.id,

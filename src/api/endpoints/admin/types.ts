@@ -261,6 +261,7 @@ export interface AdminResourceView {
   updated_at: string;
   change_requests?: AdminChangeRequest[];
   change_request_id?: string;
+  change_request_status?: string;
   trust_review_required?: boolean;
   secret_set?: boolean;
   sp_entity_id?: string;

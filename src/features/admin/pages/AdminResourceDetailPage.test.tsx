@@ -46,6 +46,46 @@ describe('admin resource detail page', () => {
     expect(await screen.findByText('资源已被修改，请刷新后重试。')).toBeInTheDocument();
   });
 
+  it('notifies when the sole administrator activation request is auto-approved', async () => {
+    const user = userEvent.setup();
+    const maker = seedUser(mockDb);
+    signInAdmin(mockDb, maker, ['super_admin']);
+    grantAdminStepUp(mockDb);
+    seedAdminResource(mockDb, {
+      id: 'adr_app',
+      kind: 'application',
+      display_name: 'Solo App',
+    });
+
+    renderRoute(['/admin/applications/adr_app']);
+
+    await user.click(await screen.findByRole('button', { name: '申请激活' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.type(within(dialog).getByLabelText(/^操作原因/), 'go live');
+    await user.click(within(dialog).getByRole('button', { name: '提交' }));
+
+    expect(await screen.findByText('申请已提交，并已自动通过审核。')).toBeInTheDocument();
+  });
+
+  it('blocks duplicate activation requests while one is pending', async () => {
+    const maker = seedUser(mockDb);
+    signInAdmin(mockDb, maker, ['super_admin']);
+    grantAdminStepUp(mockDb);
+    const resource = seedAdminResource(mockDb, {
+      id: 'adr_app',
+      kind: 'application',
+      display_name: 'Demo App',
+    });
+    seedAdminChangeRequest(resource);
+
+    renderRoute(['/admin/applications/adr_app']);
+
+    expect(await screen.findByRole('button', { name: '申请激活' })).toBeDisabled();
+    expect(
+      await screen.findByText('已有同类申请等待审批，请先在下方变更请求中处理。'),
+    ).toBeInTheDocument();
+  });
+
   it('reveals a redeemed secret once without caching it', async () => {
     const user = userEvent.setup();
     const maker = seedUser(mockDb);
