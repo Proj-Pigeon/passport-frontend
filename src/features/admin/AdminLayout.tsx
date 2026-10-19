@@ -33,6 +33,8 @@ import { BrandMark } from '@/components/BrandMark';
 import { ColorSchemeToggle } from '@/components/ColorSchemeToggle';
 import { LanguageSwitch } from '@/components/LanguageSwitch';
 import type { AdminCapability } from '@/api/endpoints/admin/types';
+import { openTopLevel } from '@/lib/topLevelNavigation';
+import { crossOriginViewURL } from '@/lib/viewSwitch';
 
 import { useAdminLogout } from './session/useAdminLogout';
 import { hasAdminCapability, useAdminSession } from './session/useAdminSession';
@@ -197,6 +199,11 @@ export function AdminLayout() {
                   leftSection={<IconArrowsExchange size={14} stroke={1.5} />}
                   onClick={() => {
                     close();
+                    const url = crossOriginViewURL('account', '/account');
+                    if (url) {
+                      openTopLevel(url);
+                      return;
+                    }
                     navigate('/account');
                   }}
                 >

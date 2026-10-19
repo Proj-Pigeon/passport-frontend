@@ -17,6 +17,7 @@ import { AdminResourceListPage } from '@/features/admin/pages/AdminResourceListP
 import { AdminUserDetailPage } from '@/features/admin/pages/AdminUserDetailPage';
 import { AdminUsersPage } from '@/features/admin/pages/AdminUsersPage';
 import { AdminGuestOnly, RequireAdmin } from '@/features/admin/session/guards';
+import { AdminOriginGate } from '@/features/admin/session/AdminOriginGate';
 import { OverviewPage } from '@/features/account/OverviewPage';
 import { ProfilePage } from '@/features/account/ProfilePage';
 import { SecurityPage } from '@/features/account/SecurityPage';
@@ -106,17 +107,21 @@ export const routes: RouteObject[] = [
       {
         path: 'admin/login',
         element: (
-          <AdminGuestOnly>
-            <AdminLoginPage />
-          </AdminGuestOnly>
+          <AdminOriginGate>
+            <AdminGuestOnly>
+              <AdminLoginPage />
+            </AdminGuestOnly>
+          </AdminOriginGate>
         ),
       },
       {
         path: 'admin',
         element: (
-          <RequireAdmin>
-            <AdminLayout />
-          </RequireAdmin>
+          <AdminOriginGate>
+            <RequireAdmin>
+              <AdminLayout />
+            </RequireAdmin>
+          </AdminOriginGate>
         ),
         children: [
           { index: true, element: <AdminOverviewPage /> },

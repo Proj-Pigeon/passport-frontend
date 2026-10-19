@@ -74,9 +74,10 @@ Put new server interactions in typed endpoint modules, not ad-hoc `fetch` calls 
 
 ## Environment and runtime config
 
-- `.env` based on `.env.example`: `VITE_API_BASE` (empty in dev for same-origin proxying), `VITE_TURNSTILE_SITE_KEY`, `VITE_FEDERATION_PROVIDERS`, and `PASSPORT_API_TARGET` (dev proxy target only, not a runtime variable).
+- `.env` based on `.env.example`: `VITE_API_BASE` (empty in dev for same-origin proxying), `VITE_ADMIN_ORIGIN` / `VITE_ACCOUNT_ORIGIN` (empty in dev; set per deployment so the admin/user view switches jump across origins), `VITE_TURNSTILE_SITE_KEY`, and `PASSPORT_API_TARGET` (dev proxy target only, not a runtime variable).
 - Development and non-container builds read `VITE_API_BASE` / `VITE_TURNSTILE_SITE_KEY` from `.env` at build time.
-- The production image reads both values at container start: `docker-entrypoint.d/40-runtime-config.sh` writes `/config.js` from the container environment, and `index.html` loads it before the app bundle. Runtime values override build-time values; changing them requires restarting the container, not rebuilding the image.
+- The production image reads these values at container start: `docker-entrypoint.d/40-runtime-config.sh` writes `/config.js` from the container environment, and `index.html` loads it before the app bundle. Runtime values override build-time values; changing them requires restarting the container, not rebuilding the image.
+- When `adminBase` (from `VITE_ADMIN_ORIGIN`) differs from the current origin, `/admin/*` routes redirect top-level to it via `AdminOriginGate`, and the account avatar menu's admin switch jumps there too; `accountBase` (from `VITE_ACCOUNT_ORIGIN`) drives the reverse switch out of the admin console.
 
 ## Deployment
 

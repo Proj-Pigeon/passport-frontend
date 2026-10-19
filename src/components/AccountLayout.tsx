@@ -33,6 +33,8 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import { SUPPORTED_LANGUAGES, applyLanguage } from '@/i18n';
 import { useLogout } from '@/features/session/useLogout';
 import { useSession } from '@/features/session/useSession';
+import { openTopLevel } from '@/lib/topLevelNavigation';
+import { crossOriginViewURL } from '@/lib/viewSwitch';
 
 import { BrandMark } from './BrandMark';
 import { AccountAvatar } from './AccountAvatar';
@@ -152,6 +154,11 @@ export function AccountLayout() {
                     leftSection={<IconArrowsExchange size={14} stroke={1.5} />}
                     onClick={() => {
                       close();
+                      const url = crossOriginViewURL('admin', '/admin');
+                      if (url) {
+                        openTopLevel(url);
+                        return;
+                      }
                       navigate('/admin');
                     }}
                   >
