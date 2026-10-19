@@ -5,6 +5,7 @@ export const BACKEND_READY_URL = process.env.PASSPORT_READY_URL ?? 'http://local
 
 export const VERIFY_EMAIL_SUBJECT = 'Verify your Passport email';
 export const RESET_PASSWORD_SUBJECT = 'Reset your Passport password';
+export const CHANGE_EMAIL_SUBJECT = 'Confirm your new Passport email';
 
 export function uniqueUsername(prefix = 'e2e'): string {
   const random = Math.floor(Math.random() * 46_656).toString(36);

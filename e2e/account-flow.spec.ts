@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 
 import {
+  CHANGE_EMAIL_SUBJECT,
   VERIFY_EMAIL_SUBJECT,
   emailFor,
   requireBackend,
@@ -27,6 +28,12 @@ async function signInWithPassword(page: Page, username: string, password = PASSW
   await page.getByRole('checkbox').check();
   await page.getByRole('button', { name: '登录', exact: true }).click();
   await expect(page.getByRole('heading', { name: '概览' })).toBeVisible();
+}
+
+async function signOut(page: Page) {
+  await page.getByRole('button', { name: '用户菜单' }).click();
+  await page.getByRole('menuitem', { name: '退出登录' }).click();
+  await expect(page.getByRole('heading', { name: '登录' })).toBeVisible();
 }
 
 async function createVerifiedAccount(page: Page, request: APIRequestContext) {
@@ -133,6 +140,58 @@ test.describe('account profile', () => {
     await expect(page.getByText('密码', { exact: true })).toBeVisible();
     await expect(page.getByText('尚未添加')).toBeVisible();
     await expect(page.getByText(/添加通行密钥后/)).toBeVisible();
+  });
+});
+
+test.describe('account security', () => {
+  test('rejects a wrong current password, then changes it and signs in again', async ({
+    page,
+    request,
+  }) => {
+    const { username } = await createVerifiedAccount(page, request);
+    const nextPassword = 'brand-new-password-1';
+
+    await page.goto('/account/security');
+    await page.getByRole('button', { name: '修改密码' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel(/^当前密码/).fill('wrong-password-000');
+    await dialog.getByLabel(/^新密码/).fill(nextPassword);
+    await dialog.getByLabel(/^确认新密码/).fill(nextPassword);
+    await dialog.getByRole('button', { name: '保存新密码' }).click();
+    await expect(dialog.getByText('当前密码不正确。')).toBeVisible();
+
+    await dialog.getByLabel(/^当前密码/).fill(PASSWORD);
+    await dialog.getByRole('button', { name: '保存新密码' }).click();
+    await expect(page.getByText('密码已更新')).toBeVisible();
+
+    await signOut(page);
+    await signInWithPassword(page, username, nextPassword);
+  });
+
+  test('changes the email after confirming the link sent to the new address', async ({
+    page,
+    request,
+  }) => {
+    const { email } = await createVerifiedAccount(page, request);
+    const newEmail = `changed-${email}`;
+
+    await page.goto('/account/security');
+    await page.getByRole('button', { name: '修改邮箱' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel(/^新邮箱地址/).fill(newEmail);
+    await dialog.getByLabel(/^当前密码/).fill(PASSWORD);
+    await dialog.getByRole('button', { name: '发送确认邮件' }).click();
+
+    await expect(page.getByText(`待确认：${newEmail}`)).toBeVisible();
+    await expect(page.getByText(email, { exact: true })).toBeVisible();
+
+    const token = await waitForMailToken(request, newEmail, CHANGE_EMAIL_SUBJECT);
+    await page.goto(`/confirm-email-change?token=${token}`);
+    await expect(page.getByRole('heading', { name: '邮箱已更新' })).toBeVisible();
+
+    await page.goto('/account/security');
+    await expect(page.getByText(newEmail, { exact: true })).toBeVisible();
+    await expect(page.getByText(`待确认：${newEmail}`)).not.toBeVisible();
   });
 });
 
