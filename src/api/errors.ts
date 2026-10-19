@@ -35,6 +35,7 @@ export interface ApiErrorInit {
   requestId?: string | null;
   fields?: ApiFieldError[] | null;
   retryAfterSeconds?: number | null;
+  loginUrl?: string | null;
 }
 
 export class ApiError extends Error {
@@ -43,6 +44,7 @@ export class ApiError extends Error {
   readonly requestId: string | null;
   readonly fields: ApiFieldError[];
   readonly retryAfterSeconds: number | null;
+  readonly loginUrl: string | null;
 
   constructor(init: ApiErrorInit) {
     super(init.message || init.code);
@@ -52,6 +54,7 @@ export class ApiError extends Error {
     this.requestId = init.requestId ?? null;
     this.fields = init.fields ?? [];
     this.retryAfterSeconds = init.retryAfterSeconds ?? null;
+    this.loginUrl = init.loginUrl ?? null;
   }
 
   is(...codes: string[]): boolean {
@@ -155,11 +158,13 @@ export function apiErrorFromResponse(
   let message = response.statusText || fallbackCode;
   let fields: ApiFieldError[] = [];
   let bodyRequestId: string | undefined;
+  let loginUrl: string | undefined;
 
   if (bodyText.length > 0) {
     try {
       const parsed: unknown = JSON.parse(bodyText);
       if (typeof parsed === 'object' && parsed !== null) {
+        loginUrl = asString((parsed as Record<string, unknown>)['login_url']);
         const envelope = (parsed as ErrorEnvelopeBody).error;
         if (typeof envelope === 'object' && envelope !== null) {
           code = asString(envelope.code) ?? code;
@@ -184,6 +189,7 @@ export function apiErrorFromResponse(
     requestId: requestId ?? bodyRequestId ?? asString(readHeader(response, 'x-request-id')) ?? null,
     fields,
     retryAfterSeconds: parseRetryAfter(readHeader(response, 'retry-after')),
+    loginUrl,
   });
 }
 

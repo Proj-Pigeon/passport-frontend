@@ -24,12 +24,14 @@ export function completeLogin(
   navigate: (path: string, options: { replace: boolean }) => void,
   restoreFederation = false,
 ) {
-  const saved = restoreFederation ? sessionStorage.getItem(STORAGE_KEY) : null;
+  const next = nextFromSearchParams(search);
+  const oauthReturn = next?.startsWith('/authorize?interaction=') ?? false;
+  const saved = restoreFederation && !oauthReturn ? sessionStorage.getItem(STORAGE_KEY) : null;
   const request = samlRequestFromSearch(search) ?? saved;
   sessionStorage.removeItem(STORAGE_KEY);
   if (request) {
     openTopLevel(apiUrl(`/saml/idp/sso/resume/${encodeURIComponent(request)}`));
     return;
   }
-  navigate(nextFromSearchParams(search) ?? '/account', { replace: true });
+  navigate(next ?? '/account', { replace: true });
 }

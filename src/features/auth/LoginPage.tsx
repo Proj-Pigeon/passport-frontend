@@ -14,6 +14,7 @@ import { AuthLayout } from '@/components/AuthLayout';
 import { useRetryAfter } from '@/hooks/useRetryAfter';
 import { fieldErrorsFromApiError, useFieldErrorText } from '@/i18n/errors';
 import { completeLogin } from '@/lib/loginReturn';
+import { nextFromSearchParams } from '@/lib/safeNext';
 import { isTurnstileEnabled } from '@/lib/turnstile';
 import { loginSchema } from '@/lib/validators';
 
@@ -49,6 +50,10 @@ export function LoginPage() {
   });
 
   const reauthRequired = searchParams.get('reauth') === 'required';
+  const reauthNext = nextFromSearchParams(searchParams.toString());
+  const reauthUrl = reauthNext ? new URL(reauthNext, window.location.origin) : null;
+  const canFederateReauth =
+    reauthUrl?.pathname === '/authorize' && !!reauthUrl.searchParams.get('interaction');
 
   const mutation = useMutation({
     mutationFn: (values: { identifier: string; password: string }) =>
@@ -219,8 +224,9 @@ export function LoginPage() {
           />
         )}
 
-        {!reauthRequired && documentsQuery.data && (
+        {documentsQuery.data && (!reauthRequired || canFederateReauth) && (
           <FederationButtons
+            reauthentication={reauthRequired ? { next: reauthNext } : undefined}
             consented={consentChecked}
             complianceVersions={{
               terms: documentsQuery.data.version,

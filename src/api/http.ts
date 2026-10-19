@@ -45,6 +45,10 @@ async function exchange(path: string, options: ApiRequestOptions): Promise<Respo
   let response = await send(path, method, options);
 
   if (response.status === 403 && isWriteMethod(method) && !options.skipCsrf) {
+    const error = apiErrorFromResponse(response, await readText(response.clone()), null);
+    if (error.code === 'login_required') {
+      throw error;
+    }
     resetCsrfToken(scope);
     response = await send(path, method, options);
   }

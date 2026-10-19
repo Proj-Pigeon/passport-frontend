@@ -1,9 +1,9 @@
 import { Anchor, Checkbox, Modal, Text } from '@mantine/core';
-import ReactMarkdown from 'react-markdown';
 import { type MouseEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ComplianceDocuments } from '@/api/types';
+import { SafeMarkdown } from '@/components/SafeMarkdown';
 
 interface ComplianceConsentProps {
   documents: ComplianceDocuments;
@@ -93,7 +93,7 @@ export function ComplianceConsent({
       >
         {active && (
           <div className="compliance-markdown" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
-            <ReactMarkdown>{active.content}</ReactMarkdown>
+            <SafeMarkdown>{active.content}</SafeMarkdown>
           </div>
         )}
       </Modal>

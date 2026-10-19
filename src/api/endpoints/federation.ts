@@ -1,15 +1,23 @@
 import { apiUrl, apiPost, apiGet, apiDelete } from '../http';
 import type { LinkTransaction } from '../types';
+import { safeNext } from '@/lib/safeNext';
 
 export function federationStartUrl(
   providerSlug: string,
   complianceVersions: Record<string, number> = {},
+  reauthentication?: { next: string | null },
 ): string {
-  if (Object.keys(complianceVersions).length === 0) {
-    return apiUrl(`/federation/${encodeURIComponent(providerSlug)}/start`);
+  const query = new URLSearchParams();
+  if (Object.keys(complianceVersions).length > 0) {
+    query.set('compliance_versions', JSON.stringify(complianceVersions));
   }
-  const query = new URLSearchParams({ compliance_versions: JSON.stringify(complianceVersions) });
-  return apiUrl(`/federation/${encodeURIComponent(providerSlug)}/start?${query.toString()}`);
+  if (reauthentication) {
+    query.set('reauth', 'required');
+    const next = safeNext(reauthentication.next);
+    if (next) query.set('next', next);
+  }
+  const search = query.size > 0 ? `?${query.toString()}` : '';
+  return apiUrl(`/federation/${encodeURIComponent(providerSlug)}/start${search}`);
 }
 
 export function createLinkTransaction(providerSlug: string) {

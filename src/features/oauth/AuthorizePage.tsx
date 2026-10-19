@@ -28,6 +28,7 @@ import { describeApiError } from '@/i18n/errors';
 import { formatClock, secondsUntil } from '@/lib/format';
 import { locationToNext, withNextParam } from '@/lib/safeNext';
 import { openTopLevel } from '@/lib/topLevelNavigation';
+import { isOAuthReauthentication, oauthReauthenticationUrl } from '@/lib/oauthReauthentication';
 
 type DecisionChoice = 'approve' | 'deny';
 
@@ -52,7 +53,9 @@ export function AuthorizePage() {
     queryFn: ({ signal }) => getInteraction(interactionId, signal),
     enabled: interactionId !== '',
     retry: (failureCount, error) =>
-      (!isApiError(error) || error.status !== 404) && failureCount < 1,
+      (!isApiError(error) || error.status !== 404) &&
+      !isOAuthReauthentication(error) &&
+      failureCount < 1,
   });
 
   const countdown = useCountdown();
@@ -64,6 +67,14 @@ export function AuthorizePage() {
       start(secondsUntil(interaction.expires_at));
     }
   }, [interaction, start]);
+
+  useEffect(() => {
+    const target = oauthReauthenticationUrl(interactionQuery.error, interactionId);
+    if (target) {
+      if (target.startsWith('/')) navigate(target, { replace: true });
+      else openTopLevel(target);
+    }
+  }, [interactionQuery.error, interactionId, navigate]);
 
   const [handled, setHandled] = useState(false);
   const [decisionError, setDecisionError] = useState<unknown>(null);
@@ -78,6 +89,12 @@ export function AuthorizePage() {
       openTopLevel(result.continue_url);
     },
     onError: (error) => {
+      const target = oauthReauthenticationUrl(error, interactionId);
+      if (target) {
+        if (target.startsWith('/')) navigate(target, { replace: true });
+        else openTopLevel(target);
+        return;
+      }
       if (isApiError(error) && (error.status === 404 || error.status === 409)) {
         setHandled(true);
         return;
@@ -108,7 +125,7 @@ export function AuthorizePage() {
     );
   }
 
-  if (interactionQuery.isPending) {
+  if (interactionQuery.isPending || isOAuthReauthentication(interactionQuery.error)) {
     return (
       <AuthLayout title={t('oauth.title')}>
         <Stack gap="md" align="center" py="lg">

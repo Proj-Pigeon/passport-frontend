@@ -23,6 +23,59 @@ describe('AuthorizePage', () => {
     topLevel.openTopLevel.mockReset();
   });
 
+  it.each(['fetch', 'approve'] as const)(
+    'handles login_required on %s without competing unauthorized navigation',
+    async (stage) => {
+      signInAlice();
+      seedInteraction(mockDb);
+      let requests = 0;
+      const response = () => {
+        requests++;
+        return HttpResponse.json(
+          {
+            error: {
+              code: 'login_required',
+              message: 'Authenticate again to continue authorization.',
+            },
+            login_url: `${window.location.origin}/login?reauth=required&next=%2Fauthorize%3Finteraction%3Dint_1`,
+          },
+          { status: 403 },
+        );
+      };
+      server.use(
+        stage === 'fetch'
+          ? http.get('*/oauth2/authorize/interactions/:interactionId', response)
+          : http.post('*/oauth2/authorize/interactions/:interactionId/approve', response),
+      );
+      const { router } = renderRoute(['/authorize?interaction=int_1']);
+      if (stage === 'approve')
+        await userEvent.click(await screen.findByRole('button', { name: '允许' }));
+      await screen.findByRole('heading', { name: '登录' });
+      expect(router.state.location.pathname).toBe('/login');
+      const params = new URLSearchParams(router.state.location.search);
+      expect(params.get('reauth')).toBe('required');
+      expect(params.get('next')).toBe('/authorize?interaction=int_1');
+      expect(requests).toBe(1);
+      expect(topLevel.openTopLevel).not.toHaveBeenCalled();
+      expect(screen.queryByText('会话已过期，请重新登录')).not.toBeInTheDocument();
+    },
+  );
+
+  it('keeps the standard unauthorized behavior for an ordinary 401', async () => {
+    signInAlice();
+    seedInteraction(mockDb);
+    server.use(
+      http.get('*/oauth2/authorize/interactions/:interactionId', () => {
+        mockDb.session = null;
+        mockDb.currentUserId = null;
+        return HttpResponse.json({ error: { code: 'unauthorized' } }, { status: 401 });
+      }),
+    );
+    const { router } = renderRoute(['/authorize?interaction=int_1']);
+    await screen.findByRole('heading', { name: '登录' });
+    expect(new URLSearchParams(router.state.location.search).has('reauth')).toBe(false);
+  });
+
   it('shows the consent context for a signed-in user', async () => {
     signInAlice();
     seedInteraction(mockDb, {

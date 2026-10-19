@@ -12,6 +12,33 @@ beforeEach(() =>
   server.use(http.get('*/v1/federation/providers', () => HttpResponse.json({ providers }))),
 );
 describe('FederationButtons', () => {
+  it('keeps federation hidden for downstream SAML ForceAuthn without an OAuth return', async () => {
+    renderRoute(['/login?saml_request=srq_1234567890abcdefghijklmnop&reauth=required']);
+    await screen.findByRole('checkbox');
+    expect(screen.queryByRole('link', { name: '使用 Google 继续' })).toBeNull();
+    expect(screen.getByRole('button', { name: '登录' })).toBeEnabled();
+  });
+  it('offers OIDC and SAML with the reauth contract and hides plain OAuth2', async () => {
+    server.use(
+      http.get('*/v1/federation/providers', () =>
+        HttpResponse.json({
+          providers: [...providers, { slug: 'acme', display_name: 'Acme', provider_type: 'saml' }],
+        }),
+      ),
+    );
+    renderRoute(['/login?reauth=required&next=%2Fauthorize%3Finteraction%3Dint_1']);
+    for (const name of ['Google', 'Acme']) {
+      const link = await screen.findByRole('link', { name: `使用 ${name} 继续` });
+      const url = new URL(link.getAttribute('href')!, window.location.origin);
+      expect(url.searchParams.get('reauth')).toBe('required');
+      expect(url.searchParams.get('next')).toBe('/authorize?interaction=int_1');
+      expect(JSON.parse(url.searchParams.get('compliance_versions')!)).toEqual({
+        terms: 1,
+        privacy: 1,
+      });
+    }
+    expect(screen.queryByRole('link', { name: '使用 GitHub 继续' })).toBeNull();
+  });
   it('loads enabled providers from the backend', async () => {
     renderWithProviders(<FederationButtons />);
     expect(await screen.findByRole('link', { name: '使用 GitHub 继续' })).toHaveAttribute(

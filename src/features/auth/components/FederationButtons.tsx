@@ -10,13 +10,18 @@ export function FederationButtons({
   consented = true,
   complianceVersions = {},
   onRequireConsent = () => undefined,
+  reauthentication,
 }: {
   consented?: boolean;
   complianceVersions?: Record<string, number>;
   onRequireConsent?: () => void;
+  reauthentication?: { next: string | null };
 }) {
   const { t } = useTranslation();
-  const providers = useFederationProviders().data?.providers ?? [];
+  const providers = (useFederationProviders().data?.providers ?? []).filter(
+    (provider) =>
+      !reauthentication || provider.provider_type === 'oidc' || provider.provider_type === 'saml',
+  );
 
   if (providers.length === 0) {
     return null;
@@ -30,14 +35,14 @@ export function FederationButtons({
           <Button
             key={provider.slug}
             component="a"
-            href={federationStartUrl(provider.slug, complianceVersions)}
+            href={federationStartUrl(provider.slug, complianceVersions, reauthentication)}
             onClick={(event) => {
               if (!consented) {
                 event.preventDefault();
                 onRequireConsent();
                 return;
               }
-              rememberSamlRequest(window.location.search);
+              rememberSamlRequest(reauthentication ? '' : window.location.search);
             }}
             variant="default"
             size="md"

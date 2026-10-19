@@ -9,6 +9,7 @@ RUN pnpm build
 FROM nginxinc/nginx-unprivileged:alpine
 COPY --from=build --chown=nginx:nginx /src/dist /usr/share/nginx/html
 COPY --chown=nginx:nginx nginx.prod.conf /etc/nginx/conf.d/default.conf
+COPY --chown=nginx:nginx nginx.security-headers.conf /etc/nginx/security-headers.conf
 COPY --chmod=755 --chown=nginx:nginx docker-entrypoint.d/40-runtime-config.sh /docker-entrypoint.d/40-runtime-config.sh
 USER nginx
 EXPOSE 8080

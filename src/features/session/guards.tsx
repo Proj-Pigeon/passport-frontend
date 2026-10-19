@@ -42,6 +42,11 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 export function GuestOnly({ children }: { children: ReactNode }) {
   const { status } = useSession();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
+
+  if (location.pathname === '/login' && searchParams.get('reauth') === 'required') {
+    return children;
+  }
 
   if (status === 'loading') {
     return <PageState kind="loading" minHeight="60vh" />;

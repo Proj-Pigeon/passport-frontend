@@ -27,6 +27,12 @@ describe('parseRetryAfter', () => {
 });
 
 describe('apiErrorFromResponse', () => {
+  it('preserves the root login_url of the 403 OAuth reauthentication contract', () => {
+    const loginUrl = 'https://account.example/login?reauth=required&next=%2Fauthorize';
+    const body = JSON.stringify({ error: { code: 'login_required' }, login_url: loginUrl });
+    const error = apiErrorFromResponse(response(403, body), body, null);
+    expect(error).toMatchObject({ status: 403, code: 'login_required', loginUrl });
+  });
   it('parses the unified envelope', () => {
     const body = JSON.stringify({
       error: {

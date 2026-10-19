@@ -1,10 +1,22 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { mockDb, seedUser, signIn } from '@/test/mocks/server';
+import { mockDb, seedInteraction, seedUser, signIn } from '@/test/mocks/server';
 import { renderRoute } from '@/test/render';
 
 describe('FederationCompletePage', () => {
+  it('returns a federated-only account to its original OAuth interaction after forced authentication', async () => {
+    signIn(mockDb, seedUser(mockDb, { has_password: false }), 'federation');
+    seedInteraction(mockDb);
+    sessionStorage.setItem('passport.samlRequest', 'srq_1234567890abcdefghijklmnop');
+    const { router } = renderRoute([
+      '/federation/complete?result=success&next=%2Fauthorize%3Finteraction%3Dint_1',
+    ]);
+    expect(await screen.findByRole('button', { name: '允许' })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/authorize');
+    expect(router.state.location.search).toBe('?interaction=int_1');
+    expect(sessionStorage.getItem('passport.samlRequest')).toBeNull();
+  });
   it('initialises the session and lands on the overview after a login success', async () => {
     signIn(mockDb, seedUser(mockDb, { username: 'alice', display_name: 'Alice' }), 'federation');
     renderRoute(['/federation/complete?result=success']);

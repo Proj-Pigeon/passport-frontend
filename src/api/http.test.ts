@@ -178,6 +178,33 @@ describe('apiRequest CSRF retry', () => {
     expect(writeCalls).toBe(2);
   });
 
+  it('preserves login_required without a CSRF retry or unauthorized event', async () => {
+    let calls = 0;
+    const handler = vi.fn();
+    setUnauthorizedHandler(handler);
+    const loginUrl = 'https://account.example/login?reauth=required&next=%2Fauthorize';
+    server.use(
+      http.post(`*${PATH}`, () => {
+        calls++;
+        return HttpResponse.json(
+          { error: { code: 'login_required' }, login_url: loginUrl },
+          { status: 403 },
+        );
+      }),
+    );
+    try {
+      await expect(apiPostProbe()).rejects.toMatchObject({
+        status: 403,
+        code: 'login_required',
+        loginUrl,
+      });
+      expect(calls).toBe(1);
+      expect(handler).not.toHaveBeenCalled();
+    } finally {
+      setUnauthorizedHandler(null);
+    }
+  });
+
   it('does not retry 403s for read requests', async () => {
     let calls = 0;
     server.use(

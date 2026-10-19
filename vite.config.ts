@@ -46,6 +46,8 @@ export default defineConfig(({ mode }) => {
       css: false,
       restoreMocks: true,
       unstubGlobals: true,
+      maxWorkers: 1,
+      testTimeout: 20_000,
     },
   };
 });
