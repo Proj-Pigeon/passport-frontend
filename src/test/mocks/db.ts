@@ -344,10 +344,14 @@ export function stepUpSatisfied(db: MockDb): boolean {
   return hasStepUp(db);
 }
 
-export function grantStepUp(db: MockDb, ttlMs = STEP_UP_TTL_MS): void {
+export function grantStepUp(
+  db: MockDb,
+  ttlMs = STEP_UP_TTL_MS,
+  method: 'passkey' | 'password' = 'passkey',
+): void {
   if (db.session) {
     db.session.step_up_expires_at = new Date(Date.now() + ttlMs).toISOString();
-    db.session.step_up_method = 'passkey';
+    db.session.step_up_method = method;
   }
 }
 

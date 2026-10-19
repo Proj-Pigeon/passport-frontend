@@ -3,7 +3,7 @@ import { useSession } from '@/features/session/useSession';
 import { useStepUp } from '@/features/step-up/useStepUp';
 
 export interface UseSensitiveActionResult {
-  requiresPasskey: boolean;
+  requiresStepUp: boolean;
   requiresPassword: boolean;
   runSensitive: <T>(action: () => Promise<T>) => Promise<T>;
 }
@@ -12,17 +12,17 @@ export function useSensitiveAction(): UseSensitiveActionResult {
   const { user } = useSession();
   const { ensureStepUp } = useStepUp();
 
-  const requiresPasskey = (user?.step_up_required ?? true) && user?.has_passkey === true;
+  const requiresStepUp = (user?.step_up_required ?? true) && user?.has_passkey === true;
 
   async function runSensitive<T>(action: () => Promise<T>): Promise<T> {
-    if (requiresPasskey) {
+    if (requiresStepUp) {
       await ensureStepUp();
     }
     try {
       return await action();
     } catch (error) {
       if (
-        !requiresPasskey &&
+        !requiresStepUp &&
         isApiError(error) &&
         error.status === 403 &&
         error.code === 'forbidden'
@@ -34,5 +34,5 @@ export function useSensitiveAction(): UseSensitiveActionResult {
     }
   }
 
-  return { requiresPasskey, requiresPassword: !requiresPasskey, runSensitive };
+  return { requiresStepUp, requiresPassword: !requiresStepUp, runSensitive };
 }

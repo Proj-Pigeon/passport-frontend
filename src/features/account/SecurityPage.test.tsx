@@ -181,11 +181,33 @@ describe('SecurityPage passkey registration', () => {
     await user.click(await screen.findByRole('button', { name: '添加' }));
 
     expect(await screen.findByText('安全验证')).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: '通行密钥' }));
     await user.click(screen.getByRole('button', { name: '使用通行密钥验证' }));
 
     await waitFor(() => expect(mockDb.passkeys).toHaveLength(2));
     expect(await screen.findByText('通行密钥已添加')).toBeInTheDocument();
     expect(mockDb.session?.step_up_expires_at).toBeTruthy();
+  });
+
+  it('adds a second passkey with the password on a device without the registered passkey', async () => {
+    const account = seedUser(mockDb);
+    signIn(mockDb, account, 'pwd');
+    seedPasskey(mockDb, { user_id: account.id, label: 'MacBook', credential_id: 'cred_1' });
+    webauthn.startRegistration.mockResolvedValue(attestation('cred_second'));
+    renderRoute(['/account/security']);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: '添加' }));
+
+    expect(await screen.findByText('安全验证')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '密码' })).toHaveAttribute('aria-selected', 'true');
+    await user.type(screen.getByLabelText(/^密码/, { selector: 'input' }), 'correct-horse-battery');
+    await user.click(screen.getByRole('button', { name: '验证密码' }));
+
+    await waitFor(() => expect(mockDb.passkeys).toHaveLength(2));
+    expect(await screen.findByText('通行密钥已添加')).toBeInTheDocument();
+    expect(mockDb.session?.step_up_method).toBe('password');
+    expect(webauthn.startAuthentication).not.toHaveBeenCalled();
   });
 
   it('keeps the modal open when the browser prompt is dismissed', async () => {
@@ -199,6 +221,7 @@ describe('SecurityPage passkey registration', () => {
     const user = userEvent.setup();
 
     await user.click(await screen.findByRole('button', { name: '添加' }));
+    await user.click(await screen.findByRole('tab', { name: '通行密钥' }));
     await user.click(await screen.findByRole('button', { name: '使用通行密钥验证' }));
 
     await waitFor(() => expect(webauthn.startAuthentication).toHaveBeenCalled());

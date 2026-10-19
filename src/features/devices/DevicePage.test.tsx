@@ -101,13 +101,13 @@ describe('DevicePage', () => {
     renderRoute(['/device?user_code=BCDF-GHJK']);
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: '批准登录' }));
-    await user.type(await screen.findByLabelText(/^密码/), 'wrong');
-    await user.click(screen.getByRole('button', { name: '验证身份' }));
+    await user.type(await screen.findByLabelText(/^密码/, { selector: 'input' }), 'wrong');
+    await user.click(screen.getByRole('button', { name: '验证密码' }));
     expect(await screen.findByText('密码错误，请重试。')).toBeInTheDocument();
     expect(approved).not.toHaveBeenCalled();
-    await user.clear(screen.getByLabelText(/^密码/));
-    await user.type(screen.getByLabelText(/^密码/), 'CorrectPassword42!');
-    await user.click(screen.getByRole('button', { name: '验证身份' }));
+    await user.clear(screen.getByLabelText(/^密码/, { selector: 'input' }));
+    await user.type(screen.getByLabelText(/^密码/, { selector: 'input' }), 'CorrectPassword42!');
+    await user.click(screen.getByRole('button', { name: '验证密码' }));
     expect(await screen.findByText(/设备已授权/)).toBeInTheDocument();
     expect(approved).toHaveBeenCalledOnce();
   });
@@ -129,7 +129,7 @@ describe('DevicePage', () => {
     );
     expect(approved).not.toHaveBeenCalled();
   });
-  it('prefers a passkey to a password', async () => {
+  it('offers passkey verification when one is registered', async () => {
     const account = login();
     seedPasskey(mockDb, { user_id: account.id, credential_id: 'cred_1' });
     renderRoute(['/device?user_code=BCDF-GHJK']);

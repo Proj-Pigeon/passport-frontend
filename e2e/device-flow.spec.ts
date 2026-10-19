@@ -44,7 +44,7 @@ async function approve(page: Page, uri: string, verifyPassword = false) {
   if (verifyPassword) {
     const dialog = page.getByRole('dialog');
     await dialog.getByRole('textbox', { name: '密码', exact: true }).fill(password!);
-    await dialog.getByRole('button', { name: '验证身份', exact: true }).click();
+    await dialog.getByRole('button', { name: '验证密码', exact: true }).click();
   }
   await expect(page.getByText('设备已授权，请返回 GuEarth 或相应应用完成登录。')).toBeVisible();
 }

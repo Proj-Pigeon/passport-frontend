@@ -814,6 +814,26 @@ export function createHandlers(db: MockDb): RequestHandler[] {
       return new HttpResponse(null, { status: 204, headers: { 'X-Request-ID': REQUEST_ID } });
     }),
 
+    http.post('*/v1/sessions/current/step-up/password', async ({ request }) => {
+      const csrf = csrfFailure(db, request);
+      if (csrf) {
+        return csrf;
+      }
+      const user = currentUser(db);
+      if (!db.session || !user) {
+        return unauthorized();
+      }
+      if (!user.has_password) {
+        return envelope(403, 'forbidden', 'This account does not have a password.');
+      }
+      const body = await readJson(request);
+      if (str(body?.['password']) !== user.password) {
+        return envelope(400, 'invalid_request', 'The password is incorrect.');
+      }
+      grantStepUp(db, undefined, 'password');
+      return new HttpResponse(null, { status: 204, headers: { 'X-Request-ID': REQUEST_ID } });
+    }),
+
     http.post('*/v1/sessions/current/step-up/passkey/options', ({ request }) => {
       const csrf = csrfFailure(db, request);
       if (csrf) {

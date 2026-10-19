@@ -40,10 +40,6 @@ export function decideDeviceAuthorization(code: string, approve: boolean) {
   );
 }
 
-export function passwordDeviceStepUp(password: string) {
-  return apiVoid('/v1/sessions/current/step-up/password', { method: 'POST', body: { password } });
-}
-
 export function listDevices(cursor?: string, signal?: AbortSignal, userId?: string) {
   const path = userId ? `/admin/v1/users/${encodeURIComponent(userId)}` : '/v1/me';
   const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';

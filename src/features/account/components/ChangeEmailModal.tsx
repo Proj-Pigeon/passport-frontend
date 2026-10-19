@@ -23,7 +23,7 @@ export function ChangeEmailModal({ close }: ChangeEmailModalProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const errorText = useFieldErrorText();
-  const { requiresPasskey, requiresPassword, runSensitive } = useSensitiveAction();
+  const { requiresStepUp, requiresPassword, runSensitive } = useSensitiveAction();
   const [submitError, setSubmitError] = useState<unknown>(null);
 
   const form = useForm({
@@ -74,8 +74,8 @@ export function ChangeEmailModal({ close }: ChangeEmailModalProps) {
     <form onSubmit={handleSubmit} noValidate>
       <Stack gap="md">
         <Text size="sm" c="dimmed">
-          {requiresPasskey
-            ? t('account.security.verifyPasskeyHint')
+          {requiresStepUp
+            ? t('account.security.verifyStepUpHint')
             : t('account.security.verifyPasswordHint')}
         </Text>
 

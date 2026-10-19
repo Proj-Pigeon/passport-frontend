@@ -53,6 +53,10 @@ export function stepUpPasskeyOptions() {
   return apiPost<PasskeyAuthenticationCeremony>('/v1/sessions/current/step-up/passkey/options');
 }
 
+export function stepUpWithPassword(password: string) {
+  return apiVoid('/v1/sessions/current/step-up/password', { method: 'POST', body: { password } });
+}
+
 export function stepUpPasskeyVerify(assertion: AuthenticationResponseJSON, ceremonyId: string) {
   return apiVoid('/v1/sessions/current/step-up/passkey/verify', {
     method: 'POST',

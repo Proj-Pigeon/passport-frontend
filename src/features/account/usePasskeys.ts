@@ -44,7 +44,7 @@ export function useRegisterPasskey() {
   const { t } = useTranslation();
 
   return useMutation({
-    mutationFn: () => runWithStepUp(() => registerPasskey()),
+    mutationFn: () => runWithStepUp(() => registerPasskey(), { preferredMethod: 'password' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.passkeys });
       notifications.show({ color: 'teal', message: t('account.security.addSuccess') });

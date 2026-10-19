@@ -22,7 +22,7 @@ export interface ChangePasswordModalProps {
 export function ChangePasswordModal({ close }: ChangePasswordModalProps) {
   const { t } = useTranslation();
   const errorText = useFieldErrorText();
-  const { requiresPasskey, runSensitive } = useSensitiveAction();
+  const { requiresStepUp, runSensitive } = useSensitiveAction();
   const [submitError, setSubmitError] = useState<unknown>(null);
 
   const form = useForm({
@@ -61,8 +61,8 @@ export function ChangePasswordModal({ close }: ChangePasswordModalProps) {
     <form onSubmit={handleSubmit} noValidate>
       <Stack gap="md">
         <Text size="sm" c="dimmed">
-          {requiresPasskey
-            ? t('account.security.verifyPasskeyHint')
+          {requiresStepUp
+            ? t('account.security.verifyStepUpHint')
             : t('account.security.verifyPasswordHint')}
         </Text>
 
