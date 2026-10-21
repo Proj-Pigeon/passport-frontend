@@ -1108,5 +1108,16 @@
     "typeLocked": "The application type is locked. Changes still use the normal approval and publishing process.",
     "typeHint": "Choose a compatible type. Existing protocols must match, and the type cannot be changed once assigned. Mixed applications must remain unclassified.",
     "integrationHint": "Use device authorization with this public client. Do not configure a redirect address or client secret. Request a device code, open the verification page, then poll at the returned interval. Use the existing userinfo, refresh and revoke endpoints."
+  },
+  "applications": {
+    "title": "Applications",
+    "listHint": "Manage authorized applications that can access your Pigeon Passport data.",
+    "empty": "No authorized applications.",
+    "authorizedAt": "Authorized on {{time}}",
+    "scopesTitle": "Permissions ({{count}})",
+    "revoke": "Revoke access",
+    "revokeTitle": "Revoke application access",
+    "revokeAria": "Revoke access for {{appName}}",
+    "revokeConfirm": "Are you sure you want to revoke access for {{appName}}? Once revoked, this application will no longer be able to access your Pigeon Passport data."
   }
 }

@@ -18,6 +18,18 @@ export function parseDate(value: string | null | undefined): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+export function formatDate(value: string | null | undefined): string | null {
+  const date = parseDate(value);
+  if (!date) {
+    return null;
+  }
+  return new Intl.DateTimeFormat(currentLocale(), {
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+  }).format(date);
+}
+
 export function formatDateTime(value: string | null | undefined): string | null {
   const date = parseDate(value);
   if (!date) {

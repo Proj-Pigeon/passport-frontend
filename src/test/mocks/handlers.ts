@@ -184,6 +184,9 @@ export function createHandlers(db: MockDb): RequestHandler[] {
     http.get('*/v1/me/devices', () =>
       db.session ? HttpResponse.json({ items: [], next_cursor: null }) : unauthorized(),
     ),
+    http.get('*/v1/me/applications', () =>
+      db.session ? HttpResponse.json({ items: [] }) : unauthorized(),
+    ),
     http.get('*/admin/v1/users/:userId/devices', () =>
       HttpResponse.json({ items: [], next_cursor: null }),
     ),

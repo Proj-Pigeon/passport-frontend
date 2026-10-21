@@ -13,7 +13,7 @@ import {
   server,
 } from '@/test/mocks/server';
 import { renderRoute } from '@/test/render';
-import type { Device } from '@/api/endpoints/devices';
+import type { AuthorizedApplication, Device } from '@/api/endpoints/devices';
 
 function devices(): Device[] {
   return [
@@ -62,7 +62,7 @@ describe('DevicesCard', () => {
     const { router } = renderRoute(['/account/security']);
     const user = userEvent.setup();
     expect(await screen.findByText('GuEarth laptop')).toBeInTheDocument();
-    expect(screen.getByText('应用')).toBeInTheDocument();
+    expect(screen.getAllByText('应用').length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: '加载更多' }));
     expect(await screen.findByText('当前会话')).toBeInTheDocument();
     expect(screen.getByText('浏览器')).toBeInTheDocument();
@@ -134,5 +134,62 @@ describe('DevicesCard', () => {
     await user.click(dialog.getByRole('button', { name: '撤销访问' }));
     expect(await screen.findByText('暂无活动设备。')).toBeInTheDocument();
     expect(revoke).toHaveBeenCalledWith({ reason: 'Device lost' });
+  });
+});
+
+describe('AuthorizedAppsCard', () => {
+  it('renders authorized applications, expands permission details and revokes after confirmation', async () => {
+    signIn(mockDb, seedUser(mockDb), 'pwd');
+    let items: AuthorizedApplication[] = [
+      {
+        id: 'grt_pigeon_app',
+        client_id: 'client_pigeon',
+        client_name: '鸽巢通行证',
+        scopes: ['openid', 'profile', 'email'],
+        authorized_at: '2026-10-19T00:00:00Z',
+        logo_url: '/v1/applications/apl_pigeon/logo',
+        developer_name: '奈索星联',
+        developer_url: 'https://nexaorion.example',
+      },
+    ];
+    const revoke = vi.fn();
+    server.use(
+      http.get('*/v1/me/applications', () => HttpResponse.json({ items })),
+      http.delete('*/v1/me/applications/:id', ({ params }) => {
+        revoke(params['id']);
+        items = [];
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    renderRoute(['/account/security']);
+    const user = userEvent.setup();
+
+    expect(await screen.findByRole('heading', { name: '应用' })).toBeInTheDocument();
+    expect(await screen.findByText('鸽巢通行证')).toBeInTheDocument();
+    expect(screen.getByText('奈索星联')).toBeInTheDocument();
+    expect(screen.getByText(/授权于/)).toBeInTheDocument();
+
+    const toggle = screen.getByRole('button', { name: /权限范围 \(3\)/ });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(
+      screen.getByText('允许应用确认当前登录的是你，并获取用于识别你的唯一标识。'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('允许应用获取你的鸽巢通行证用户名等基本资料。')).toBeInTheDocument();
+    expect(screen.getByText('允许应用获取你在鸽巢通行证中绑定的邮箱地址。')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '撤销 鸽巢通行证 的授权' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      within(dialog).getByText(
+        '你确定要撤销对 鸽巢通行证 的授权吗？撤销后，该应用将无法访问你的鸽巢通行证数据。',
+      ),
+    ).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: '撤销授权' }));
+
+    expect(await screen.findByText('暂无已授权的应用。')).toBeInTheDocument();
+    expect(revoke).toHaveBeenCalledWith('grt_pigeon_app');
   });
 });

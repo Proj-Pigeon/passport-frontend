@@ -60,3 +60,33 @@ export function revokeDevice(id: string, userId?: string, reason?: string) {
     scope: userId ? 'admin' : 'account',
   });
 }
+
+export interface AuthorizedApplication {
+  id: string;
+  client_id: string;
+  client_name: string;
+  scopes: string[];
+  authorized_at: string;
+  last_used_at?: string;
+  logo_url?: string;
+  developer_name?: string;
+  developer_url?: string;
+}
+
+export interface AuthorizedApplicationList {
+  items: AuthorizedApplication[];
+}
+
+export function listAuthorizedApplications(signal?: AbortSignal) {
+  return apiGet<AuthorizedApplicationList>('/v1/me/applications', {
+    signal,
+    scope: 'account',
+  });
+}
+
+export function revokeAuthorizedApplication(id: string) {
+  return apiVoid(`/v1/me/applications/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    scope: 'account',
+  });
+}

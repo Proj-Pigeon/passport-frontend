@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { AccountPageHeader } from '@/components/AccountSections';
 
+import { AuthorizedAppsCard } from '@/features/devices/AuthorizedAppsCard';
 import { DevicesCard } from '@/features/devices/DevicesCard';
 import { AccountSecurityCard } from './components/AccountSecurityCard';
 import { PasskeySection } from './components/PasskeySection';
@@ -19,6 +20,7 @@ export function SecurityPage() {
       <AccountSecurityCard />
       <PasskeySection />
       <DevicesCard />
+      <AuthorizedAppsCard />
     </Stack>
   );
 }
