@@ -28,7 +28,8 @@ import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPage } from '@/features/auth/RegisterPage';
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage';
 import { VerifyEmailPage } from '@/features/auth/VerifyEmailPage';
-import { DevicePage } from '@/features/devices/DevicePage';
+import { DeviceCodePage } from '@/features/devices/DeviceCodePage';
+import { DeviceConsentPage } from '@/features/devices/DeviceConsentPage';
 import { AuthorizePage } from '@/features/oauth/AuthorizePage';
 import { GuestOnly, RequireAuth } from '@/features/session/guards';
 
@@ -77,7 +78,15 @@ export const routes: RouteObject[] = [
         path: 'device',
         element: (
           <RequireAuth>
-            <DevicePage />
+            <DeviceCodePage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'device/confirm',
+        element: (
+          <RequireAuth>
+            <DeviceConsentPage />
           </RequireAuth>
         ),
       },

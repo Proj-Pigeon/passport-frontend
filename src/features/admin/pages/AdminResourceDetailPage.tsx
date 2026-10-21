@@ -54,6 +54,7 @@ import {
   ApplicationTypeBadge,
   ApplicationTypeCard,
 } from '../components/resource/ApplicationTypeCard';
+import { ApplicationBrandingCard } from '../components/resource/ApplicationBrandingCard';
 import { applicationType } from '../components/resource/applicationPresets';
 import { ApplicationProtocolCard } from '../components/resource/ApplicationProtocolCard';
 import { OauthClientSections } from '../components/resource/OauthClientSections';
@@ -412,6 +413,7 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
       {kind === 'application' && (
         <>
           <ApplicationTypeCard {...sectionProps} canWrite={canWrite} />
+          <ApplicationBrandingCard {...sectionProps} canWrite={canWrite} />
           <SectionCard
             title={t('admin.applicationProtocols.clientsCard')}
             description={t('admin.applicationProtocols.clientsHint')}

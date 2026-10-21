@@ -2,7 +2,8 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { mockDb, seedUser, seedPasskey, signIn, server } from '@/test/mocks/server';
+
+import { mockDb, seedPasskey, seedUser, server, signIn } from '@/test/mocks/server';
 import { envelope } from '@/test/mocks/handlers';
 import { renderRoute } from '@/test/render';
 
@@ -40,6 +41,9 @@ beforeEach(() => {
             platform: 'windows',
             scopes: ['openid', 'profile', 'email'],
             expires_at: new Date(Date.now() + 600_000).toISOString(),
+            logo_url: '/v1/applications/apl_gu/logo',
+            developer_name: 'Nexaorion',
+            developer_url: 'https://nexaorion.example',
           }),
     ),
     http.post('*/v1/device-authorizations/:code/approve', () => {
@@ -68,37 +72,38 @@ function login(options: { step_up_required?: boolean; has_password?: boolean } =
   return account;
 }
 
-describe('DevicePage', () => {
-  it('preserves a complete device code through the login redirect', async () => {
-    const { router } = renderRoute(['/device?user_code=BCDF-GHJK']);
-    await screen.findByRole('heading', { name: '登录' });
-    expect(router.state.location.search).toContain('next=%2Fdevice%3Fuser_code%3DBCDF-GHJK');
-  });
-  it('prefills metadata and denies without identity verification', async () => {
+describe('DeviceConsentPage', () => {
+  it('shows the application branding and denies without identity verification', async () => {
     login();
-    renderRoute(['/device?user_code=BCDF-GHJK']);
-    expect(await screen.findByText('GuEarth')).toBeInTheDocument();
-    expect(screen.getByLabelText(/^设备代码/)).toHaveValue('BCDF-GHJK');
+    renderRoute(['/device/confirm?user_code=BCDFGHJK']);
+    expect(await screen.findByRole('heading', { name: '授权 GuEarth' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'GuEarth' })).toHaveAttribute(
+      'src',
+      '/v1/applications/apl_gu/logo',
+    );
+    const developer = screen.getByRole('link', { name: /Nexaorion/ });
+    expect(developer).toHaveAttribute('href', 'https://nexaorion.example');
+    expect(screen.getByText('该应用将会获得以下权限：')).toBeInTheDocument();
+    expect(screen.getByText('Work laptop · windows')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '拒绝' }));
     expect(await screen.findByText('已拒绝登录，可以关闭此页面。')).toBeInTheDocument();
     expect(denied).toHaveBeenCalledOnce();
     expect(approved).not.toHaveBeenCalled();
   });
-  it('accepts manually entered codes and reports an expired code', async () => {
+  it('reports an expired code with a way back to the entry page', async () => {
     login();
-    renderRoute(['/device']);
-    const user = userEvent.setup();
-    await user.type(await screen.findByLabelText(/^设备代码/), 'expired');
-    await user.click(screen.getByRole('button', { name: '查询代码' }));
+    renderRoute(['/device/confirm?user_code=EXPIRED']);
     expect(await screen.findByText(/代码无效、已过期或已使用/)).toBeInTheDocument();
-    await user.clear(screen.getByLabelText(/^设备代码/));
-    await user.type(screen.getByLabelText(/^设备代码/), 'bcdf-ghjk');
-    await user.click(screen.getByRole('button', { name: '查询代码' }));
-    expect(await screen.findByText('GuEarth')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '重新输入代码' })).toHaveAttribute('href', '/device');
   });
-  it('uses password verification and keeps a wrong password on the device page', async () => {
+  it('asks for the code when the link has none', async () => {
     login();
-    renderRoute(['/device?user_code=BCDF-GHJK']);
+    renderRoute(['/device/confirm']);
+    expect(await screen.findByText('缺少设备代码')).toBeInTheDocument();
+  });
+  it('uses password verification and keeps a wrong password on the consent page', async () => {
+    login();
+    renderRoute(['/device/confirm?user_code=BCDFGHJK']);
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: '批准登录' }));
     await user.type(await screen.findByLabelText(/^密码/, { selector: 'input' }), 'wrong');
@@ -113,7 +118,7 @@ describe('DevicePage', () => {
   });
   it('requires risk confirmation when account verification is disabled', async () => {
     login({ step_up_required: false });
-    renderRoute(['/device?user_code=BCDF-GHJK']);
+    renderRoute(['/device/confirm?user_code=BCDFGHJK']);
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: '批准登录' }));
     await user.click(await screen.findByRole('button', { name: '继续操作' }));
@@ -121,7 +126,7 @@ describe('DevicePage', () => {
   });
   it('guides a credential-free account to register a passkey', async () => {
     login({ has_password: false });
-    renderRoute(['/device?user_code=BCDF-GHJK']);
+    renderRoute(['/device/confirm?user_code=BCDFGHJK']);
     await userEvent.click(await screen.findByRole('button', { name: '批准登录' }));
     expect(await screen.findByRole('link', { name: '前往安全设置' })).toHaveAttribute(
       'href',
@@ -132,7 +137,7 @@ describe('DevicePage', () => {
   it('offers passkey verification when one is registered', async () => {
     const account = login();
     seedPasskey(mockDb, { user_id: account.id, credential_id: 'cred_1' });
-    renderRoute(['/device?user_code=BCDF-GHJK']);
+    renderRoute(['/device/confirm?user_code=BCDFGHJK']);
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: '批准登录' }));
     await user.click(await screen.findByRole('button', { name: '使用通行密钥验证' }));

@@ -1,6 +1,7 @@
 {
   "common": {
     "appName": "Pigeon Passport",
+    "platformName": "Pigeon Passport",
     "tagline": "Unified account center",
     "submit": "Submit",
     "cancel": "Cancel",
@@ -319,7 +320,11 @@
   "oauth": {
     "title": "Authorization request",
     "subtitle": "An application wants to access your account",
-    "requestedBy": "{{client}} is requesting permission to:",
+    "authorizeTitle": "Authorize {{client}}",
+    "developedByBefore": "An application developed by ",
+    "developedByAfter": "",
+    "hostedBy": "An application on {{platform}}",
+    "permissionsTitle": "This application will get the following permissions:",
     "accountLabel": "Account",
     "switchAccount": "Use another account",
     "expiresIn": "Expires in {{time}}",
@@ -336,10 +341,19 @@
     "loadFailedTitle": "Could not load the authorization request",
     "decisionAmbiguous": "The result could not be confirmed. Check in the application, or start again.",
     "scopes": {
-      "openid": "Confirm your identity",
-      "profile": "Read your basic profile (username, display name)",
-      "email": "Read your email address",
-      "unknown": "{{scope}} (unrecognized scope)"
+      "openid": {
+        "title": "Confirm your identity",
+        "description": "Allows the app to confirm that you are signed in and to get a unique identifier for your account."
+      },
+      "profile": {
+        "title": "Read your basic profile",
+        "description": "Allows the app to read your {{platform}} username and other basic profile details."
+      },
+      "email": {
+        "title": "Read your email address",
+        "description": "Allows the app to read the email address linked to your {{platform}} account."
+      },
+      "unknownDescription": "The app is also requesting another permission ({{scope}})."
     }
   },
   "account": {
@@ -1031,6 +1045,20 @@
       "partialTitle": "Application draft created",
       "partialHint": "The protocol configuration was not saved. Retry to continue with this draft.",
       "viewDraft": "View the created application draft"
+    },
+    "branding": {
+      "card": "Branding",
+      "hint": "The app icon and developer details are shown on the authorization consent page.",
+      "logo": "App icon",
+      "logoHint": "PNG or JPEG, up to 512 KB.",
+      "logoUpload": "Upload icon",
+      "logoReplace": "Replace icon",
+      "logoRemove": "Remove icon",
+      "logoMissing": "No icon uploaded yet.",
+      "developerName": "Developer name",
+      "developerUrl": "Developer website",
+      "save": "Save branding",
+      "invalidUrl": "The developer website is not a valid URL."
     }
   },
   "devices": {
@@ -1052,13 +1080,16 @@
     "authorizeTitle": "Authorize a device",
     "authorizeHint": "Enter the code shown in the application you want to sign in to.",
     "code": "Device code",
-    "lookup": "Check code",
+    "codeInvalid": "The code format is wrong. It should be 8 characters, like ABCD-EFGH.",
+    "missingCodeTitle": "Missing device code",
+    "missingCodeBody": "The link does not include a device code. Go back and enter it again.",
+    "backToCode": "Enter another code",
     "expired": "This code is invalid, expired, or already used. Request a new code in the application.",
     "expires": "Expires: {{time}}",
     "phishing": "Only approve if you started signing in on this device. Never approve a code sent by someone else.",
     "approve": "Approve sign-in",
     "deny": "Deny",
-    "approved": "Device authorized. Return to GuEarth or the application to finish signing in.",
+    "approved": "Device authorized. Return to the application to finish signing in.",
     "denied": "Sign-in denied. You can close this page.",
     "unclassified": "Unclassified",
     "applicationType": "Application type",

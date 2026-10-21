@@ -83,23 +83,40 @@ describe('AuthorizePage', () => {
       scopes: ['openid', 'profile', 'email'],
     });
     renderRoute(['/authorize?interaction=int_1']);
-    expect(await screen.findByText('Note Studio 请求获得以下权限：')).toBeInTheDocument();
-    expect(screen.getByText('确认你的身份')).toBeInTheDocument();
-    expect(screen.getByText('读取你的基本资料（用户名、昵称）')).toBeInTheDocument();
-    expect(screen.getByText('读取你的邮箱地址')).toBeInTheDocument();
-    expect(screen.getByText('当前账号')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '授权 Note Studio' })).toBeInTheDocument();
+    expect(screen.getByText('该应用将会获得以下权限：')).toBeInTheDocument();
+    expect(screen.getByText('验证用户身份')).toBeInTheDocument();
+    expect(screen.getByText('允许应用获取你的鸽巢通行证用户名等基本资料。')).toBeInTheDocument();
+    expect(screen.getByText('读取邮箱地址')).toBeInTheDocument();
     expect(screen.getByText('Alice')).toBeInTheDocument();
     expect(screen.getByText('alice@example.com')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '允许' })).toBeEnabled();
     expect(screen.getByRole('button', { name: '拒绝' })).toBeEnabled();
   });
 
+  it('shows the application branding when the client provides it', async () => {
+    signInAlice();
+    seedInteraction(mockDb, {
+      client_name: 'Note Studio',
+      logo_url: '/v1/applications/apl_mock/logo',
+      developer_name: 'Nexaorion',
+      developer_url: 'https://nexaorion.example',
+    });
+    renderRoute(['/authorize?interaction=int_1']);
+    expect(await screen.findByRole('heading', { name: '授权 Note Studio' })).toBeInTheDocument();
+    const logo = screen.getByRole('img', { name: 'Note Studio' });
+    expect(logo).toHaveAttribute('src', '/v1/applications/apl_mock/logo');
+    const developer = screen.getByRole('link', { name: /Nexaorion/ });
+    expect(developer).toHaveAttribute('href', 'https://nexaorion.example');
+  });
+
   it('labels an unrecognized scope', async () => {
     signInAlice();
     seedInteraction(mockDb, { scopes: ['openid', 'admin'] });
     renderRoute(['/authorize?interaction=int_1']);
-    expect(await screen.findByText('确认你的身份')).toBeInTheDocument();
-    expect(screen.getByText('admin（未知权限）')).toBeInTheDocument();
+    expect(await screen.findByText('验证用户身份')).toBeInTheDocument();
+    expect(screen.getByText('admin')).toBeInTheDocument();
+    expect(screen.getByText('应用还请求了一项其他权限（admin）。')).toBeInTheDocument();
   });
 
   it('navigates top-level to the approve continue_url', async () => {

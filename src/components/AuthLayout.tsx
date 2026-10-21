@@ -10,6 +10,8 @@ import { LanguageSwitch } from './LanguageSwitch';
 export interface AuthLayoutProps {
   title: string;
   subtitle?: ReactNode;
+  lead?: ReactNode;
+  centered?: boolean;
   children: ReactNode;
   footer?: ReactNode;
   maxWidth?: number;
@@ -19,6 +21,8 @@ export interface AuthLayoutProps {
 export function AuthLayout({
   title,
   subtitle,
+  lead,
+  centered = false,
   children,
   footer,
   maxWidth = 460,
@@ -62,12 +66,13 @@ export function AuthLayout({
         <Stack w="100%" gap="lg">
           <Paper p={{ base: 'lg', sm: 'xl' }} radius="md" shadow="xs">
             <Stack gap="lg">
-              <Stack gap={6}>
-                <Title order={1} fz={{ base: 22, sm: 26 }}>
+              <Stack gap={6} align={centered ? 'center' : undefined}>
+                {lead}
+                <Title order={1} fz={{ base: 22, sm: 26 }} ta={centered ? 'center' : undefined}>
                   {title}
                 </Title>
                 {subtitle && (
-                  <Text size="sm" c="dimmed">
+                  <Text size="sm" c="dimmed" ta={centered ? 'center' : undefined}>
                     {subtitle}
                   </Text>
                 )}

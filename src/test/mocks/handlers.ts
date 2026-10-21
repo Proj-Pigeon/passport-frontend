@@ -133,6 +133,9 @@ function interactionView(interaction: MockInteraction) {
     client_name: interaction.client_name,
     scopes: interaction.scopes,
     expires_at: interaction.expires_at,
+    logo_url: interaction.logo_url,
+    developer_name: interaction.developer_name,
+    developer_url: interaction.developer_url,
   };
 }
 

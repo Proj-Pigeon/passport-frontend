@@ -3,6 +3,7 @@ import {
   Anchor,
   Button,
   Fieldset,
+  FileInput,
   Group,
   Modal,
   Select,
@@ -18,7 +19,11 @@ import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 
-import { createAdminResource, listAdminResources } from '@/api/endpoints/admin/resources';
+import {
+  createAdminResource,
+  listAdminResources,
+  uploadApplicationLogo,
+} from '@/api/endpoints/admin/resources';
 import { SubmitErrorAlert } from '@/features/auth/components/SubmitErrorAlert';
 import { adminKeys } from '../../keys';
 import { useAdminSession } from '../../session/useAdminSession';
@@ -83,6 +88,9 @@ function ApplicationCreateForm({
   const [selectedPreset, setPreset] = useState<ApplicationPreset>(kind === 'saml' ? 'saml' : 'web');
   const [displayName, setDisplayName] = useState('');
   const [description, setDescription] = useState('');
+  const [developerName, setDeveloperName] = useState('');
+  const [developerUrl, setDeveloperUrl] = useState('');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [owner, setOwner] = useState<string | null>(null);
   const [risk, setRisk] = useState('normal');
   const [applicationId, setApplicationId] = useState<string | null>(fixedApplicationId ?? null);
@@ -140,11 +148,16 @@ function ApplicationCreateForm({
                 owner_user_id: ownerId.trim(),
                 risk,
                 application_type: preset,
+                developer_name: developerName.trim(),
+                developer_url: developerUrl.trim(),
               },
             });
             parentId = application.id;
             createdApplication.current = application.id;
             setCreatedApplicationId(application.id);
+            if (logoFile) {
+              await uploadApplicationLogo(application.id, logoFile, logoFile.type);
+            }
             await queryClient.invalidateQueries({
               queryKey: adminKeys.resourceKind('application'),
             });
@@ -182,6 +195,15 @@ function ApplicationCreateForm({
     if ([...reason.trim()].length > 1000) next['reason'] = t('admin.reason.hint');
     if (kind === 'application' && !/^usr_[A-Za-z0-9_-]+$/.test(ownerId.trim()))
       next['owner'] = invalid;
+    if (kind === 'application' && developerUrl.trim() !== '') {
+      try {
+        const parsed = new URL(developerUrl.trim());
+        if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:')
+          next['developerUrl'] = t('admin.branding.invalidUrl');
+      } catch {
+        next['developerUrl'] = t('admin.branding.invalidUrl');
+      }
+    }
     if (new TextEncoder().encode(description.trim()).length > 2000) next['description'] = invalid;
     if (kind !== 'application' && !applicationId) next['application'] = invalid;
     if (preset === 'saml') {
@@ -309,6 +331,28 @@ function ApplicationCreateForm({
                     if (value) setRisk(value);
                   }}
                   allowDeselect={false}
+                />
+                <FileInput
+                  label={t('admin.branding.logo')}
+                  description={t('admin.branding.logoHint')}
+                  accept="image/png,image/jpeg"
+                  value={logoFile}
+                  onChange={setLogoFile}
+                  clearable
+                />
+                <TextInput
+                  label={t('admin.branding.developerName')}
+                  value={developerName}
+                  onChange={(event) => setDeveloperName(event.currentTarget.value)}
+                  maxLength={160}
+                />
+                <TextInput
+                  label={t('admin.branding.developerUrl')}
+                  value={developerUrl}
+                  onChange={(event) => setDeveloperUrl(event.currentTarget.value)}
+                  placeholder="https://developer.example.com"
+                  maxLength={2048}
+                  error={errors['developerUrl']}
                 />
               </>
             )}

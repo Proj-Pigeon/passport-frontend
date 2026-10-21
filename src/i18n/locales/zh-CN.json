@@ -1,6 +1,7 @@
 {
   "common": {
     "appName": "Pigeon Passport",
+    "platformName": "鸽巢通行证",
     "tagline": "统一账号中心",
     "submit": "提交",
     "cancel": "取消",
@@ -319,7 +320,11 @@
   "oauth": {
     "title": "授权请求",
     "subtitle": "有应用请求访问你的账号",
-    "requestedBy": "{{client}} 请求获得以下权限：",
+    "authorizeTitle": "授权 {{client}}",
+    "developedByBefore": "由 ",
+    "developedByAfter": " 开发的应用",
+    "hostedBy": "{{platform}}上的应用",
+    "permissionsTitle": "该应用将会获得以下权限：",
     "accountLabel": "当前账号",
     "switchAccount": "切换账号",
     "expiresIn": "{{time}} 后失效",
@@ -336,10 +341,19 @@
     "loadFailedTitle": "无法加载授权请求",
     "decisionAmbiguous": "无法确认授权结果，请回到应用查看或重新发起。",
     "scopes": {
-      "openid": "确认你的身份",
-      "profile": "读取你的基本资料（用户名、昵称）",
-      "email": "读取你的邮箱地址",
-      "unknown": "{{scope}}（未知权限）"
+      "openid": {
+        "title": "验证用户身份",
+        "description": "允许应用确认当前登录的是你，并获取用于识别你的唯一标识。"
+      },
+      "profile": {
+        "title": "读取基本资料",
+        "description": "允许应用获取你的{{platform}}用户名等基本资料。"
+      },
+      "email": {
+        "title": "读取邮箱地址",
+        "description": "允许应用获取你在{{platform}}中绑定的邮箱地址。"
+      },
+      "unknownDescription": "应用还请求了一项其他权限（{{scope}}）。"
     }
   },
   "account": {
@@ -1031,6 +1045,20 @@
       "partialTitle": "应用草稿已创建",
       "partialHint": "协议配置保存失败，修正后重试将继续使用同一份草稿。",
       "viewDraft": "查看已创建的应用草稿"
+    },
+    "branding": {
+      "card": "品牌信息",
+      "hint": "应用图标与开发者信息会展示在授权同意页。",
+      "logo": "应用图标",
+      "logoHint": "支持 PNG 或 JPEG，不超过 512 KB。",
+      "logoUpload": "上传图标",
+      "logoReplace": "更换图标",
+      "logoRemove": "移除图标",
+      "logoMissing": "尚未上传图标。",
+      "developerName": "开发者名称",
+      "developerUrl": "开发者网址",
+      "save": "保存品牌信息",
+      "invalidUrl": "开发者网址格式不正确。"
     }
   },
   "devices": {
@@ -1052,13 +1080,16 @@
     "authorizeTitle": "授权设备",
     "authorizeHint": "输入需要登录的应用中显示的代码。",
     "code": "设备代码",
-    "lookup": "查询代码",
+    "codeInvalid": "代码格式不正确，应为 8 位字符（如 ABCD-EFGH）。",
+    "missingCodeTitle": "缺少设备代码",
+    "missingCodeBody": "链接中没有设备代码，请返回重新输入。",
+    "backToCode": "重新输入代码",
     "expired": "代码无效、已过期或已使用，请在应用中重新获取。",
     "expires": "过期时间：{{time}}",
     "phishing": "仅在你主动登录此设备时批准，请勿批准他人发送的代码。",
     "approve": "批准登录",
     "deny": "拒绝",
-    "approved": "设备已授权，请返回 GuEarth 或相应应用完成登录。",
+    "approved": "设备已授权，请返回应用完成登录。",
     "denied": "已拒绝登录，可以关闭此页面。",
     "unclassified": "未分类",
     "applicationType": "应用类型",

@@ -46,7 +46,7 @@ async function approve(page: Page, uri: string, verifyPassword = false) {
     await dialog.getByRole('textbox', { name: '密码', exact: true }).fill(password!);
     await dialog.getByRole('button', { name: '验证密码', exact: true }).click();
   }
-  await expect(page.getByText('设备已授权，请返回 GuEarth 或相应应用完成登录。')).toBeVisible();
+  await expect(page.getByText('设备已授权，请返回应用完成登录。')).toBeVisible();
 }
 
 async function exchange(request: APIRequestContext, deviceCode: string) {
@@ -89,7 +89,7 @@ test('device login, userinfo, refresh, user/admin revoke and current browser exi
   expect(current.status()).toBe(200);
   const userId = ((await current.json()) as { user: { id: string } }).user.id;
   await page.goto(first.verification_uri_complete);
-  await expect(page.getByLabel('设备代码')).toHaveValue(first.user_code);
+  await expect(page).toHaveURL(/\/device\/confirm\?user_code=/);
   await expect(page.getByText('GuEarth E2E', { exact: true })).toBeVisible();
   await expectNoOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('device-desktop.png'), fullPage: true });

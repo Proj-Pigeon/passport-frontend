@@ -25,6 +25,9 @@ export interface DeviceAuthorization {
   platform: string;
   scopes: string[];
   expires_at: string;
+  logo_url?: string;
+  developer_name?: string;
+  developer_url?: string;
 }
 
 export function getDeviceAuthorization(code: string, signal?: AbortSignal) {

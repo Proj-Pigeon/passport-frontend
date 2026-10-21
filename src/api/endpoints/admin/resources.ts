@@ -1,4 +1,12 @@
-import { apiGet, apiGetWithMeta, apiPost, apiPut, apiRequest, apiVoid } from '../../http';
+import {
+  apiBlobOrNull,
+  apiGet,
+  apiGetWithMeta,
+  apiPost,
+  apiPut,
+  apiRequest,
+  apiVoid,
+} from '../../http';
 import { buildAdminSearch } from './query';
 import type {
   AdminActivationRequestInput,
@@ -105,6 +113,34 @@ export function decideAdminApproval(
     input,
     { headers: { 'If-Match': etag }, scope: 'admin' },
   );
+}
+
+export async function uploadApplicationLogo(resourceId: string, image: Blob, contentType: string) {
+  const bytes = new Uint8Array(await image.arrayBuffer());
+  let binary = '';
+  for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+  }
+  return apiPut<undefined>(
+    `/admin/v1/applications/${encodeURIComponent(resourceId)}/logo`,
+    { media_type: contentType, content: btoa(binary) },
+    { scope: 'admin' },
+  );
+}
+
+export function deleteApplicationLogo(resourceId: string) {
+  return apiVoid(`/admin/v1/applications/${encodeURIComponent(resourceId)}/logo`, {
+    method: 'DELETE',
+    scope: 'admin',
+  });
+}
+
+export function getApplicationLogo(resourceId: string, signal?: AbortSignal) {
+  return apiBlobOrNull(`/admin/v1/applications/${encodeURIComponent(resourceId)}/logo`, {
+    accept: 'image/*',
+    signal,
+    scope: 'admin',
+  });
 }
 
 export function addOauthRedirectUri(

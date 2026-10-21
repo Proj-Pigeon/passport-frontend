@@ -11,6 +11,8 @@ export const adminKeys = {
     ['admin', 'resources', kind, 'list', params] as const,
   resource: (kind: string, resourceId: string) =>
     ['admin', 'resources', kind, 'detail', resourceId] as const,
+  applicationLogo: (resourceId: string) =>
+    ['admin', 'resources', 'application', resourceId, 'logo'] as const,
   auditList: (params: Record<string, unknown>) => ['admin', 'audit', params] as const,
   auditDetail: (eventId: string) => ['admin', 'audit', 'detail', eventId] as const,
   httpAccessList: (params: Record<string, unknown>) =>

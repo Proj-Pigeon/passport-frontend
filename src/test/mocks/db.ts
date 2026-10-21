@@ -68,6 +68,9 @@ export interface MockInteraction {
   approveUrl: string;
   denyUrl: string;
   boundUserId: string | null;
+  logo_url?: string;
+  developer_name?: string;
+  developer_url?: string;
 }
 
 export interface MockAdminSession {
