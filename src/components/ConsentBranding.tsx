@@ -2,6 +2,8 @@ import { Anchor, Avatar, Group, Paper, Stack, Text, ThemeIcon } from '@mantine/c
 import { IconCheck, IconExternalLink, IconFeather, IconLink } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 
+import { resolveAssetUrl } from '@/api/http';
+
 export interface ConsentApplication {
   name: string;
   logoUrl?: string | null;
@@ -14,7 +16,12 @@ const KNOWN_SCOPES = ['openid', 'profile', 'email'] as const;
 export function ConsentBrandRow({ application }: { application: ConsentApplication }) {
   return (
     <Group justify="center" gap="md" wrap="nowrap">
-      <Avatar src={application.logoUrl ?? null} alt={application.name} size={64} radius="md">
+      <Avatar
+        src={resolveAssetUrl(application.logoUrl)}
+        alt={application.name}
+        size={64}
+        radius="md"
+      >
         {application.name.slice(0, 1).toUpperCase()}
       </Avatar>
       <IconLink size={20} color="var(--mantine-color-dimmed)" />

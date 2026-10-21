@@ -1,8 +1,20 @@
-import { Alert, Button, FileInput, Group, Image, Stack, Text, TextInput } from '@mantine/core';
+import {
+  Alert,
+  Avatar,
+  Button,
+  FileButton,
+  Group,
+  Stack,
+  Text,
+  TextInput,
+  ThemeIcon,
+} from '@mantine/core';
+import { IconPhoto } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { fieldErrorI18nKey } from '@/api/errors';
 import { apiUrl } from '@/api/http';
 import {
   deleteApplicationLogo,
@@ -12,6 +24,7 @@ import {
 } from '@/api/endpoints/admin/resources';
 import { SectionCard } from '@/components/AccountSections';
 import { describeApiError } from '@/i18n/errors';
+import { prepareAvatarFile } from '@/lib/image';
 
 import { adminKeys } from '../../keys';
 import { useAdminStepUp } from '../../step-up/useAdminStepUp';
@@ -42,14 +55,16 @@ export function ApplicationBrandingCard({
   const { t } = useTranslation();
   const stepUp = useAdminStepUp();
   const queryClient = useQueryClient();
+  const fileResetRef = useRef<() => void>(() => {});
+  const [logoIssue, setLogoIssue] = useState<string | null>(null);
+
   const logoQuery = useQuery({
     queryKey: adminKeys.applicationLogo(resource.id),
     queryFn: ({ signal }) => getApplicationLogo(resource.id, signal),
   });
-  const logoUrl =
-    logoQuery.data !== null
-      ? `${apiUrl(`/admin/v1/applications/${encodeURIComponent(resource.id)}/logo`)}?v=${logoQuery.dataUpdatedAt}`
-      : null;
+  const logoUrl = logoQuery.data
+    ? `${apiUrl(`/admin/v1/applications/${encodeURIComponent(resource.id)}/logo`)}?v=${logoQuery.dataUpdatedAt}`
+    : null;
 
   const [developerName, setDeveloperName] = useState(() =>
     configString(resource.configuration, 'developer_name'),
@@ -58,7 +73,6 @@ export function ApplicationBrandingCard({
     configString(resource.configuration, 'developer_url'),
   );
   const [urlError, setUrlError] = useState(false);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [saveModal, setSaveModal] = useState(false);
 
   const invalidateLogo = () =>
@@ -68,13 +82,14 @@ export function ApplicationBrandingCard({
     mutationFn: (file: File) =>
       stepUp.runWithAdminStepUp(() => uploadApplicationLogo(resource.id, file, file.type)),
     onSuccess: async () => {
-      setLogoFile(null);
+      setLogoIssue(null);
       await invalidateLogo();
     },
   });
   const deleteMutation = useMutation({
     mutationFn: () => stepUp.runWithAdminStepUp(() => deleteApplicationLogo(resource.id)),
     onSuccess: async () => {
+      setLogoIssue(null);
       await invalidateLogo();
     },
   });
@@ -101,49 +116,62 @@ export function ApplicationBrandingCard({
     },
   });
 
+  const handleFile = async (file: File | null) => {
+    fileResetRef.current();
+    if (!file) return;
+    uploadMutation.reset();
+    setLogoIssue(null);
+    const prepared = await prepareAvatarFile(file);
+    if (!prepared.ok) {
+      setLogoIssue(t(fieldErrorI18nKey('avatar', prepared.issue)));
+      return;
+    }
+    uploadMutation.mutate(
+      new File([prepared.avatar.blob], file.name, { type: prepared.avatar.mediaType }),
+    );
+  };
+
   const dirty =
     developerName.trim() !== configString(resource.configuration, 'developer_name') ||
     developerUrl.trim() !== configString(resource.configuration, 'developer_url');
 
   return (
     <SectionCard title={t('admin.branding.card')} description={t('admin.branding.hint')}>
-      <Stack gap="sm">
-        <Group align="flex-start" gap="md" wrap="wrap">
+      <Stack gap="md">
+        <Group align="center" gap="md" wrap="nowrap">
           {logoUrl ? (
-            <Image src={logoUrl} width={72} height={72} radius="md" alt={resource.display_name} />
+            <Avatar src={logoUrl} alt={resource.display_name} size={72} radius="md" />
           ) : (
-            <Text size="sm" c="dimmed">
-              {t('admin.branding.logoMissing')}
-            </Text>
+            <ThemeIcon size={72} radius="md" variant="light" color="gray">
+              <IconPhoto size={32} stroke={1.5} />
+            </ThemeIcon>
           )}
-          {canWrite && (
-            <Stack gap="xs" style={{ flex: 1, minWidth: 220 }}>
-              <FileInput
-                label={t('admin.branding.logo')}
-                description={t('admin.branding.logoHint')}
-                accept="image/png,image/jpeg"
-                value={logoFile}
-                onChange={setLogoFile}
-                clearable
-              />
-              <Group gap="sm">
-                <Button
-                  size="xs"
-                  variant="light"
-                  disabled={!logoFile || uploadMutation.isPending}
-                  loading={uploadMutation.isPending}
-                  onClick={() => {
-                    uploadMutation.reset();
-                    if (logoFile) uploadMutation.mutate(logoFile);
-                  }}
+          <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
+            <Text size="sm" fw={500}>
+              {t('admin.branding.logo')}
+            </Text>
+            <Text size="xs" c="dimmed">
+              {t('admin.branding.logoHint')}
+            </Text>
+            {canWrite && (
+              <Group gap="xs" mt={4}>
+                <FileButton
+                  resetRef={fileResetRef}
+                  onChange={handleFile}
+                  accept="image/png,image/jpeg"
+                  disabled={uploadMutation.isPending}
                 >
-                  {logoUrl ? t('admin.branding.logoReplace') : t('admin.branding.logoUpload')}
-                </Button>
+                  {(props) => (
+                    <Button size="xs" variant="light" loading={uploadMutation.isPending} {...props}>
+                      {logoUrl ? t('admin.branding.logoReplace') : t('admin.branding.logoUpload')}
+                    </Button>
+                  )}
+                </FileButton>
                 {logoUrl && (
                   <Button
                     size="xs"
                     color="red"
-                    variant="light"
+                    variant="subtle"
                     loading={deleteMutation.isPending}
                     onClick={() => {
                       deleteMutation.reset();
@@ -154,19 +182,25 @@ export function ApplicationBrandingCard({
                   </Button>
                 )}
               </Group>
-              {uploadMutation.error !== null && (
-                <Alert color="red" variant="light" role="alert">
-                  <Text size="sm">{describeApiError(uploadMutation.error)}</Text>
-                </Alert>
-              )}
-              {deleteMutation.error !== null && (
-                <Alert color="red" variant="light" role="alert">
-                  <Text size="sm">{describeApiError(deleteMutation.error)}</Text>
-                </Alert>
-              )}
-            </Stack>
-          )}
+            )}
+          </Stack>
         </Group>
+
+        {logoIssue !== null && (
+          <Alert color="red" variant="light" role="alert">
+            <Text size="sm">{logoIssue}</Text>
+          </Alert>
+        )}
+        {uploadMutation.error !== null && (
+          <Alert color="red" variant="light" role="alert">
+            <Text size="sm">{describeApiError(uploadMutation.error)}</Text>
+          </Alert>
+        )}
+        {deleteMutation.error !== null && (
+          <Alert color="red" variant="light" role="alert">
+            <Text size="sm">{describeApiError(deleteMutation.error)}</Text>
+          </Alert>
+        )}
 
         <TextInput
           label={t('admin.branding.developerName')}

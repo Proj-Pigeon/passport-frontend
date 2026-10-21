@@ -1,4 +1,4 @@
-import { Alert, Button, Group, Loader, Paper, Stack, Text } from '@mantine/core';
+import { Alert, Button, Group, Loader, Stack, Text } from '@mantine/core';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,7 +15,6 @@ import {
 } from '@/components/ConsentBranding';
 import { SubmitErrorAlert } from '@/features/auth/components/SubmitErrorAlert';
 import { isStepUpAborted } from '@/features/step-up/useStepUp';
-import { formatDateTime } from '@/lib/format';
 
 import { useDeviceStepUp } from './useDeviceStepUp';
 
@@ -128,17 +127,6 @@ export function DeviceConsentPage() {
     >
       <Stack gap="md">
         <ConsentScopeList scopes={authorization.scopes} />
-
-        <Paper withBorder p="sm" radius="md">
-          <Stack gap={2}>
-            <Text size="sm" fw={500} style={{ overflowWrap: 'anywhere' }}>
-              {authorization.device_name} · {authorization.platform}
-            </Text>
-            <Text size="xs" c="dimmed">
-              {t('devices.expires', { time: formatDateTime(authorization.expires_at) })}
-            </Text>
-          </Stack>
-        </Paper>
 
         <Alert color="orange">{t('devices.phishing')}</Alert>
 

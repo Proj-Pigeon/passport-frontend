@@ -84,7 +84,7 @@ describe('DeviceConsentPage', () => {
     const developer = screen.getByRole('link', { name: /Nexaorion/ });
     expect(developer).toHaveAttribute('href', 'https://nexaorion.example');
     expect(screen.getByText('该应用将会获得以下权限：')).toBeInTheDocument();
-    expect(screen.getByText('Work laptop · windows')).toBeInTheDocument();
+    expect(screen.queryByText('Work laptop · windows')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '拒绝' }));
     expect(await screen.findByText('已拒绝登录，可以关闭此页面。')).toBeInTheDocument();
     expect(denied).toHaveBeenCalledOnce();
