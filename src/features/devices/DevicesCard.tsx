@@ -82,61 +82,66 @@ export function DevicesCard({ userId, canWrite = true }: { userId?: string; canW
             <Button onClick={() => query.refetch()}>{t('common.retry')}</Button>
           </>
         ) : (
-          <>
-            {query.data.pages.flatMap((page) => page.items).length === 0 && (
-              <Text c="dimmed">{t('devices.empty')}</Text>
-            )}
-            {query.data.pages
+          (() => {
+            const items = query.data.pages
               .flatMap((page) => page.items)
-              .map((device) => (
-                <Paper key={device.id} withBorder p="md" radius="md">
-                  <Stack gap="xs" style={{ minWidth: 0 }}>
-                    <Group gap="xs">
-                      <Badge variant="light">{t(`devices.${device.kind}`)}</Badge>
-                      {device.current && <Badge color="teal">{t('devices.current')}</Badge>}
-                    </Group>
-                    <Text fw={500} style={{ overflowWrap: 'anywhere' }}>
-                      {device.device_name}
-                    </Text>
-                    <Text size="sm" c="dimmed" style={{ overflowWrap: 'anywhere' }}>
-                      {[device.platform, device.client_name].filter(Boolean).join(' · ')}
-                    </Text>
-                    <Text size="sm">
-                      {t('devices.lastActive', { time: formatDateTime(device.last_active_at) })}
-                    </Text>
-                    {device.scopes.length > 0 && (
-                      <Text size="xs" c="dimmed" style={{ overflowWrap: 'anywhere' }}>
-                        {device.scopes.join(' · ')}
-                      </Text>
-                    )}
-                    {canWrite && (
-                      <Group>
-                        <Button
-                          size="xs"
-                          color="red"
-                          variant="light"
-                          disabled={mutation.isPending}
-                          onClick={() => confirm(device)}
-                        >
-                          {t(
-                            device.current && !userId ? 'devices.revokeCurrent' : 'devices.revoke',
-                          )}
-                        </Button>
+              .filter((device) => (userId ? true : device.kind !== 'application'));
+            return (
+              <>
+                {items.length === 0 && <Text c="dimmed">{t('devices.empty')}</Text>}
+                {items.map((device) => (
+                  <Paper key={device.id} withBorder p="md" radius="md">
+                    <Stack gap="xs" style={{ minWidth: 0 }}>
+                      <Group gap="xs">
+                        <Badge variant="light">{t(`devices.${device.kind}`)}</Badge>
+                        {device.current && <Badge color="teal">{t('devices.current')}</Badge>}
                       </Group>
-                    )}
-                  </Stack>
-                </Paper>
-              ))}
-            {query.hasNextPage && (
-              <Button
-                variant="default"
-                loading={query.isFetchingNextPage}
-                onClick={() => query.fetchNextPage()}
-              >
-                {t('devices.more')}
-              </Button>
-            )}
-          </>
+                      <Text fw={500} style={{ overflowWrap: 'anywhere' }}>
+                        {device.device_name}
+                      </Text>
+                      <Text size="sm" c="dimmed" style={{ overflowWrap: 'anywhere' }}>
+                        {[device.platform, device.client_name].filter(Boolean).join(' · ')}
+                      </Text>
+                      <Text size="sm">
+                        {t('devices.lastActive', { time: formatDateTime(device.last_active_at) })}
+                      </Text>
+                      {device.scopes.length > 0 && (
+                        <Text size="xs" c="dimmed" style={{ overflowWrap: 'anywhere' }}>
+                          {device.scopes.join(' · ')}
+                        </Text>
+                      )}
+                      {canWrite && (
+                        <Group>
+                          <Button
+                            size="xs"
+                            color="red"
+                            variant="light"
+                            disabled={mutation.isPending}
+                            onClick={() => confirm(device)}
+                          >
+                            {t(
+                              device.current && !userId
+                                ? 'devices.revokeCurrent'
+                                : 'devices.revoke',
+                            )}
+                          </Button>
+                        </Group>
+                      )}
+                    </Stack>
+                  </Paper>
+                ))}
+              </>
+            );
+          })()
+        )}
+        {query.hasNextPage && (
+          <Button
+            variant="default"
+            loading={query.isFetchingNextPage}
+            onClick={() => query.fetchNextPage()}
+          >
+            {t('devices.more')}
+          </Button>
         )}
         {!isStepUpAborted(mutation.error) && <SubmitErrorAlert error={mutation.error} />}
       </Stack>

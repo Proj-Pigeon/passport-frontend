@@ -18,12 +18,11 @@ import type { AuthorizedApplication, Device } from '@/api/endpoints/devices';
 function devices(): Device[] {
   return [
     {
-      id: 'dev_laptop',
-      kind: 'application',
-      device_name: 'GuEarth laptop',
-      platform: 'windows',
-      client_name: 'GuEarth',
-      scopes: ['openid', 'profile'],
+      id: 'ses_other',
+      kind: 'browser',
+      device_name: 'Chrome on Mac',
+      platform: 'browser',
+      scopes: [],
       authorized_at: new Date().toISOString(),
       last_active_at: new Date().toISOString(),
       current: false,
@@ -40,8 +39,9 @@ function devices(): Device[] {
     },
   ];
 }
+
 describe('DevicesCard', () => {
-  it('paginates a mixed list and revokes the current browser without step-up', async () => {
+  it('paginates browser sessions and revokes the current browser without step-up', async () => {
     signIn(mockDb, seedUser(mockDb), 'pwd');
     const items = devices();
     const revoke = vi.fn();
@@ -61,11 +61,10 @@ describe('DevicesCard', () => {
     );
     const { router } = renderRoute(['/account/security']);
     const user = userEvent.setup();
-    expect(await screen.findByText('GuEarth laptop')).toBeInTheDocument();
-    expect(screen.getAllByText('应用').length).toBeGreaterThan(0);
+    expect(await screen.findByText('Chrome on Mac')).toBeInTheDocument();
+    expect(screen.getByText('浏览器')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '加载更多' }));
     expect(await screen.findByText('当前会话')).toBeInTheDocument();
-    expect(screen.getByText('浏览器')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '撤销并退出' }));
     const dialog = await screen.findByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: '撤销访问' }));
@@ -73,7 +72,8 @@ describe('DevicesCard', () => {
     expect(router.state.location.pathname).toBe('/login');
     expect(revoke).toHaveBeenCalledOnce();
   });
-  it('confirms application revocation with account risk confirmation', async () => {
+
+  it('confirms other browser revocation with account risk confirmation', async () => {
     signIn(mockDb, seedUser(mockDb, { step_up_required: false }), 'pwd');
     let items = devices().slice(0, 1);
     const revoke = vi.fn();
@@ -87,7 +87,7 @@ describe('DevicesCard', () => {
     );
     renderRoute(['/account/security']);
     const user = userEvent.setup();
-    await screen.findByText('GuEarth laptop');
+    await screen.findByText('Chrome on Mac');
     await user.click(screen.getByRole('button', { name: '撤销访问' }));
     await user.click(
       within(await screen.findByRole('dialog')).getByRole('button', { name: '撤销访问' }),
@@ -96,6 +96,7 @@ describe('DevicesCard', () => {
     expect(await screen.findByText('暂无活动设备。')).toBeInTheDocument();
     expect(revoke).toHaveBeenCalledOnce();
   });
+
   it('requires a reason for an administrator to revoke a user device', async () => {
     const admin = seedUser(mockDb);
     signInAdmin(mockDb, admin, ['user_admin']);

@@ -1075,7 +1075,7 @@
   },
   "devices": {
     "title": "Devices",
-    "listHint": "Manage signed-in browsers and authorized applications. Revocation immediately ends their access.",
+    "listHint": "Manage signed-in browser sessions. Revocation immediately ends their access.",
     "empty": "No active devices.",
     "application": "Application",
     "browser": "Browser",
