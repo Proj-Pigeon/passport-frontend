@@ -755,7 +755,15 @@
       "redeemConflictHint": "The approval is no longer usable or the secret state does not match.",
       "redeemForbiddenHint": "Only the original requester can redeem; the approver cannot.",
       "overlap": "Overlap window (seconds)",
-      "overlapHint": "How long the old secret stays valid during rotation, 0–3600 seconds."
+      "overlapHint": "How long the old secret stays valid during rotation, 0–3600 seconds.",
+      "sessionCard": "Sign-in persistence",
+      "sessionHint": "How long the app stays signed in after the user consents, without asking the user to authorize again.",
+      "sessionCurrent": "Currently effective: {{hours}} hours (about {{days}} days)",
+      "sessionField": "Sign-in duration (hours)",
+      "sessionFieldHint": "Leave empty to use the default 93 days; range 1–8760 hours.",
+      "sessionDefault": "Default: 93 days",
+      "sessionInvalid": "Enter whole hours between 1 and 8760.",
+      "sessionSave": "Save"
     },
     "secret": {
       "title": "Client secret",
@@ -1042,6 +1050,10 @@
       "nameIdHint": "NameID uses a persistent identifier isolated per application.",
       "draftHint": "Saved as a draft; request activation and approval before use.",
       "invalid": "Check the format or length of this field.",
+      "sessionDuration": "Sign-in duration (hours)",
+      "sessionDurationHint": "Leave empty to keep users signed in to the app for the default 93 days.",
+      "sessionDurationPlaceholder": "Default: 93 days",
+      "sessionDurationInvalid": "Enter whole hours between 1 and 8760.",
       "partialTitle": "Application draft created",
       "partialHint": "The protocol configuration was not saved. Retry to continue with this draft.",
       "viewDraft": "View the created application draft"

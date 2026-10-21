@@ -755,7 +755,15 @@
       "redeemConflictHint": "该批准已失效或当前密钥状态不匹配。",
       "redeemForbiddenHint": "只有申请人可以兑换，且审批人不可兑换。",
       "overlap": "重叠窗口（秒）",
-      "overlapHint": "轮换时旧密钥保留的时间，0–3600 秒。"
+      "overlapHint": "轮换时旧密钥保留的时间，0–3600 秒。",
+      "sessionCard": "登录态保持",
+      "sessionHint": "用户授权后，应用可保持登录的时长，期间无需用户再次确认授权。",
+      "sessionCurrent": "当前生效：{{hours}} 小时（约 {{days}} 天）",
+      "sessionField": "登录态保持时长（小时）",
+      "sessionFieldHint": "留空使用默认 93 天；范围 1–8760 小时。",
+      "sessionDefault": "默认 93 天",
+      "sessionInvalid": "请输入 1–8760 之间的整数小时数。",
+      "sessionSave": "保存"
     },
     "secret": {
       "title": "客户端密钥",
@@ -1042,6 +1050,10 @@
       "nameIdHint": "NameID 使用按应用隔离的 persistent 标识。",
       "draftHint": "创建后为草稿，需申请激活并审批后才能使用。",
       "invalid": "请检查此字段的格式或长度。",
+      "sessionDuration": "登录态保持时长（小时）",
+      "sessionDurationHint": "留空则用户在应用内默认保持登录 93 天。",
+      "sessionDurationPlaceholder": "默认 93 天",
+      "sessionDurationInvalid": "请输入 1–8760 之间的整数小时数。",
       "partialTitle": "应用草稿已创建",
       "partialHint": "协议配置保存失败，修正后重试将继续使用同一份草稿。",
       "viewDraft": "查看已创建的应用草稿"

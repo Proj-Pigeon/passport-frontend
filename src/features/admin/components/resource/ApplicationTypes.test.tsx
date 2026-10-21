@@ -20,6 +20,7 @@ const fields: ProtocolDraft = {
   scopes: ['openid', 'profile'],
   authMethod: 'client_secret_basic',
   subjectType: 'public',
+  sessionDurationHours: '',
   entityId: '',
   acsUrls: '',
   certificate: '',

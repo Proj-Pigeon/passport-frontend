@@ -279,8 +279,8 @@ export function signIn(db: MockDb, user: MockUser, amr: AuthenticationMethod): v
     auth_time: new Date(now).toISOString(),
     amr: [amr],
     acr: null,
-    idle_expires_at: new Date(now + 30 * 60_000).toISOString(),
-    expires_at: new Date(now + 12 * 3600_000).toISOString(),
+    idle_expires_at: new Date(now + 30 * 24 * 3600_000).toISOString(),
+    expires_at: new Date(now + 93 * 24 * 3600_000).toISOString(),
   };
 }
 

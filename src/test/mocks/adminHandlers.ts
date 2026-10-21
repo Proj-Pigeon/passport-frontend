@@ -560,7 +560,10 @@ export function createAdminHandlers(db: MockDb): RequestHandler[] {
         }
         const configuration = body['configuration'];
         if (typeof configuration === 'object' && configuration !== null) {
-          resource.configuration = configuration as Record<string, unknown>;
+          resource.configuration = {
+            ...resource.configuration,
+            ...(configuration as Record<string, unknown>),
+          };
         }
         return resourceWithEtag(db, bumpResource(resource));
       }),

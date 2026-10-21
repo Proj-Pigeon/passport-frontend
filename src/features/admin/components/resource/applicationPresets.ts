@@ -1,15 +1,29 @@
 export type ApplicationPreset = 'web' | 'spa' | 'native' | 'saml' | 'device';
 
+export const DEFAULT_SESSION_DURATION_HOURS = 2232;
+export const MAX_SESSION_DURATION_HOURS = 8760;
+
 export interface ProtocolDraft {
   redirectUris: string;
   scopes: string[];
   authMethod: 'client_secret_basic' | 'client_secret_post';
   subjectType: 'pairwise' | 'public';
+  sessionDurationHours: number | '';
   entityId: string;
   acsUrls: string;
   certificate: string;
   requireSignedRequests: boolean;
   allowIdpInitiated: boolean;
+}
+
+export function sessionDurationSeconds(hours: number | ''): number {
+  return typeof hours === 'number' && Number.isFinite(hours) && hours > 0
+    ? Math.round(hours) * 3600
+    : 0;
+}
+
+export function sessionDurationDays(seconds: number): number {
+  return Math.round(seconds / 86400);
 }
 
 export function uriLines(value: string) {
@@ -67,6 +81,7 @@ export function protocolConfiguration(
       signing_certificates: fields.certificate.trim() ? [{ pem: fields.certificate.trim() }] : [],
     };
   }
+  const sessionSeconds = sessionDurationSeconds(fields.sessionDurationHours);
   return {
     display_name: displayName,
     client_type: preset === 'web' ? 'confidential' : 'public',
@@ -74,6 +89,7 @@ export function protocolConfiguration(
     subject_type: fields.subjectType,
     allowed_scopes: fields.scopes,
     require_consent: true,
+    ...(sessionSeconds ? { refresh_token_ttl_seconds: sessionSeconds } : {}),
     redirect_uris: (preset === 'device' ? [] : uriLines(fields.redirectUris)).map((uri) => ({
       uri,
     })),

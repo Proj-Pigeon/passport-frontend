@@ -6,6 +6,7 @@ import {
   FileInput,
   Group,
   Modal,
+  NumberInput,
   Select,
   Stack,
   Switch,
@@ -28,7 +29,7 @@ import { SubmitErrorAlert } from '@/features/auth/components/SubmitErrorAlert';
 import { adminKeys } from '../../keys';
 import { useAdminSession } from '../../session/useAdminSession';
 import { useAdminStepUp } from '../../step-up/useAdminStepUp';
-import { applicationType } from './applicationPresets';
+import { applicationType, MAX_SESSION_DURATION_HOURS } from './applicationPresets';
 import {
   protocolConfiguration,
   validUris,
@@ -103,6 +104,7 @@ function ApplicationCreateForm({
     scopes: ['openid', 'profile', 'email'],
     authMethod: 'client_secret_basic',
     subjectType: 'pairwise',
+    sessionDurationHours: '',
     entityId: '',
     acsUrls: '',
     certificate: '',
@@ -223,6 +225,15 @@ function ApplicationCreateForm({
         fields.scopes.some((scope) => !/^[A-Za-z0-9:._-]{1,80}$/.test(scope))
       )
         next['scopes'] = t('admin.applicationCreate.scopesInvalid');
+      const hours = fields.sessionDurationHours;
+      if (
+        hours !== '' &&
+        (!Number.isFinite(hours) ||
+          !Number.isInteger(hours) ||
+          hours < 1 ||
+          hours > MAX_SESSION_DURATION_HOURS)
+      )
+        next['sessionDuration'] = t('admin.applicationCreate.sessionDurationInvalid');
     }
     setErrors(next);
     if (Object.keys(next).length === 0 && !mutation.isPending) mutation.mutate();
@@ -419,6 +430,20 @@ function ApplicationCreateForm({
                     if (value) update('subjectType', value as ProtocolDraft['subjectType']);
                   }}
                   allowDeselect={false}
+                />
+                <NumberInput
+                  label={t('admin.applicationCreate.sessionDuration')}
+                  description={t('admin.applicationCreate.sessionDurationHint')}
+                  placeholder={t('admin.applicationCreate.sessionDurationPlaceholder')}
+                  value={fields.sessionDurationHours}
+                  onChange={(value) =>
+                    update('sessionDurationHours', value === '' ? '' : Number(value))
+                  }
+                  min={1}
+                  max={MAX_SESSION_DURATION_HOURS}
+                  allowDecimal={false}
+                  clampBehavior="strict"
+                  error={errors['sessionDuration']}
                 />
               </>
             )}

@@ -18,6 +18,7 @@ import type { AdminChangeRequest, AdminSecretResult } from '@/api/endpoints/admi
 import {
   addOauthRedirectUri,
   getAdminResource,
+  patchAdminResource,
   redeemOauthClientSecret,
   redeemOauthClientSecretRotation,
   removeOauthRedirectUri,
@@ -31,6 +32,11 @@ import { describeApiError } from '@/i18n/errors';
 import type { ResourceSectionProps } from '../../pages/AdminResourceDetailPage';
 import { hasAdminCapability, useAdminSession } from '../../session/useAdminSession';
 import { useAdminStepUp } from '../../step-up/useAdminStepUp';
+import {
+  MAX_SESSION_DURATION_HOURS,
+  sessionDurationDays,
+  sessionDurationSeconds,
+} from './applicationPresets';
 import { ReasonModal } from '../ReasonModal';
 import { SecretRevealModal } from '../SecretRevealModal';
 
@@ -53,6 +59,8 @@ export function OauthClientSections({
   const redirectUris =
     (resource.configuration['redirect_uris'] as RedirectEntry[] | undefined) ?? [];
   const isConfidential = resource.configuration['client_type'] === 'confidential';
+  const sessionSeconds = Number(resource.configuration['refresh_token_ttl_seconds']) || 0;
+  const configuredSessionHours = sessionSeconds > 0 ? sessionSeconds / 3600 : '';
 
   const [newUri, setNewUri] = useState('');
   const [addModal, setAddModal] = useState(false);
@@ -65,8 +73,37 @@ export function OauthClientSections({
   const [grantUserId, setGrantUserId] = useState('');
   const [grantModal, setGrantModal] = useState(false);
   const [revealedSecret, setRevealedSecret] = useState<AdminSecretResult | null>(null);
+  const [sessionHours, setSessionHours] = useState<number | ''>(configuredSessionHours);
+  const [sessionError, setSessionError] = useState(false);
+  const [sessionModal, setSessionModal] = useState(false);
 
   const invalidate = refresh;
+
+  const sessionMutation = useMutation({
+    mutationFn: (reason: string) =>
+      stepUp.runWithAdminStepUp(() =>
+        patchAdminResource(
+          'oauth',
+          resource.id,
+          {
+            reason,
+            configuration: { refresh_token_ttl_seconds: sessionDurationSeconds(sessionHours) },
+          },
+          etag,
+        ),
+      ),
+    onSuccess: async () => {
+      setSessionModal(false);
+      await invalidate();
+    },
+  });
+
+  const sessionDirty = sessionHours !== configuredSessionHours;
+  const sessionHoursValid =
+    sessionHours === '' ||
+    (Number.isInteger(sessionHours) &&
+      sessionHours >= 1 &&
+      sessionHours <= MAX_SESSION_DURATION_HOURS);
 
   const addMutation = useMutation({
     mutationFn: async (input: { reason: string }) =>
@@ -216,6 +253,57 @@ export function OauthClientSections({
         </SectionCard>
       )}
 
+      <SectionCard title={t('admin.oauth.sessionCard')} description={t('admin.oauth.sessionHint')}>
+        <Stack gap="xs">
+          {sessionSeconds > 0 && (
+            <Text size="sm" c="dimmed">
+              {t('admin.oauth.sessionCurrent', {
+                hours: sessionSeconds / 3600,
+                days: sessionDurationDays(sessionSeconds),
+              })}
+            </Text>
+          )}
+          <NumberInput
+            label={t('admin.oauth.sessionField')}
+            description={t('admin.oauth.sessionFieldHint')}
+            placeholder={t('admin.oauth.sessionDefault')}
+            value={sessionHours}
+            onChange={(value) => {
+              setSessionHours(value === '' ? '' : Number(value));
+              setSessionError(false);
+            }}
+            min={1}
+            max={MAX_SESSION_DURATION_HOURS}
+            allowDecimal={false}
+            clampBehavior="strict"
+            disabled={!canWrite}
+            error={sessionError ? t('admin.oauth.sessionInvalid') : undefined}
+          />
+          {canWrite && (
+            <>
+              <Group gap="sm">
+                <Button
+                  size="xs"
+                  variant="light"
+                  disabled={!sessionDirty || sessionMutation.isPending}
+                  onClick={() => {
+                    sessionMutation.reset();
+                    if (!sessionHoursValid) {
+                      setSessionError(true);
+                      return;
+                    }
+                    setSessionModal(true);
+                  }}
+                >
+                  {t('admin.oauth.sessionSave')}
+                </Button>
+              </Group>
+              <SubmitInlineError error={sessionMutation.error} />
+            </>
+          )}
+        </Stack>
+      </SectionCard>
+
       <SectionCard title={t('admin.oauth.grantsCard')} description={t('admin.oauth.grantsHint')}>
         <Stack gap="sm">
           <Text size="sm" c="dimmed">
@@ -343,6 +431,21 @@ export function OauthClientSections({
             removeMutation.mutate({ reason, entry: removeTarget });
           }
         }}
+      />
+
+      <ReasonModal
+        opened={sessionModal}
+        onClose={() => (sessionMutation.isPending ? undefined : setSessionModal(false))}
+        title={t('admin.oauth.sessionSave')}
+        confirmLabel={t('common.submit')}
+        pending={sessionMutation.isPending}
+        error={sessionMutation.error}
+        errorHint={
+          isApiError(sessionMutation.error) && sessionMutation.error.status === 412
+            ? t('admin.config.conflictHint')
+            : undefined
+        }
+        onSubmit={(reason) => sessionMutation.mutate(reason)}
       />
 
       <ReasonModal
