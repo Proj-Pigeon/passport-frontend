@@ -27,6 +27,7 @@ export interface SessionUser {
   email: string;
   email_verified: boolean;
   roles?: string[];
+  capabilities?: string[];
   step_up_required: boolean;
   has_password?: boolean;
   has_passkey?: boolean;

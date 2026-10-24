@@ -29,10 +29,9 @@ describe('isStepUpActive', () => {
 });
 
 describe('isStepUpRequired', () => {
-  it('matches a 403 forbidden envelope', () => {
-    expect(isStepUpRequired(new ApiError({ status: 403, code: 'forbidden', message: '' }))).toBe(
-      true,
-    );
+  it.each(['forbidden', 'account_step_up_required'])('matches a 403 %s envelope', (code) => {
+    expect(isStepUpRequired(new ApiError({ status: 403, code, message: '' }))).toBe(true);
+    expect(isStepUpRequired(new ApiError({ status: 401, code, message: '' }))).toBe(false);
   });
 
   it('ignores every other rejection', () => {

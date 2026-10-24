@@ -3,6 +3,11 @@ export const ADMIN_QUERY_ROOT = ['admin'] as const;
 export const adminKeys = {
   all: ADMIN_QUERY_ROOT,
   session: ['admin', 'session'] as const,
+  permissions: ['admin', 'permissions'] as const,
+  applicationPermissions: (id: string) => ['admin', 'permissions', 'application', id] as const,
+  permissionGrants: (id: string) => ['admin', 'users', 'permission-grants', id] as const,
+  resourceServers: (id: string) => ['admin', 'resource-servers', 'application', id] as const,
+  resourceServer: (id: string) => ['admin', 'resource-servers', 'detail', id] as const,
   users: ['admin', 'users'] as const,
   userList: (params: Record<string, unknown>) => ['admin', 'users', 'list', params] as const,
   user: (userId: string) => ['admin', 'users', 'detail', userId] as const,

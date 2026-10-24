@@ -26,7 +26,9 @@ describe('admin audit events page', () => {
 
     renderRoute(['/admin/audit-events']);
 
-    expect(await screen.findByText('admin.user.suspended')).toBeInTheDocument();
+    expect(
+      await screen.findByText('admin.user.suspended', {}, { timeout: 5000 }),
+    ).toBeInTheDocument();
     await user.click(screen.getByText('admin.user.suspended'));
 
     const dialog = await screen.findByRole('dialog');

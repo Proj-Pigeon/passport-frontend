@@ -187,6 +187,12 @@ export function createAdminHandlers(db: MockDb): RequestHandler[] {
   const handlers: RequestHandler[] = [];
 
   handlers.push(
+    http.get(
+      '*/admin/v1/applications/:id/logo',
+      ({ request }) =>
+        adminGuard(db, request, { capability: 'applications:read' }) ??
+        new HttpResponse(null, { status: 204 }),
+    ),
     http.get('*/admin/v1/auth/csrf', () =>
       HttpResponse.json(
         { token: db.adminCsrfToken },

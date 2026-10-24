@@ -1,5 +1,11 @@
 import type { AccountStatus, AuthenticationMethod, AuthenticatorTransport } from '@/api/types';
 import type {
+  DeveloperApplication,
+  PermissionDefinition,
+  PermissionGrants,
+} from '@/api/endpoints/permissions';
+import type { ResourceServer, ResourceServerInput } from '@/api/endpoints/admin/resourceServers';
+import type {
   AdminAuditEvent,
   AdminBackupExercise,
   AdminCapability,
@@ -150,6 +156,11 @@ export interface MockDb {
   adminKeyRotations: AdminKeyRotationRequest[];
   adminBackupExercises: AdminBackupExercise[];
   adminSecretCounter: number;
+  permissionDefinitions: PermissionDefinition[];
+  permissionGrants: Map<string, PermissionGrants>;
+  developerApplications: (DeveloperApplication & { owner_user_id: string })[];
+  resourceServers: ResourceServer[];
+  resourceServerDrafts: Map<string, ResourceServerInput>;
 }
 
 export const MOCK_CSRF_TOKEN = 'mock-csrf-token';
@@ -228,6 +239,19 @@ export function createMockDb(): MockDb {
     adminKeyRotations: [],
     adminBackupExercises: [],
     adminSecretCounter: 0,
+    permissionDefinitions: ALL_CAPABILITIES.map((code) => ({
+      id: `builtin_${code}`,
+      code,
+      name: code,
+      description: '',
+      status: 'active',
+      version: 1,
+      grant_count: 0,
+    })),
+    permissionGrants: new Map(),
+    developerApplications: [],
+    resourceServers: [],
+    resourceServerDrafts: new Map(),
   };
 }
 

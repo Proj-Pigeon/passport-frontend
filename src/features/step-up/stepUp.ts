@@ -18,5 +18,9 @@ export function isStepUpActive(
 }
 
 export function isStepUpRequired(error: unknown): boolean {
-  return isApiError(error) && error.status === 403 && error.code === 'forbidden';
+  return (
+    isApiError(error) &&
+    error.status === 403 &&
+    (error.code === 'forbidden' || error.code === 'account_step_up_required')
+  );
 }

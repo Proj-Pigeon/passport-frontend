@@ -51,6 +51,11 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/account', labelKey: 'nav.account', icon: (p) => <IconLayoutDashboard {...p} /> },
   { to: '/account/profile', labelKey: 'nav.profile', icon: (p) => <IconUserCircle {...p} /> },
   { to: '/account/security', labelKey: 'nav.security', icon: (p) => <IconShieldLock {...p} /> },
+  {
+    to: '/account/developer',
+    labelKey: 'authorization.developerTitle',
+    icon: (p) => <IconDeviceDesktop {...p} />,
+  },
 ];
 
 export function AccountLayout() {
@@ -149,7 +154,7 @@ export function AccountLayout() {
                     {t(item.labelKey)}
                   </Menu.Item>
                 ))}
-                {user?.roles && user.roles.length > 0 && (
+                {(user?.capabilities?.length ?? user?.roles?.length ?? 0) > 0 && (
                   <Menu.Item
                     leftSection={<IconArrowsExchange size={14} stroke={1.5} />}
                     onClick={() => {
@@ -256,7 +261,10 @@ export function AccountLayout() {
                   {item.icon({ size: 18, stroke: 1.5 })}
                 </span>
               }
-              active={location.pathname === item.to}
+              active={
+                location.pathname === item.to ||
+                (item.to !== '/account' && location.pathname.startsWith(`${item.to}/`))
+              }
               onClick={close}
               style={{ borderRadius: 'var(--mantine-radius-md)' }}
             />

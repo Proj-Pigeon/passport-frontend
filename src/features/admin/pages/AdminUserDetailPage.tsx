@@ -17,6 +17,7 @@ import { describeApiError } from '@/i18n/errors';
 import { formatDateTime } from '@/lib/format';
 
 import { DevicesCard } from '@/features/devices/DevicesCard';
+import { PermissionGrantsCard } from '../components/PermissionGrantsCard';
 import { adminKeys } from '../keys';
 import { AdminStatusBadge } from '../components/AdminStatusBadge';
 import { ReasonModal } from '../components/ReasonModal';
@@ -210,6 +211,7 @@ export function AdminUserDetailPage() {
         )}
       </SectionCard>
 
+      <PermissionGrantsCard key={userId} userId={userId} />
       <DevicesCard userId={userId} canWrite={canWrite} />
 
       <ReasonModal

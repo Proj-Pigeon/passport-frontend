@@ -2,6 +2,7 @@ import { Badge, Group, Select, Stack, Table, Tabs, Text, TextInput } from '@mant
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router';
 
 import type { AdminAuditResult } from '@/api/endpoints/admin/types';
 import { listAdminAuditEvents, listAdminHttpAccessRecords } from '@/api/endpoints/admin/operations';
@@ -28,7 +29,8 @@ function AuditEventsPanel({ onOpen }: { onOpen: (eventId: string) => void }) {
   const [action, setAction] = useState('');
   const [result, setResult] = useState<AdminAuditResult | null>(null);
   const [actorId, setActorId] = useState('');
-  const [resourceId, setResourceId] = useState('');
+  const [searchParams] = useSearchParams();
+  const [resourceId, setResourceId] = useState(() => searchParams.get('resource_id') ?? '');
   const pager = useCursorPager();
 
   const query = useQuery({

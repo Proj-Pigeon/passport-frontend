@@ -11,8 +11,10 @@ export interface ReasonModalProps {
   description?: ReactNode;
   confirmLabel: string;
   confirmColor?: string;
+  confirmDisabled?: boolean;
   pending?: boolean;
   required?: boolean;
+  minReasonLength?: number;
   error?: unknown;
   errorHint?: ReactNode;
   extraFields?: ReactNode;
@@ -34,8 +36,10 @@ function ReasonForm({
   description,
   confirmLabel,
   confirmColor,
+  confirmDisabled,
   pending,
   required,
+  minReasonLength = 1,
   error,
   errorHint,
   extraFields,
@@ -44,9 +48,16 @@ function ReasonForm({
 }: ReasonModalProps) {
   const { t } = useTranslation();
   const [reason, setReason] = useState('');
+  const [blurred, setBlurred] = useState(false);
 
   const trimmed = reason.trim();
-  const invalid = [...trimmed].length > MAX_REASON_LENGTH || (required && trimmed.length === 0);
+  const length = [...trimmed].length;
+  const invalid =
+    length > MAX_REASON_LENGTH || ((required || length > 0) && length < minReasonLength);
+  const guidance = t('authorization.reasonLength', {
+    min: minReasonLength,
+    max: MAX_REASON_LENGTH,
+  });
 
   return (
     <Stack gap="sm">
@@ -54,9 +65,11 @@ function ReasonForm({
       {extraFields}
       <Textarea
         label={t('admin.reason.label')}
-        description={t('admin.reason.hint')}
+        description={minReasonLength > 1 ? guidance : t('admin.reason.hint')}
         placeholder={t('admin.reason.placeholder')}
         value={reason}
+        error={blurred && invalid ? guidance : undefined}
+        onBlur={() => setBlurred(true)}
         onChange={(event) => setReason(event.currentTarget.value)}
         autosize
         minRows={2}
@@ -71,7 +84,7 @@ function ReasonForm({
         </Button>
         <Button
           color={confirmColor}
-          disabled={invalid}
+          disabled={invalid || confirmDisabled}
           loading={pending}
           onClick={() => onSubmit(trimmed)}
         >

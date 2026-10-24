@@ -178,9 +178,11 @@ function interactionDecision(
 }
 
 import { createAdminHandlers } from './adminHandlers';
+import { createAuthorizationHandlers } from './authorizationHandlers';
 
 export function createHandlers(db: MockDb): RequestHandler[] {
   return [
+    ...createAuthorizationHandlers(db),
     http.get('*/v1/me/devices', () =>
       db.session ? HttpResponse.json({ items: [], next_cursor: null }) : unauthorized(),
     ),

@@ -259,3 +259,27 @@ test.describe('passkeys', () => {
     await expect(page.getByRole('button', { name: '使用通行密钥登录' })).toBeVisible();
   });
 });
+
+test.describe('ordinary account developer access', () => {
+  test('opens the owner directory without an administrator session', async ({ page, request }) => {
+    await createVerifiedAccount(page, request);
+    const adminRequests: string[] = [];
+    page.on('request', (entry) => {
+      if (new URL(entry.url()).pathname.startsWith('/admin/v1/')) adminRequests.push(entry.url());
+    });
+    const applications = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === '/v1/developer/applications' &&
+        response.request().method() === 'GET',
+    );
+    await page.goto('/account/developer');
+    expect((await applications).status()).toBe(200);
+    await expect(page.getByRole('heading', { name: '我的开发应用' })).toBeVisible();
+    await expect(page.getByText('你还没有拥有的应用。')).toBeVisible();
+    await expect(page.getByRole('button', { name: '核对并保存权限' })).toHaveCount(0);
+    await page.goto('/account/developer/not-owned/permissions');
+    await expect(page.getByText('此应用不在你的开发者账户范围内。')).toBeVisible();
+    await expect(page.getByRole('button', { name: '新建权限' })).toHaveCount(0);
+    expect(adminRequests).toEqual([]);
+  });
+});

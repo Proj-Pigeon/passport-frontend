@@ -18,6 +18,10 @@ import { AdminUserDetailPage } from '@/features/admin/pages/AdminUserDetailPage'
 import { AdminUsersPage } from '@/features/admin/pages/AdminUsersPage';
 import { AdminGuestOnly, RequireAdmin } from '@/features/admin/session/guards';
 import { AdminOriginGate } from '@/features/admin/session/AdminOriginGate';
+import {
+  DeveloperApplicationsPage,
+  DeveloperPermissionsPage,
+} from '@/features/developer/DeveloperApplicationsPage';
 import { OverviewPage } from '@/features/account/OverviewPage';
 import { ProfilePage } from '@/features/account/ProfilePage';
 import { SecurityPage } from '@/features/account/SecurityPage';
@@ -110,6 +114,8 @@ export const routes: RouteObject[] = [
           { index: true, element: <OverviewPage /> },
           { path: 'profile', element: <ProfilePage /> },
           { path: 'security', element: <SecurityPage /> },
+          { path: 'developer', element: <DeveloperApplicationsPage /> },
+          { path: 'developer/:applicationId/permissions', element: <DeveloperPermissionsPage /> },
         ],
       },
 

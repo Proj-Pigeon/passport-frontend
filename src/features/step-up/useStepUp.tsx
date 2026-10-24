@@ -30,6 +30,7 @@ export function isStepUpAborted(value: unknown): boolean {
 
 export interface StepUpRunOptions {
   requireUpfront?: boolean;
+  requireVerification?: boolean;
   retryOnForbidden?: boolean;
   preferredMethod?: StepUpMethod;
 }
@@ -122,12 +123,12 @@ export function useStepUp(): UseStepUpResult {
     action: () => Promise<T>,
     options?: StepUpRunOptions,
   ): Promise<T> {
-    if (!stepUpRequired) {
+    if (!stepUpRequired && !options?.requireVerification) {
       await confirmRiskyAction();
       return await action();
     }
-    if (options?.requireUpfront) {
-      await ensureStepUp();
+    if (options?.requireUpfront || options?.requireVerification) {
+      await ensureStepUp({ preferredMethod: options?.preferredMethod });
     }
     try {
       return await action();

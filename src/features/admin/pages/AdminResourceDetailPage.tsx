@@ -45,6 +45,8 @@ import {
   SamlConnectivityGuideCard,
 } from '@/features/admin/guides/ConnectivityGuideCards';
 
+import { AdminPermissionCatalog } from '../components/AdminPermissionCatalog';
+import { ResourceServersCard } from '../components/ResourceServersCard';
 import { adminKeys } from '../keys';
 import { AdminStatusBadge } from '../components/AdminStatusBadge';
 import { ChangeRequestsCard } from '../components/ChangeRequestsCard';
@@ -414,6 +416,8 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
         <>
           <ApplicationTypeCard {...sectionProps} canWrite={canWrite} />
           <ApplicationBrandingCard {...sectionProps} canWrite={canWrite} />
+          <AdminPermissionCatalog key={`permissions-${resource.id}`} applicationId={resource.id} />
+          <ResourceServersCard key={`servers-${resource.id}`} applicationId={resource.id} />
           <SectionCard
             title={t('admin.applicationProtocols.clientsCard')}
             description={t('admin.applicationProtocols.clientsHint')}

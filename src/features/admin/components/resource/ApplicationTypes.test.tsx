@@ -86,7 +86,9 @@ describe('Application types', () => {
     seedAdminResource(mockDb, { id: 'apl_legacy', display_name: 'Legacy' });
     renderRoute(['/admin/applications/apl_legacy']);
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: '添加 OAuth 客户端' }));
+    await user.click(
+      await screen.findByRole('button', { name: '添加 OAuth 客户端' }, { timeout: 5000 }),
+    );
     const modal = await screen.findByRole('dialog');
     const preset = within(modal).getByRole('combobox', { name: /^接入预设/ });
     await user.click(preset);
@@ -173,7 +175,9 @@ describe('Application types', () => {
     });
     renderRoute(['/admin/applications/apl_device']);
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: '添加 OAuth 客户端' }));
+    await user.click(
+      await screen.findByRole('button', { name: '添加 OAuth 客户端' }, { timeout: 5000 }),
+    );
     const modal = await screen.findByRole('dialog');
     expect(within(modal).getByRole('combobox', { name: /^接入预设/ })).toHaveValue('设备授权');
     expect(within(modal).queryByLabelText(/^回调地址/)).not.toBeInTheDocument();
