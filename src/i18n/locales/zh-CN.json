@@ -720,7 +720,16 @@
       "actionConfirm": "即将对 {{username}} 执行该操作。",
       "conflictHint": "用户当前状态不允许该操作。",
       "selfHint": "不能对自己执行该操作。",
-      "selfNotice": "不能对自己的账号执行挂起或恢复操作。"
+      "selfNotice": "不能对自己的账号执行挂起或恢复操作。",
+      "tabAccess": "权限与设备"
+    },
+    "resourceTabs": {
+      "overview": "概览",
+      "protocols": "接入配置",
+      "access": "权限与服务",
+      "settings": "连接与凭据",
+      "integration": "接入指南与配置",
+      "activity": "变更与发布"
     },
     "resources": {
       "create": "创建草稿",
@@ -728,6 +737,8 @@
       "displayName": "显示名称",
       "parentApplication": "所属应用",
       "parentApplicationPlaceholder": "选择父应用",
+      "backToApplication": "返回所属应用",
+      "openDetail": "管理配置",
       "empty": "暂无资源",
       "emptyHint": "点击\"创建草稿\"新增第一条记录。",
       "statusFilter": "按状态筛选",
@@ -791,6 +802,9 @@
     "changeRequests": {
       "title": "变更请求",
       "description": "最近 100 条变更请求。",
+      "empty": "暂无变更请求",
+      "viewDetail": "查看",
+      "detailTitle": "变更请求详情",
       "requestedBy": "申请人",
       "baseVersion": "基准版本",
       "policyVersion": "策略版本"
@@ -969,6 +983,7 @@
       },
       "historyCard": "本次会话操作记录",
       "historyHint": "仅显示本页发起或审批的请求，完整历史请查看审计事件。",
+      "historyEmpty": "本次会话暂无轮换操作",
       "managerUnavailableHint": "当前部署未启用密钥轮换。",
       "noCapability": "当前账号没有密钥轮换相关能力。"
     },

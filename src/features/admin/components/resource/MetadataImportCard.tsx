@@ -6,15 +6,16 @@ import { useTranslation } from 'react-i18next';
 import { importResourceMetadata } from '@/api/endpoints/admin/resources';
 import { SectionCard } from '@/components/AccountSections';
 
-import type { ResourceSectionProps } from '../../pages/AdminResourceDetailPage';
 import { useAdminStepUp } from '../../step-up/useAdminStepUp';
 import { ReasonModal } from '../ReasonModal';
+import type { ResourceSectionProps } from './resourceTypes';
 
 export function MetadataImportCard({
   kind,
   resource,
   etag,
   refresh,
+  canWrite = true,
 }: ResourceSectionProps & { kind: 'saml' | 'federation' }) {
   const { t } = useTranslation();
   const stepUp = useAdminStepUp();
@@ -61,52 +62,41 @@ export function MetadataImportCard({
         description={t('admin.metadata.hint', {
           format: format === 'saml' ? 'SAML XML' : 'OIDC discovery JSON',
         })}
+        action={
+          canWrite ? (
+            <Group gap="xs">
+              {supportsDiscovery && (
+                <Button
+                  size="xs"
+                  variant="default"
+                  onClick={() => {
+                    mutation.reset();
+                    setModal('discovery');
+                  }}
+                >
+                  {t('admin.metadata.fetchDiscovery')}
+                </Button>
+              )}
+              <Button
+                size="xs"
+                variant="light"
+                onClick={() => {
+                  mutation.reset();
+                  setModal('paste');
+                }}
+              >
+                {t('admin.metadata.submit')}
+              </Button>
+            </Group>
+          ) : undefined
+        }
       >
-        <Stack gap="sm">
+        <Stack gap="xs">
           {mutation.isSuccess && (
             <Alert color="green" variant="light">
               {t('admin.metadata.imported')}
             </Alert>
           )}
-          {supportsDiscovery && (
-            <Group justify="space-between" align="flex-end" wrap="nowrap">
-              <TextInput
-                label={t('admin.metadata.discoveryUrl')}
-                description={t('admin.metadata.discoveryUrlHint')}
-                placeholder="https://accounts.google.com"
-                value={discoveryUrl}
-                onChange={(event) => setDiscoveryUrl(event.currentTarget.value)}
-                style={{ flex: 1 }}
-              />
-              <Button
-                size="xs"
-                variant="light"
-                disabled={discoveryUrl.trim().length === 0}
-                onClick={() => setModal('discovery')}
-              >
-                {t('admin.metadata.fetchDiscovery')}
-              </Button>
-            </Group>
-          )}
-          <Textarea
-            value={metadata}
-            onChange={(event) => setMetadata(event.currentTarget.value)}
-            placeholder={
-              format === 'saml' ? '<EntityDescriptor …>' : '{"issuer": "https://idp.example", …}'
-            }
-            autosize
-            minRows={4}
-            maxRows={12}
-            ff="monospace"
-          />
-          <Button
-            size="xs"
-            variant="light"
-            disabled={metadata.trim().length === 0}
-            onClick={() => setModal('paste')}
-          >
-            {t('admin.metadata.submit')}
-          </Button>
           <Text size="xs" c="dimmed">
             {t('admin.metadata.trustReview')}
           </Text>
@@ -121,8 +111,40 @@ export function MetadataImportCard({
         }
         description={t('admin.metadata.confirm')}
         confirmLabel={t('admin.metadata.submit')}
+        confirmDisabled={
+          modal === 'discovery' ? discoveryUrl.trim().length === 0 : metadata.trim().length === 0
+        }
         pending={mutation.isPending}
         error={mutation.error}
+        size="lg"
+        extraFields={
+          modal === 'discovery' ? (
+            <TextInput
+              label={t('admin.metadata.discoveryUrl')}
+              description={t('admin.metadata.discoveryUrlHint')}
+              placeholder="https://accounts.google.com"
+              value={discoveryUrl}
+              onChange={(event) => setDiscoveryUrl(event.currentTarget.value)}
+              data-autofocus
+              required
+            />
+          ) : (
+            <Textarea
+              label={t('admin.metadata.title')}
+              value={metadata}
+              onChange={(event) => setMetadata(event.currentTarget.value)}
+              placeholder={
+                format === 'saml' ? '<EntityDescriptor …>' : '{"issuer": "https://idp.example", …}'
+              }
+              autosize
+              minRows={6}
+              maxRows={14}
+              ff="monospace"
+              data-autofocus
+              required
+            />
+          )
+        }
         onSubmit={(reason) => mutation.mutate({ reason })}
       />
     </>

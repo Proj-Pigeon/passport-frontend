@@ -720,7 +720,16 @@
       "actionConfirm": "You are about to perform this action on {{username}}.",
       "conflictHint": "This action is not allowed in the user's current state.",
       "selfHint": "You cannot perform this action on yourself.",
-      "selfNotice": "You cannot suspend or restore your own account."
+      "selfNotice": "You cannot suspend or restore your own account.",
+      "tabAccess": "Permissions & devices"
+    },
+    "resourceTabs": {
+      "overview": "Overview",
+      "protocols": "Protocols",
+      "access": "Access & services",
+      "settings": "Settings",
+      "integration": "Integration",
+      "activity": "Activity"
     },
     "resources": {
       "create": "Create draft",
@@ -728,6 +737,8 @@
       "displayName": "Display name",
       "parentApplication": "Application",
       "parentApplicationPlaceholder": "Select the parent application",
+      "backToApplication": "Back to application",
+      "openDetail": "Configure",
       "empty": "No resources yet",
       "emptyHint": "Use \"Create draft\" to add the first record.",
       "statusFilter": "Filter by status",
@@ -791,6 +802,9 @@
     "changeRequests": {
       "title": "Change requests",
       "description": "The 100 most recent change requests.",
+      "empty": "No change requests",
+      "viewDetail": "Details",
+      "detailTitle": "Change request details",
       "requestedBy": "Requested by",
       "baseVersion": "Base version",
       "policyVersion": "Policy version"
@@ -969,6 +983,7 @@
       },
       "historyCard": "This session",
       "historyHint": "Only requests from this page. See audit events for the full history.",
+      "historyEmpty": "No rotation actions in this session",
       "managerUnavailableHint": "Key rotation is not available in this deployment.",
       "noCapability": "Your account has no key rotation capabilities."
     },

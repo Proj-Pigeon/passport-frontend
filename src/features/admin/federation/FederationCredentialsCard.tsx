@@ -7,7 +7,7 @@ import { clearFederationSecret, setFederationSecret } from '@/api/endpoints/admi
 import { patchAdminResource } from '@/api/endpoints/admin/resources';
 import { SectionCard } from '@/components/AccountSections';
 
-import type { ResourceSectionProps } from '../pages/AdminResourceDetailPage';
+import type { ResourceSectionProps } from '../components/resource/resourceTypes';
 import { useAdminStepUp } from '../step-up/useAdminStepUp';
 import { ReasonModal } from '../components/ReasonModal';
 

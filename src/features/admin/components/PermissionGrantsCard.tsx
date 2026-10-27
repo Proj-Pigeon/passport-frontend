@@ -4,7 +4,10 @@ import {
   Badge,
   Button,
   Checkbox,
+  Divider,
   Group,
+  ScrollArea,
+  SimpleGrid,
   Stack,
   Text,
   TextInput,
@@ -149,7 +152,7 @@ function GrantEditor({
     const key = application ? 'application_permission_ids' : 'builtin_permission_ids';
     return (
       <Stack gap="sm">
-        <Text fw={600}>
+        <Text fw={600} size="sm">
           {t(application ? 'authorization.applicationGrants' : 'authorization.builtinGrants')}
         </Text>
         {items.length === 0 && (
@@ -157,38 +160,65 @@ function GrantEditor({
             {t('authorization.empty')}
           </Text>
         )}
-        {items.map((definition) => {
-          const checked = selection[key].includes(definition.id);
-          const roles = !application ? (preview.inherited.get(definition.code) ?? []) : [];
-          return (
-            <Stack key={definition.id} gap={4}>
-              <Checkbox
-                label={`${definition.name} (${definition.code})`}
-                description={[definition.application_id, definition.description]
-                  .filter(Boolean)
-                  .join(' · ')}
-                checked={checked}
-                disabled={
-                  !canWrite ||
-                  mutation.isPending ||
-                  definition.status === 'deleted' ||
-                  (definition.status === 'disabled' &&
-                    !initialGrantSelection(baseline.grants)[key].includes(definition.id))
-                }
-                onChange={(event) => toggle(key, definition.id, event.currentTarget.checked)}
-              />
-              <Group gap="xs">
-                <Badge variant="light">{t(`authorization.status.${definition.status}`)}</Badge>
-                {checked && <Text size="xs">{t('authorization.directSource')}</Text>}
-                {roles.length > 0 && (
-                  <Text size="xs">
-                    {t('authorization.roleSource', { roles: roles.map(roleLabel).join(', ') })}
-                  </Text>
-                )}
-              </Group>
-            </Stack>
-          );
-        })}
+        <ScrollArea.Autosize mah={320} scrollbars="y">
+          <Stack gap="md" pe="xs">
+            {items.map((definition) => {
+              const checked = selection[key].includes(definition.id);
+              const roles = !application ? (preview.inherited.get(definition.code) ?? []) : [];
+              const details = [
+                definition.name === definition.code ? '' : definition.code,
+                definition.application_id ?? '',
+                definition.description,
+              ]
+                .filter(Boolean)
+                .join(' · ');
+              const sources = [
+                checked ? t('authorization.directSource') : '',
+                roles.length > 0
+                  ? t('authorization.roleSource', { roles: roles.map(roleLabel).join(', ') })
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' · ');
+              return (
+                <Group key={definition.id} justify="space-between" align="flex-start" wrap="nowrap">
+                  <Checkbox
+                    label={definition.name}
+                    description={
+                      details || sources ? (
+                        <>
+                          {details && (
+                            <Text component="span" display="block" size="xs" c="dimmed">
+                              {details}
+                            </Text>
+                          )}
+                          {sources && (
+                            <Text component="span" display="block" size="xs" c="dimmed" mt={2}>
+                              {sources}
+                            </Text>
+                          )}
+                        </>
+                      ) : undefined
+                    }
+                    checked={checked}
+                    disabled={
+                      !canWrite ||
+                      mutation.isPending ||
+                      definition.status === 'deleted' ||
+                      (definition.status === 'disabled' &&
+                        !initialGrantSelection(baseline.grants)[key].includes(definition.id))
+                    }
+                    onChange={(event) => toggle(key, definition.id, event.currentTarget.checked)}
+                    style={{ flex: 1, minWidth: 0 }}
+                  />
+                  <Badge variant="light" style={{ flexShrink: 0 }}>
+                    {t(`authorization.status.${definition.status}`)}
+                  </Badge>
+                </Group>
+              );
+            })}
+          </Stack>
+        </ScrollArea.Autosize>
       </Stack>
     );
   };
@@ -233,7 +263,7 @@ function GrantEditor({
     </Stack>
   );
   return (
-    <Stack>
+    <Stack gap="md">
       {!canWrite && (
         <Alert>{t(self ? 'authorization.noSelf' : 'authorization.superAdminOnly')}</Alert>
       )}
@@ -241,29 +271,53 @@ function GrantEditor({
         {t('authorization.currentEffective')}:{' '}
         {baseline.grants.effective_capabilities.join(', ') || t('authorization.none')}
       </Text>
-      <Text fw={600}>{t('authorization.roles')}</Text>
-      {Object.keys(baseline.grants.role_capabilities).map((role) => (
-        <Checkbox
-          key={role}
-          label={roleLabel(role)}
-          checked={selection.roles.includes(role)}
-          disabled={!canWrite || mutation.isPending}
-          onChange={(event) => toggle('roles', role, event.currentTarget.checked)}
-        />
-      ))}
+      <Stack gap="xs">
+        <Text fw={600} size="sm">
+          {t('authorization.roles')}
+        </Text>
+        <Group gap="md" wrap="wrap">
+          {Object.keys(baseline.grants.role_capabilities).map((role) => (
+            <Checkbox
+              key={role}
+              label={roleLabel(role)}
+              checked={selection.roles.includes(role)}
+              disabled={!canWrite || mutation.isPending}
+              onChange={(event) => toggle('roles', role, event.currentTarget.checked)}
+            />
+          ))}
+        </Group>
+      </Stack>
       <TextInput
         label={t('authorization.searchApplications')}
         value={search}
         onChange={(event) => setSearch(event.currentTarget.value)}
       />
-      {renderDefinitions(false)}
-      {renderDefinitions(true)}
+      <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
+        {renderDefinitions(false)}
+        {renderDefinitions(true)}
+      </SimpleGrid>
       {canWrite && (
-        <SectionCard title={t('authorization.previewTitle')}>{previewContent}</SectionCard>
+        <>
+          <Divider />
+          <Stack gap="xs">
+            <Text fw={600} size="sm">
+              {t('authorization.previewTitle')}
+            </Text>
+            <Text size="sm">
+              {t('authorization.inheritedRemaining')}:{' '}
+              {[...preview.inherited.keys()].sort().join(', ') || t('authorization.none')}
+            </Text>
+            <Text size="sm">
+              {t('authorization.effectivePreview')}:{' '}
+              {preview.effective.join(', ') || t('authorization.none')}
+            </Text>
+          </Stack>
+        </>
       )}
       <Group>
         {canWrite && (
           <Button
+            size="xs"
             disabled={!preview.changed || !baseline.etag || conflict}
             onClick={() => {
               mutation.reset();
@@ -273,13 +327,14 @@ function GrantEditor({
             {t('authorization.reviewSave')}
           </Button>
         )}
-        <Button variant="default" onClick={refresh} disabled={mutation.isPending}>
+        <Button size="xs" variant="default" onClick={refresh} disabled={mutation.isPending}>
           {t('authorization.refresh')}
         </Button>
         {hasAdminCapability(session, 'audit:read') && (
           <Anchor
             component={Link}
             to={`/admin/audit-events?resource_id=${encodeURIComponent(userId)}`}
+            size="sm"
           >
             {t('authorization.audit')}
           </Anchor>

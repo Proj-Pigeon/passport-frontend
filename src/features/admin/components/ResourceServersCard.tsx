@@ -2,12 +2,16 @@ import {
   Alert,
   Badge,
   Button,
+  Code,
+  Divider,
   Group,
   Modal,
+  SimpleGrid,
   Stack,
   Text,
   Textarea,
   TextInput,
+  Title,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -50,15 +54,21 @@ export function ResourceServersCard({ applicationId }: { applicationId: string }
   const refresh = async () => {
     await client.invalidateQueries({ queryKey: adminKeys.resourceServers(applicationId) });
   };
+  const canWrite = hasAdminCapability(session, 'applications:write');
+
   return (
     <SectionCard
       title={t('authorization.serversTitle')}
       description={t('authorization.serversHint')}
+      action={
+        canWrite ? (
+          <Button size="xs" variant="light" onClick={() => setCreating(true)}>
+            {t('authorization.createServer')}
+          </Button>
+        ) : undefined
+      }
     >
-      <Stack>
-        {hasAdminCapability(session, 'applications:write') && (
-          <Button onClick={() => setCreating(true)}>{t('authorization.createServer')}</Button>
-        )}
+      <Stack gap="md">
         {query.isError && query.data && <SubmitErrorAlert error={query.error} />}
         {query.isPending ? (
           <PageState kind="loading" />
@@ -72,9 +82,14 @@ export function ResourceServersCard({ applicationId }: { applicationId: string }
         ) : query.data.items.length === 0 ? (
           <PageState kind="empty" title={t('authorization.noServers')} minHeight={80} />
         ) : (
-          query.data.items.map((server) => (
-            <ResourceServerCard key={server.id} serverId={server.id} refreshList={refresh} />
-          ))
+          <Stack gap="md">
+            {query.data.items.map((server, index) => (
+              <Stack key={server.id} gap="md">
+                {index > 0 && <Divider />}
+                <ResourceServerRow serverId={server.id} refreshList={refresh} />
+              </Stack>
+            ))}
+          </Stack>
         )}
         {creating && (
           <ServerActionModal
@@ -129,21 +144,25 @@ function ChangeReview({
       <Text fw={500} size="sm">
         {t('authorization.proposedSnapshot')}
       </Text>
-      {fields.map((field) => (
-        <InfoItem key={field.label} label={field.label}>
-          <Text size="sm">{field.proposed || t('authorization.none')}</Text>
-          {field.proposed !== field.current && (
-            <Text size="sm" c="dimmed">
-              {t('authorization.currentValue', { value: field.current || t('authorization.none') })}
-            </Text>
-          )}
-        </InfoItem>
-      ))}
+      <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
+        {fields.map((field) => (
+          <InfoItem key={field.label} label={field.label}>
+            <Text size="sm">{field.proposed || t('authorization.none')}</Text>
+            {field.proposed !== field.current && (
+              <Text size="sm" c="dimmed">
+                {t('authorization.currentValue', {
+                  value: field.current || t('authorization.none'),
+                })}
+              </Text>
+            )}
+          </InfoItem>
+        ))}
+      </SimpleGrid>
     </Stack>
   );
 }
 
-function ResourceServerCard({
+function ResourceServerRow({
   serverId,
   refreshList,
 }: {
@@ -186,28 +205,30 @@ function ResourceServerCard({
         item.base_version === server.version &&
         credentialAction(item.action),
     ) ?? false;
+
   return (
-    <SectionCard title={server.name}>
-      <Stack>
-        {query.isError && <SubmitErrorAlert error={query.error} />}
-        <Group>
+    <Stack gap="sm">
+      {query.isError && <SubmitErrorAlert error={query.error} />}
+      <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
+        <Group gap="xs" wrap="wrap">
+          <Title order={3} fz={15} fw={600}>
+            {server.name}
+          </Title>
           <AdminStatusBadge status={server.status} />
-          <Text size="sm">{server.id}</Text>
+          <Code>{server.id}</Code>
         </Group>
-        <InfoItem label={t('authorization.audience')}>{server.audience}</InfoItem>
-        <InfoItem label={t('authorization.clientIds')}>
-          {server.client_ids.join(', ') || t('authorization.none')}
-        </InfoItem>
-        <InfoItem label={t('authorization.credentialStatus')}>
-          {t(server.secret_set ? 'authorization.secretSet' : 'authorization.secretUnset')}
-        </InfoItem>
-        {!canWrite && <Text size="sm">{t('authorization.readOnly')}</Text>}
-        {canWrite && (
-          <Group>
-            <Button variant="light" disabled={pending} onClick={() => setAction({ kind: 'edit' })}>
+        {canWrite ? (
+          <Group gap="xs" wrap="wrap">
+            <Button
+              size="xs"
+              variant="light"
+              disabled={pending}
+              onClick={() => setAction({ kind: 'edit' })}
+            >
               {t('authorization.editServer')}
             </Button>
             <Button
+              size="xs"
               variant="light"
               disabled={pending || approvedCredential}
               onClick={() =>
@@ -217,6 +238,7 @@ function ResourceServerCard({
               {t(server.secret_set ? 'authorization.rotateSecret' : 'authorization.createSecret')}
             </Button>
             <Button
+              size="xs"
               variant="light"
               color={lifecycle === 'deactivate' ? 'red' : undefined}
               disabled={pending}
@@ -229,34 +251,49 @@ function ResourceServerCard({
               )}
             </Button>
           </Group>
+        ) : (
+          <Text size="xs" c="dimmed">
+            {t('authorization.readOnly')}
+          </Text>
         )}
-        {pending && <Alert>{t('admin.resources.activationPendingHint')}</Alert>}
-        {(server.change_requests ?? []).map((request) => (
-          <Stack key={request.id} gap="xs">
-            <Group>
-              <Text size="sm">
+      </Group>
+
+      <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
+        <InfoItem label={t('authorization.audience')}>
+          <Text size="sm" ff="monospace">
+            {server.audience}
+          </Text>
+        </InfoItem>
+        <InfoItem label={t('authorization.clientIds')}>
+          <Text size="sm" ff="monospace">
+            {server.client_ids.join(', ') || t('authorization.none')}
+          </Text>
+        </InfoItem>
+        <InfoItem label={t('authorization.credentialStatus')}>
+          <Text size="sm">
+            {t(server.secret_set ? 'authorization.secretSet' : 'authorization.secretUnset')}
+          </Text>
+        </InfoItem>
+      </SimpleGrid>
+
+      {pending && <Alert>{t('admin.resources.activationPendingHint')}</Alert>}
+
+      {(server.change_requests ?? []).map((request) => (
+        <Stack key={request.id} gap="xs">
+          <Group justify="space-between" wrap="wrap" gap="xs">
+            <Group gap="xs">
+              <Text size="sm" fw={500}>
                 {t(`admin.changeAction.${request.action}`, { defaultValue: request.action })}
               </Text>
               <Badge>{t(`admin.status.${request.status}`, { defaultValue: request.status })}</Badge>
+              <Text size="xs" c="dimmed">
+                {t('authorization.requestedBy', { user: request.requested_by })}
+              </Text>
             </Group>
-            <Text size="sm">{request.reason}</Text>
-            <Text size="xs">{t('authorization.requestedBy', { user: request.requested_by })}</Text>
-            <ChangeReview server={server} request={request} />
-            {request.status === 'approved' &&
-              credentialAction(request.action) &&
-              request.base_version === server.version && (
-                <>
-                  <Alert>{t('authorization.approvedCredential')}</Alert>
-                  {canWrite && session?.user_id === request.requested_by && (
-                    <Button onClick={() => setAction({ kind: 'redeem', requestId: request.id })}>
-                      {t('authorization.redeemSecret')}
-                    </Button>
-                  )}
-                </>
-              )}
             {canApprove && request.status === 'pending' && (
-              <Group>
+              <Group gap="xs">
                 <Button
+                  size="xs"
                   variant="light"
                   disabled={request.base_version !== server.version}
                   onClick={() => setAction({ kind: 'approve', requestId: request.id })}
@@ -264,6 +301,7 @@ function ResourceServerCard({
                   {t('admin.approval.approve')}
                 </Button>
                 <Button
+                  size="xs"
                   variant="light"
                   color="red"
                   onClick={() => setAction({ kind: 'reject', requestId: request.id })}
@@ -272,48 +310,66 @@ function ResourceServerCard({
                 </Button>
               </Group>
             )}
-          </Stack>
-        ))}
-        {action && (
-          <ServerActionModal
-            applicationId={server.application_id}
-            server={server}
-            action={action}
-            onClose={() => setAction(null)}
-            refresh={refresh}
-            onSecret={setSecret}
-          />
-        )}
-        <Modal
-          opened={secret !== null}
-          onClose={() => setSecret(null)}
-          title={t('authorization.secretTitle')}
-          closeOnClickOutside={false}
-          closeOnEscape={false}
-          withCloseButton={false}
-        >
-          <Stack>
-            <Alert color="red">{t('admin.secret.warning')}</Alert>
-            {secret && (
-              <>
-                <TextInput
-                  label={t('authorization.credentialId')}
-                  value={secret.credential_id}
-                  readOnly
-                />
-                <TextInput
-                  label={t('admin.secret.valueLabel')}
-                  value={secret.secret}
-                  readOnly
-                  autoComplete="off"
-                />
-              </>
+          </Group>
+          <Text size="sm">{request.reason}</Text>
+          <ChangeReview server={server} request={request} />
+          {request.status === 'approved' &&
+            credentialAction(request.action) &&
+            request.base_version === server.version && (
+              <Group justify="space-between" align="center" wrap="wrap">
+                <Alert style={{ flex: 1 }}>{t('authorization.approvedCredential')}</Alert>
+                {canWrite && session?.user_id === request.requested_by && (
+                  <Button
+                    size="xs"
+                    onClick={() => setAction({ kind: 'redeem', requestId: request.id })}
+                  >
+                    {t('authorization.redeemSecret')}
+                  </Button>
+                )}
+              </Group>
             )}
-            <Button onClick={() => setSecret(null)}>{t('admin.secret.acknowledge')}</Button>
-          </Stack>
-        </Modal>
-      </Stack>
-    </SectionCard>
+        </Stack>
+      ))}
+
+      {action && (
+        <ServerActionModal
+          applicationId={server.application_id}
+          server={server}
+          action={action}
+          onClose={() => setAction(null)}
+          refresh={refresh}
+          onSecret={setSecret}
+        />
+      )}
+      <Modal
+        opened={secret !== null}
+        onClose={() => setSecret(null)}
+        title={t('authorization.secretTitle')}
+        closeOnClickOutside={false}
+        closeOnEscape={false}
+        withCloseButton={false}
+      >
+        <Stack>
+          <Alert color="red">{t('admin.secret.warning')}</Alert>
+          {secret && (
+            <>
+              <TextInput
+                label={t('authorization.credentialId')}
+                value={secret.credential_id}
+                readOnly
+              />
+              <TextInput
+                label={t('admin.secret.valueLabel')}
+                value={secret.secret}
+                readOnly
+                autoComplete="off"
+              />
+            </>
+          )}
+          <Button onClick={() => setSecret(null)}>{t('admin.secret.acknowledge')}</Button>
+        </Stack>
+      </Modal>
+    </Stack>
   );
 }
 
@@ -471,6 +527,7 @@ function ServerActionModal({
                 required
                 value={name}
                 onChange={(event) => setName(event.currentTarget.value)}
+                data-autofocus
               />
               <TextInput
                 label={t('authorization.audience')}

@@ -125,7 +125,7 @@ describe('DevicesCard', () => {
         return new HttpResponse(null, { status: 204 });
       }),
     );
-    renderRoute(['/admin/users/usr_device_owner']);
+    renderRoute(['/admin/users/usr_device_owner/access']);
     const user = userEvent.setup();
     await screen.findByText('Lost laptop');
     await user.click(screen.getByRole('button', { name: '撤销访问' }));

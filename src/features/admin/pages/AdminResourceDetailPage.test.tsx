@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
@@ -20,6 +20,42 @@ function signInAsMaker() {
 }
 
 describe('admin resource detail page', () => {
+  it('redirects bare resource detail URLs to overview and preserves query parameters', async () => {
+    const maker = seedUser(mockDb);
+    signInAdmin(mockDb, maker, ['super_admin']);
+    seedAdminResource(mockDb, {
+      id: 'adr_app',
+      kind: 'application',
+      display_name: 'Portal App',
+    });
+
+    const { router } = renderRoute(['/admin/applications/adr_app?from=list']);
+
+    expect(await screen.findByRole('heading', { name: 'Portal App' })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe('/admin/applications/adr_app/overview'),
+    );
+    expect(router.state.location.search).toBe('?from=list');
+  });
+
+  it('shows the complete configuration version ID in a tooltip', async () => {
+    const user = userEvent.setup();
+    const maker = seedUser(mockDb);
+    const configurationVersionId = 'cfg_gQvRXHyYNZvUB5FaD1Y4lg';
+    signInAdmin(mockDb, maker, ['super_admin']);
+    seedAdminResource(mockDb, {
+      id: 'adr_app',
+      kind: 'application',
+      configuration_version_id: configurationVersionId,
+    });
+
+    renderRoute(['/admin/applications/adr_app/overview']);
+
+    const value = await screen.findByText(configurationVersionId);
+    await user.hover(value);
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(configurationVersionId);
+  });
+
   it('shows the If-Match conflict hint when the version moved', async () => {
     const user = userEvent.setup();
     signInAsMaker();
@@ -33,7 +69,8 @@ describe('admin resource detail page', () => {
     renderRoute(['/admin/federation-providers/adr_1']);
 
     expect(await screen.findByRole('heading', { name: 'Demo IdP' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '展开配置 JSON' }));
+    await user.click(screen.getByRole('tab', { name: '接入指南与配置' }));
+    await user.click(await screen.findByRole('button', { name: '展开配置 JSON' }));
     const editor = screen.getByLabelText(/^配置 JSON/);
     fireEvent.change(editor, { target: { value: '{"issuer":"https://idp.example/v2"}' } });
     await user.type(screen.getByLabelText(/^操作原因/), 'rotate issuer');
@@ -86,7 +123,7 @@ describe('admin resource detail page', () => {
     ).toBeInTheDocument();
   });
 
-  it('reveals a redeemed secret once without caching it', async () => {
+  it('reveals a redeemed secret once without caching it and navigates back to parent application', async () => {
     const user = userEvent.setup();
     const maker = seedUser(mockDb);
     signInAdmin(mockDb, maker, ['super_admin']);
@@ -107,7 +144,7 @@ describe('admin resource detail page', () => {
       requested_by: 'usr_seed',
     });
 
-    const { queryClient } = renderRoute(['/admin/oauth-clients/adr_oc']);
+    const { queryClient, router } = renderRoute(['/admin/oauth-clients/adr_oc']);
 
     expect(await screen.findByRole('heading', { name: 'Web Client' })).toBeInTheDocument();
     await user.click(await screen.findByRole('button', { name: '兑换（创建密钥）' }));
@@ -124,5 +161,11 @@ describe('admin resource detail page', () => {
         .map((entry) => entry.state.data),
     );
     expect(cached).not.toContain('sec_mock_1');
+
+    await user.click(screen.getByRole('button', { name: '我已保存' }));
+    await user.click(screen.getByRole('link', { name: '返回所属应用' }));
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe('/admin/applications/adr_app/protocols'),
+    );
   });
 });

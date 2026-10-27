@@ -160,6 +160,7 @@ test('device login, userinfo, refresh, user/admin revoke and current browser exi
     await expect(admin.getByText('通行密钥已添加')).toBeVisible();
     await login(admin, adminUsername!, true);
     await admin.goto(`/admin/users/${userId}`);
+    await admin.getByRole('tab', { name: '权限与设备' }).click();
     const adminCard = admin
       .locator('.mantine-Paper-root')
       .filter({

@@ -62,7 +62,7 @@ describe('Application types', () => {
       configuration: { application_type: 'device' },
     });
     renderRoute(['/admin/applications/apl_device']);
-    expect(await screen.findByText(/应用类型已锁定/)).toBeInTheDocument();
+    expect(await screen.findByText(/应用类型已锁定/, {}, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: '应用类型' })).not.toBeInTheDocument();
   });
   it('assigns a type to a legacy application through a reasoned change', async () => {
@@ -70,7 +70,7 @@ describe('Application types', () => {
     seedAdminResource(mockDb, { id: 'apl_legacy', display_name: 'Legacy' });
     renderRoute(['/admin/applications/apl_legacy']);
     const user = userEvent.setup();
-    const select = await screen.findByRole('combobox', { name: '应用类型' });
+    const select = await screen.findByRole('combobox', { name: '应用类型' }, { timeout: 5000 });
     await user.click(select);
     await user.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}{ArrowDown}{Enter}');
     expect(select).toHaveValue('设备授权');
@@ -84,7 +84,7 @@ describe('Application types', () => {
   it('hides the device preset for a fixed legacy parent and links to classification', async () => {
     admin();
     seedAdminResource(mockDb, { id: 'apl_legacy', display_name: 'Legacy' });
-    renderRoute(['/admin/applications/apl_legacy']);
+    renderRoute(['/admin/applications/apl_legacy/protocols']);
     const user = userEvent.setup();
     await user.click(
       await screen.findByRole('button', { name: '添加 OAuth 客户端' }, { timeout: 5000 }),
@@ -105,7 +105,7 @@ describe('Application types', () => {
     await user.keyboard('{Escape}');
     await user.click(within(modal).getByRole('link', { name: '前往应用详情' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(screen.getByRole('combobox', { name: '应用类型' })).toBeInTheDocument();
+    expect(await screen.findByRole('combobox', { name: '应用类型' })).toBeInTheDocument();
   });
   it('drops a selected device preset when switching to a legacy parent and validates redirects', async () => {
     admin();
@@ -173,7 +173,7 @@ describe('Application types', () => {
       display_name: 'GuEarth',
       configuration: { application_type: 'device' },
     });
-    renderRoute(['/admin/applications/apl_device']);
+    renderRoute(['/admin/applications/apl_device/protocols']);
     const user = userEvent.setup();
     await user.click(
       await screen.findByRole('button', { name: '添加 OAuth 客户端' }, { timeout: 5000 }),

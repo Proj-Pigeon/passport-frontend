@@ -6,13 +6,14 @@ import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 export interface AccountPageHeaderProps {
   title: string;
   subtitle?: ReactNode;
+  actions?: ReactNode;
 }
 
-export function AccountPageHeader({ title, subtitle }: AccountPageHeaderProps) {
+export function AccountPageHeader({ title, subtitle, actions }: AccountPageHeaderProps) {
   useDocumentTitle(title);
 
-  return (
-    <Stack gap={2}>
+  const heading = (
+    <Stack gap={2} style={{ minWidth: 0 }}>
       <Title order={1} fz={{ base: 20, sm: 24 }}>
         {title}
       </Title>
@@ -22,6 +23,19 @@ export function AccountPageHeader({ title, subtitle }: AccountPageHeaderProps) {
         </Text>
       )}
     </Stack>
+  );
+
+  if (!actions) {
+    return heading;
+  }
+
+  return (
+    <Group justify="space-between" align="flex-start" wrap="wrap" gap="md">
+      {heading}
+      <Group gap="xs" wrap="wrap">
+        {actions}
+      </Group>
+    </Group>
   );
 }
 
@@ -35,7 +49,7 @@ export interface SectionCardProps {
 
 export function InfoItem({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <Stack gap={2}>
+    <Stack gap={2} miw={0}>
       <Text size="xs" c="dimmed" fw={500}>
         {label}
       </Text>

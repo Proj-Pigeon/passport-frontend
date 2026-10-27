@@ -18,15 +18,29 @@ export interface ReasonModalProps {
   error?: unknown;
   errorHint?: ReactNode;
   extraFields?: ReactNode;
+  size?: string | number;
   onSubmit: (reason: string) => void;
 }
 
 const MAX_REASON_LENGTH = 1000;
 
 export function ReasonModal(props: ReasonModalProps) {
-  const { opened, onClose, title } = props;
+  const { opened, onClose, title, pending, size } = props;
   return (
-    <Modal opened={opened} onClose={onClose} title={title} withinPortal>
+    <Modal
+      opened={opened}
+      onClose={() => {
+        if (!pending) {
+          onClose();
+        }
+      }}
+      closeOnClickOutside={!pending}
+      closeOnEscape={!pending}
+      withCloseButton={!pending}
+      title={title}
+      size={size}
+      withinPortal
+    >
       <ReasonForm {...props} />
     </Modal>
   );
@@ -74,7 +88,7 @@ function ReasonForm({
         autosize
         minRows={2}
         maxRows={6}
-        data-autofocus
+        data-autofocus={!extraFields ? true : undefined}
         required={required}
       />
       <SubmitErrorAlert error={error} hint={errorHint} />

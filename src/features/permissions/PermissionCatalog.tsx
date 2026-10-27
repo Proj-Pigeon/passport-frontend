@@ -5,6 +5,7 @@ import {
   Group,
   Select,
   Stack,
+  Table,
   Text,
   Textarea,
   TextInput,
@@ -124,21 +125,23 @@ export function PermissionCatalog({
     <SectionCard
       title={t('authorization.catalogTitle')}
       description={t('authorization.catalogHint')}
-    >
-      <Stack>
-        {!canWrite && <Alert>{t('authorization.readOnly')}</Alert>}
-        <Group>
-          {canWrite && (
-            <Button onClick={() => open({ kind: 'create' })}>
+      action={
+        canWrite ? (
+          <Group gap="xs" wrap="wrap">
+            {scope === 'admin' && (
+              <Button size="xs" variant="default" onClick={() => open({ kind: 'preset' })}>
+                {t('authorization.preset')}
+              </Button>
+            )}
+            <Button size="xs" variant="light" onClick={() => open({ kind: 'create' })}>
               {t('authorization.createPermission')}
             </Button>
-          )}
-          {canWrite && scope === 'admin' && (
-            <Button variant="light" onClick={() => open({ kind: 'preset' })}>
-              {t('authorization.preset')}
-            </Button>
-          )}
-        </Group>
+          </Group>
+        ) : undefined
+      }
+    >
+      <Stack gap="sm">
+        {!canWrite && <Alert>{t('authorization.readOnly')}</Alert>}
         <TextInput
           label={t('authorization.search')}
           value={search}
@@ -156,39 +159,67 @@ export function PermissionCatalog({
         ) : items.length === 0 ? (
           <PageState kind="empty" title={t('authorization.empty')} minHeight={80} />
         ) : (
-          items.map((definition) => (
-            <Stack key={definition.id} gap="xs">
-              <Group justify="space-between">
-                <Text fw={500}>{definition.name}</Text>
-                <Badge variant="light">{t(`authorization.status.${definition.status}`)}</Badge>
-              </Group>
-              <Text size="sm" ff="monospace">
-                {definition.code}
-              </Text>
-              <Text size="sm" c="dimmed">
-                {definition.description}
-              </Text>
-              {canWrite && definition.status !== 'deleted' && (
-                <Group>
-                  <Button
-                    size="compact-sm"
-                    variant="light"
-                    onClick={() => open({ kind: 'edit', definition })}
-                  >
-                    {t('authorization.editPermission')}
-                  </Button>
-                  <Button
-                    size="compact-sm"
-                    variant="light"
-                    color="red"
-                    onClick={() => open({ kind: 'delete', definition })}
-                  >
-                    {t('common.delete')}
-                  </Button>
-                </Group>
-              )}
-            </Stack>
-          ))
+          <Table.ScrollContainer minWidth={560}>
+            <Table highlightOnHover verticalSpacing="xs">
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>{t('authorization.name')}</Table.Th>
+                  <Table.Th>{t('authorization.code')}</Table.Th>
+                  <Table.Th>{t('authorization.statusLabel')}</Table.Th>
+                  <Table.Th />
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {items.map((definition) => (
+                  <Table.Tr key={definition.id}>
+                    <Table.Td>
+                      <Stack gap={2}>
+                        <Text size="sm" fw={500}>
+                          {definition.name}
+                        </Text>
+                        {definition.description && (
+                          <Text size="xs" c="dimmed">
+                            {definition.description}
+                          </Text>
+                        )}
+                      </Stack>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" ff="monospace">
+                        {definition.code}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge variant="light">
+                        {t(`authorization.status.${definition.status}`)}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      {canWrite && definition.status !== 'deleted' && (
+                        <Group gap="xs" justify="flex-end" wrap="nowrap">
+                          <Button
+                            size="compact-sm"
+                            variant="light"
+                            onClick={() => open({ kind: 'edit', definition })}
+                          >
+                            {t('authorization.editPermission')}
+                          </Button>
+                          <Button
+                            size="compact-sm"
+                            variant="light"
+                            color="red"
+                            onClick={() => open({ kind: 'delete', definition })}
+                          >
+                            {t('common.delete')}
+                          </Button>
+                        </Group>
+                      )}
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
         )}
         <ReasonModal
           opened={action !== null}
@@ -220,12 +251,14 @@ export function PermissionCatalog({
                     value={code}
                     readOnly={action.kind === 'edit'}
                     onChange={(event) => setCode(event.currentTarget.value)}
+                    data-autofocus={action.kind === 'create' ? true : undefined}
                   />
                   <TextInput
                     label={t('authorization.name')}
                     required
                     value={name}
                     onChange={(event) => setName(event.currentTarget.value)}
+                    data-autofocus={action.kind === 'edit' ? true : undefined}
                   />
                   <Textarea
                     label={t('authorization.description')}

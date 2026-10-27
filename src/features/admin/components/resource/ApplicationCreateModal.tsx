@@ -2,12 +2,14 @@ import {
   Alert,
   Anchor,
   Button,
+  Divider,
   Fieldset,
   FileInput,
   Group,
   Modal,
   NumberInput,
   Select,
+  SimpleGrid,
   Stack,
   Switch,
   TagsInput,
@@ -247,23 +249,34 @@ function ApplicationCreateForm({
           style={{ border: 0 }}
         >
           <Stack gap="sm">
-            <Select
-              label={t('admin.applicationCreate.preset')}
-              data={presets.map((value) => ({
-                value,
-                label: t('admin.applicationCreate.presets.' + value),
-              }))}
-              value={preset}
-              onChange={(value) => {
-                if (value) {
-                  setPreset(value as ApplicationPreset);
-                  setErrors({});
-                }
-              }}
-              allowDeselect={false}
-              required
-            />
-            <Text size="sm" c="dimmed">
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+              <Select
+                label={t('admin.applicationCreate.preset')}
+                data={presets.map((value) => ({
+                  value,
+                  label: t('admin.applicationCreate.presets.' + value),
+                }))}
+                value={preset}
+                onChange={(value) => {
+                  if (value) {
+                    setPreset(value as ApplicationPreset);
+                    setErrors({});
+                  }
+                }}
+                allowDeselect={false}
+                required
+              />
+              <TextInput
+                label={t('admin.resources.displayName')}
+                value={displayName}
+                onChange={(event) => setDisplayName(event.currentTarget.value)}
+                required
+                data-autofocus
+                maxLength={120}
+                error={errors['displayName']}
+              />
+            </SimpleGrid>
+            <Text size="xs" c="dimmed">
               {t('admin.applicationCreate.hints.' + preset)}
             </Text>
             {kind !== 'application' && !fixedApplicationId && (
@@ -303,17 +316,30 @@ function ApplicationCreateForm({
                 </Anchor>
               </Alert>
             )}
-            <TextInput
-              label={t('admin.resources.displayName')}
-              value={displayName}
-              onChange={(event) => setDisplayName(event.currentTarget.value)}
-              required
-              data-autofocus
-              maxLength={120}
-              error={errors['displayName']}
-            />
             {kind === 'application' && (
               <>
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+                  <TextInput
+                    label={t('admin.applicationCreate.owner')}
+                    description={t('admin.applicationCreate.ownerHint')}
+                    value={ownerId}
+                    onChange={(event) => setOwner(event.currentTarget.value)}
+                    required
+                    error={errors['owner']}
+                  />
+                  <Select
+                    label={t('admin.applicationCreate.risk')}
+                    data={[
+                      { value: 'normal', label: t('admin.applicationCreate.riskNormal') },
+                      { value: 'high', label: t('admin.applicationCreate.riskHigh') },
+                    ]}
+                    value={risk}
+                    onChange={(value) => {
+                      if (value) setRisk(value);
+                    }}
+                    allowDeselect={false}
+                  />
+                </SimpleGrid>
                 <Textarea
                   label={t('admin.applicationCreate.description')}
                   value={description}
@@ -323,48 +349,30 @@ function ApplicationCreateForm({
                   maxRows={4}
                   error={errors['description']}
                 />
-                <TextInput
-                  label={t('admin.applicationCreate.owner')}
-                  description={t('admin.applicationCreate.ownerHint')}
-                  value={ownerId}
-                  onChange={(event) => setOwner(event.currentTarget.value)}
-                  required
-                  error={errors['owner']}
-                />
-                <Select
-                  label={t('admin.applicationCreate.risk')}
-                  data={[
-                    { value: 'normal', label: t('admin.applicationCreate.riskNormal') },
-                    { value: 'high', label: t('admin.applicationCreate.riskHigh') },
-                  ]}
-                  value={risk}
-                  onChange={(value) => {
-                    if (value) setRisk(value);
-                  }}
-                  allowDeselect={false}
-                />
-                <FileInput
-                  label={t('admin.branding.logo')}
-                  description={t('admin.branding.logoHint')}
-                  accept="image/png,image/jpeg"
-                  value={logoFile}
-                  onChange={setLogoFile}
-                  clearable
-                />
-                <TextInput
-                  label={t('admin.branding.developerName')}
-                  value={developerName}
-                  onChange={(event) => setDeveloperName(event.currentTarget.value)}
-                  maxLength={160}
-                />
-                <TextInput
-                  label={t('admin.branding.developerUrl')}
-                  value={developerUrl}
-                  onChange={(event) => setDeveloperUrl(event.currentTarget.value)}
-                  placeholder="https://developer.example.com"
-                  maxLength={2048}
-                  error={errors['developerUrl']}
-                />
+                <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
+                  <FileInput
+                    label={t('admin.branding.logo')}
+                    description={t('admin.branding.logoHint')}
+                    accept="image/png,image/jpeg"
+                    value={logoFile}
+                    onChange={setLogoFile}
+                    clearable
+                  />
+                  <TextInput
+                    label={t('admin.branding.developerName')}
+                    value={developerName}
+                    onChange={(event) => setDeveloperName(event.currentTarget.value)}
+                    maxLength={160}
+                  />
+                  <TextInput
+                    label={t('admin.branding.developerUrl')}
+                    value={developerUrl}
+                    onChange={(event) => setDeveloperUrl(event.currentTarget.value)}
+                    placeholder="https://developer.example.com"
+                    maxLength={2048}
+                    error={errors['developerUrl']}
+                  />
+                </SimpleGrid>
               </>
             )}
           </Stack>
@@ -382,6 +390,7 @@ function ApplicationCreateForm({
             </Anchor>
           </Alert>
         )}
+        <Divider />
         <Fieldset disabled={mutation.isPending} p={0} style={{ border: 0 }}>
           <Stack gap="sm">
             {preset !== 'saml' && (
@@ -408,43 +417,45 @@ function ApplicationCreateForm({
                   error={errors['scopes']}
                   required
                 />
-                {preset === 'web' && (
+                <SimpleGrid cols={{ base: 1, sm: preset === 'web' ? 3 : 2 }} spacing="sm">
+                  {preset === 'web' && (
+                    <Select
+                      label={t('admin.applicationCreate.authMethod')}
+                      data={['client_secret_basic', 'client_secret_post']}
+                      value={fields.authMethod}
+                      onChange={(value) => {
+                        if (value) update('authMethod', value as ProtocolDraft['authMethod']);
+                      }}
+                      allowDeselect={false}
+                    />
+                  )}
                   <Select
-                    label={t('admin.applicationCreate.authMethod')}
-                    data={['client_secret_basic', 'client_secret_post']}
-                    value={fields.authMethod}
+                    label={t('admin.applicationCreate.subject')}
+                    data={[
+                      { value: 'pairwise', label: t('admin.applicationCreate.pairwise') },
+                      { value: 'public', label: t('admin.applicationCreate.public') },
+                    ]}
+                    value={fields.subjectType}
                     onChange={(value) => {
-                      if (value) update('authMethod', value as ProtocolDraft['authMethod']);
+                      if (value) update('subjectType', value as ProtocolDraft['subjectType']);
                     }}
                     allowDeselect={false}
                   />
-                )}
-                <Select
-                  label={t('admin.applicationCreate.subject')}
-                  data={[
-                    { value: 'pairwise', label: t('admin.applicationCreate.pairwise') },
-                    { value: 'public', label: t('admin.applicationCreate.public') },
-                  ]}
-                  value={fields.subjectType}
-                  onChange={(value) => {
-                    if (value) update('subjectType', value as ProtocolDraft['subjectType']);
-                  }}
-                  allowDeselect={false}
-                />
-                <NumberInput
-                  label={t('admin.applicationCreate.sessionDuration')}
-                  description={t('admin.applicationCreate.sessionDurationHint')}
-                  placeholder={t('admin.applicationCreate.sessionDurationPlaceholder')}
-                  value={fields.sessionDurationHours}
-                  onChange={(value) =>
-                    update('sessionDurationHours', value === '' ? '' : Number(value))
-                  }
-                  min={1}
-                  max={MAX_SESSION_DURATION_HOURS}
-                  allowDecimal={false}
-                  clampBehavior="strict"
-                  error={errors['sessionDuration']}
-                />
+                  <NumberInput
+                    label={t('admin.applicationCreate.sessionDuration')}
+                    description={t('admin.applicationCreate.sessionDurationHint')}
+                    placeholder={t('admin.applicationCreate.sessionDurationPlaceholder')}
+                    value={fields.sessionDurationHours}
+                    onChange={(value) =>
+                      update('sessionDurationHours', value === '' ? '' : Number(value))
+                    }
+                    min={1}
+                    max={MAX_SESSION_DURATION_HOURS}
+                    allowDecimal={false}
+                    clampBehavior="strict"
+                    error={errors['sessionDuration']}
+                  />
+                </SimpleGrid>
               </>
             )}
             {preset === 'saml' && (
@@ -477,16 +488,20 @@ function ApplicationCreateForm({
                   minRows={3}
                   maxRows={6}
                 />
-                <Switch
-                  label={t('admin.applicationCreate.signedRequests')}
-                  checked={fields.requireSignedRequests}
-                  onChange={(event) => update('requireSignedRequests', event.currentTarget.checked)}
-                />
-                <Switch
-                  label={t('admin.applicationCreate.idpInitiated')}
-                  checked={fields.allowIdpInitiated}
-                  onChange={(event) => update('allowIdpInitiated', event.currentTarget.checked)}
-                />
+                <Group gap="lg" wrap="wrap">
+                  <Switch
+                    label={t('admin.applicationCreate.signedRequests')}
+                    checked={fields.requireSignedRequests}
+                    onChange={(event) =>
+                      update('requireSignedRequests', event.currentTarget.checked)
+                    }
+                  />
+                  <Switch
+                    label={t('admin.applicationCreate.idpInitiated')}
+                    checked={fields.allowIdpInitiated}
+                    onChange={(event) => update('allowIdpInitiated', event.currentTarget.checked)}
+                  />
+                </Group>
                 <Text size="xs" c="dimmed">
                   {t('admin.applicationCreate.nameIdHint')}
                 </Text>

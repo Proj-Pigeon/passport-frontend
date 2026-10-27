@@ -12,9 +12,23 @@ import { AdminConfigurationVersionsPage } from '@/features/admin/pages/AdminConf
 import { AdminComplianceDocumentsPage } from '@/features/admin/pages/AdminComplianceDocumentsPage';
 import { AdminKeyRotationsPage } from '@/features/admin/pages/AdminKeyRotationsPage';
 import { AdminOverviewPage } from '@/features/admin/pages/AdminOverviewPage';
-import { AdminResourceDetailPage } from '@/features/admin/pages/AdminResourceDetailPage';
+import {
+  AdminResourceAccessSubpage,
+  AdminResourceActivitySubpage,
+  AdminResourceDetailPage,
+  AdminResourceIntegrationSubpage,
+  AdminResourceOverviewSubpage,
+  AdminResourceProtocolsSubpage,
+  AdminResourceSectionRedirect,
+  AdminResourceSettingsSubpage,
+} from '@/features/admin/pages/AdminResourceDetailPage';
 import { AdminResourceListPage } from '@/features/admin/pages/AdminResourceListPage';
-import { AdminUserDetailPage } from '@/features/admin/pages/AdminUserDetailPage';
+import {
+  AdminUserAccessSubpage,
+  AdminUserDetailPage,
+  AdminUserOverviewSubpage,
+  AdminUserSectionRedirect,
+} from '@/features/admin/pages/AdminUserDetailPage';
 import { AdminUsersPage } from '@/features/admin/pages/AdminUsersPage';
 import { AdminGuestOnly, RequireAdmin } from '@/features/admin/session/guards';
 import { AdminOriginGate } from '@/features/admin/session/AdminOriginGate';
@@ -38,6 +52,14 @@ import { AuthorizePage } from '@/features/oauth/AuthorizePage';
 import { GuestOnly, RequireAuth } from '@/features/session/guards';
 
 import { RootShell } from './RootShell';
+
+const protocolDetailChildren: RouteObject[] = [
+  { index: true, element: <AdminResourceSectionRedirect /> },
+  { path: 'overview', element: <AdminResourceOverviewSubpage /> },
+  { path: 'settings', element: <AdminResourceSettingsSubpage /> },
+  { path: 'integration', element: <AdminResourceIntegrationSubpage /> },
+  { path: 'activity', element: <AdminResourceActivitySubpage /> },
+];
 
 export const routes: RouteObject[] = [
   {
@@ -141,14 +163,33 @@ export const routes: RouteObject[] = [
         children: [
           { index: true, element: <AdminOverviewPage /> },
           { path: 'users', element: <AdminUsersPage /> },
-          { path: 'users/:userId', element: <AdminUserDetailPage /> },
+          {
+            path: 'users/:userId',
+            element: <AdminUserDetailPage />,
+            children: [
+              { index: true, element: <AdminUserSectionRedirect /> },
+              { path: 'overview', element: <AdminUserOverviewSubpage /> },
+              { path: 'access', element: <AdminUserAccessSubpage /> },
+            ],
+          },
           { path: 'applications', element: <AdminResourceListPage kind="application" /> },
           {
             path: 'applications/:resourceId',
             element: <AdminResourceDetailPage kind="application" />,
+            children: [
+              { index: true, element: <AdminResourceSectionRedirect /> },
+              { path: 'overview', element: <AdminResourceOverviewSubpage /> },
+              { path: 'protocols', element: <AdminResourceProtocolsSubpage /> },
+              { path: 'access', element: <AdminResourceAccessSubpage /> },
+              { path: 'activity', element: <AdminResourceActivitySubpage /> },
+            ],
           },
           { path: 'oauth-clients', element: <Navigate to="/admin/applications" replace /> },
-          { path: 'oauth-clients/:resourceId', element: <AdminResourceDetailPage kind="oauth" /> },
+          {
+            path: 'oauth-clients/:resourceId',
+            element: <AdminResourceDetailPage kind="oauth" />,
+            children: protocolDetailChildren,
+          },
           {
             path: 'saml-service-providers',
             element: <Navigate to="/admin/applications" replace />,
@@ -156,6 +197,7 @@ export const routes: RouteObject[] = [
           {
             path: 'saml-service-providers/:resourceId',
             element: <AdminResourceDetailPage kind="saml" />,
+            children: protocolDetailChildren,
           },
           {
             path: 'federation-providers',
@@ -164,6 +206,7 @@ export const routes: RouteObject[] = [
           {
             path: 'federation-providers/:resourceId',
             element: <AdminResourceDetailPage kind="federation" />,
+            children: protocolDetailChildren,
           },
           { path: 'audit-events', element: <AdminAuditEventsPage /> },
           { path: 'configuration-versions', element: <AdminConfigurationVersionsPage /> },

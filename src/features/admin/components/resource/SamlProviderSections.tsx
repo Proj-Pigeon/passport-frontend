@@ -1,14 +1,4 @@
-import {
-  ActionIcon,
-  Button,
-  Code,
-  Divider,
-  Group,
-  Stack,
-  Text,
-  Textarea,
-  TextInput,
-} from '@mantine/core';
+import { ActionIcon, Button, Code, Group, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -22,14 +12,13 @@ import {
 } from '@/api/endpoints/admin/resources';
 import { isApiError } from '@/api/errors';
 import { SectionCard } from '@/components/AccountSections';
-import { describeApiError } from '@/i18n/errors';
 import { formatDateTime } from '@/lib/format';
 
-import type { ResourceSectionProps } from '../../pages/AdminResourceDetailPage';
 import { hasAdminCapability, useAdminSession } from '../../session/useAdminSession';
 import { useAdminStepUp } from '../../step-up/useAdminStepUp';
 import { AdminStatusBadge } from '../AdminStatusBadge';
 import { ReasonModal } from '../ReasonModal';
+import type { ResourceSectionProps } from './resourceTypes';
 
 interface UriEntry {
   id: string;
@@ -158,7 +147,25 @@ export function SamlProviderSections({ resource, etag, refresh }: ResourceSectio
 
   return (
     <>
-      <SectionCard title={t('admin.saml.acsCard')} description={t('admin.saml.acsHint')}>
+      <SectionCard
+        title={t('admin.saml.acsCard')}
+        description={t('admin.saml.acsHint')}
+        action={
+          canWrite ? (
+            <Button
+              size="xs"
+              variant="light"
+              onClick={() => {
+                addAcsMutation.reset();
+                setNewAcs('');
+                setAddAcsModal(true);
+              }}
+            >
+              {t('admin.saml.addAcs')}
+            </Button>
+          ) : undefined
+        }
+      >
         <Stack gap="xs">
           {acsUrls.length === 0 && (
             <Text size="sm" c="dimmed">
@@ -184,39 +191,28 @@ export function SamlProviderSections({ resource, etag, refresh }: ResourceSectio
               )}
             </Group>
           ))}
-          {canWrite && (
-            <>
-              <Divider my={4} />
-              <Group gap="sm" wrap="nowrap">
-                <TextInput
-                  value={newAcs}
-                  onChange={(event) => setNewAcs(event.currentTarget.value)}
-                  placeholder="https://sp.example/acs"
-                  style={{ flex: 1 }}
-                />
-                <Button
-                  size="xs"
-                  variant="light"
-                  disabled={newAcs.trim().length === 0}
-                  onClick={() => {
-                    addAcsMutation.reset();
-                    setAddAcsModal(true);
-                  }}
-                >
-                  {t('admin.saml.addAcs')}
-                </Button>
-              </Group>
-              {addAcsMutation.error && (
-                <Text size="sm" c="red">
-                  {describeApiError(addAcsMutation.error)}
-                </Text>
-              )}
-            </>
-          )}
         </Stack>
       </SectionCard>
 
-      <SectionCard title={t('admin.saml.certCard')} description={t('admin.saml.certHint')}>
+      <SectionCard
+        title={t('admin.saml.certCard')}
+        description={t('admin.saml.certHint')}
+        action={
+          canWrite ? (
+            <Button
+              size="xs"
+              variant="light"
+              onClick={() => {
+                addCertMutation.reset();
+                setPemDraft('');
+                setAddCertModal(true);
+              }}
+            >
+              {t('admin.saml.addCert')}
+            </Button>
+          ) : undefined
+        }
+      >
         <Stack gap="xs">
           {certificates.length === 0 && (
             <Text size="sm" c="dimmed">
@@ -258,30 +254,20 @@ export function SamlProviderSections({ resource, etag, refresh }: ResourceSectio
               )}
             </Group>
           ))}
-          {canWrite && (
-            <>
-              <Divider my={4} />
-              <Button
-                size="xs"
-                variant="light"
-                onClick={() => {
-                  addCertMutation.reset();
-                  setAddCertModal(true);
-                }}
-              >
-                {t('admin.saml.addCert')}
-              </Button>
-              {addCertMutation.error && (
-                <Text size="sm" c="red">
-                  {describeApiError(addCertMutation.error)}
-                </Text>
-              )}
-            </>
-          )}
         </Stack>
       </SectionCard>
 
-      <SectionCard title={t('admin.saml.policyCard')} description={t('admin.saml.policyHint')}>
+      <SectionCard
+        title={t('admin.saml.policyCard')}
+        description={t('admin.saml.policyHint')}
+        action={
+          canWrite ? (
+            <Button size="xs" variant="light" onClick={openPolicyModal}>
+              {t('admin.saml.editPolicy')}
+            </Button>
+          ) : undefined
+        }
+      >
         <Stack gap="xs">
           {Object.keys(policy).length === 0 ? (
             <Text size="sm" c="dimmed">
@@ -294,14 +280,6 @@ export function SamlProviderSections({ resource, etag, refresh }: ResourceSectio
               </Text>
             ))
           )}
-          {canWrite && (
-            <>
-              <Divider my={4} />
-              <Button size="xs" variant="light" onClick={openPolicyModal}>
-                {t('admin.saml.editPolicy')}
-              </Button>
-            </>
-          )}
         </Stack>
       </SectionCard>
 
@@ -309,11 +287,21 @@ export function SamlProviderSections({ resource, etag, refresh }: ResourceSectio
         opened={addAcsModal}
         onClose={() => (addAcsMutation.isPending ? undefined : setAddAcsModal(false))}
         title={t('admin.saml.addAcs')}
-        description={newAcs.trim()}
         confirmLabel={t('admin.saml.addAcs')}
+        confirmDisabled={newAcs.trim().length === 0}
         pending={addAcsMutation.isPending}
         error={addAcsMutation.error}
         errorHint={conflictHint(addAcsMutation.error, t)}
+        extraFields={
+          <TextInput
+            label={t('admin.saml.acsCard')}
+            value={newAcs}
+            onChange={(event) => setNewAcs(event.currentTarget.value)}
+            placeholder="https://sp.example/acs"
+            data-autofocus
+            required
+          />
+        }
         onSubmit={(reason) => addAcsMutation.mutate({ reason })}
       />
 
@@ -338,6 +326,7 @@ export function SamlProviderSections({ resource, etag, refresh }: ResourceSectio
         opened={addCertModal}
         onClose={() => (addCertMutation.isPending ? undefined : setAddCertModal(false))}
         title={t('admin.saml.addCert')}
+        confirmDisabled={pemDraft.trim().length === 0}
         extraFields={
           <Textarea
             label={t('admin.federation.certificateInput')}

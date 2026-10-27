@@ -246,7 +246,11 @@ export function AdminLayout() {
                   const active =
                     item.to === '/admin'
                       ? location.pathname === '/admin'
-                      : location.pathname.startsWith(item.to);
+                      : item.to === '/admin/applications'
+                        ? location.pathname.startsWith('/admin/applications') ||
+                          location.pathname.startsWith('/admin/oauth-clients') ||
+                          location.pathname.startsWith('/admin/saml-service-providers')
+                        : location.pathname.startsWith(item.to);
                   return (
                     <NavLink
                       key={item.to}

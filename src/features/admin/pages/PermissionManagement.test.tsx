@@ -99,8 +99,8 @@ describe('user permission management', () => {
     const user = userEvent.setup();
     login();
     seedGrants();
-    renderRoute(['/admin/users/target']);
-    const direct = await screen.findByRole('checkbox', { name: 'users:read (users:read)' });
+    renderRoute(['/admin/users/target/access']);
+    const direct = await screen.findByRole('checkbox', { name: 'users:read' });
     expect(direct).toBeChecked();
     await user.click(direct);
     expect(screen.getByText('仍从角色继承的能力: users:read, users:write')).toBeInTheDocument();
@@ -130,10 +130,10 @@ describe('user permission management', () => {
           return new HttpResponse(null, { status: 403 });
         }),
       );
-    renderRoute([`/admin/users/${mode === 'self' ? user.id : 'target'}`]);
+    renderRoute([`/admin/users/${mode === 'self' ? user.id : 'target'}/access`]);
     expect(await screen.findByRole('checkbox', { name: '超级管理员' })).toBeDisabled();
     expect(screen.queryByRole('button', { name: '核对并保存权限' })).not.toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: 'users:read (users:read)' })).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: 'users:read' })).toBeDisabled();
     expect(
       screen.queryByText('保存后的平台有效能力: users:read, users:write'),
     ).not.toBeInTheDocument();
@@ -162,15 +162,15 @@ describe('user permission management', () => {
     };
     mockDb.permissionDefinitions.push(retained, unavailable);
     grants.application_grants = [retained];
-    renderRoute(['/admin/users/target']);
-    const checkbox = await screen.findByRole('checkbox', { name: 'Retained (retained.read)' });
+    renderRoute(['/admin/users/target/access']);
+    const checkbox = await screen.findByRole('checkbox', { name: 'Retained' });
     expect(checkbox).toBeEnabled();
     await user.click(checkbox);
     expect(checkbox).not.toBeChecked();
     expect(checkbox).toBeEnabled();
     await user.click(checkbox);
     expect(checkbox).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: 'Unavailable (unavailable.read)' })).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: 'Unavailable' })).toBeDisabled();
     expect(screen.getByText('保存后的平台有效能力: users:write')).toBeInTheDocument();
   });
 
@@ -178,8 +178,8 @@ describe('user permission management', () => {
     const user = userEvent.setup();
     login();
     const grants = seedGrants();
-    renderRoute(['/admin/users/target']);
-    await user.click(await screen.findByRole('checkbox', { name: 'users:read (users:read)' }));
+    renderRoute(['/admin/users/target/access']);
+    await user.click(await screen.findByRole('checkbox', { name: 'users:read' }));
     await user.click(screen.getByRole('button', { name: '核对并保存权限' }));
     grants.version = 2;
     await reasonAndConfirm(user, 'old version', '保存');
@@ -188,7 +188,7 @@ describe('user permission management', () => {
     expect(within(dialog).getByRole('button', { name: '保存' })).toBeDisabled();
     await user.click(within(dialog).getByRole('button', { name: '刷新并重新核对' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(screen.getByRole('checkbox', { name: 'users:read (users:read)' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'users:read' })).toBeChecked();
     expect(mockDb.permissionGrants.get('target')?.version).toBe(2);
   });
 
@@ -196,7 +196,7 @@ describe('user permission management', () => {
     const user = userEvent.setup();
     login();
     seedGrants();
-    renderRoute(['/admin/users/target']);
+    renderRoute(['/admin/users/target/access']);
     await user.click(
       await screen.findByRole('link', { name: '查看用户审计记录' }, { timeout: 5000 }),
     );
@@ -209,7 +209,7 @@ describe('application permission catalog', () => {
     const user = userEvent.setup();
     login(['application_admin']);
     seedAdminResource(mockDb, { id: 'app', display_name: 'GuEarth' });
-    renderRoute(['/admin/applications/app']);
+    renderRoute(['/admin/applications/app/access']);
     await user.click(await screen.findByRole('button', { name: '新建权限' }));
     await user.type(screen.getByLabelText(/^权限代码/), 'api.access');
     await user.type(screen.getByLabelText(/^权限名称/), 'Service access');
@@ -250,7 +250,7 @@ describe('application permission catalog', () => {
       role_capabilities: {},
       effective_capabilities: [],
     });
-    renderRoute(['/admin/applications/app']);
+    renderRoute(['/admin/applications/app/access']);
     await user.click(await screen.findByRole('button', { name: '编辑权限' }));
     await user.click(screen.getByRole('combobox', { name: '状态' }));
     await user.click(screen.getByRole('option', { name: '有效' }));
@@ -270,7 +270,7 @@ describe('application permission catalog', () => {
     const user = userEvent.setup();
     login(['application_admin']);
     seedAdminResource(mockDb, { id: 'app' });
-    renderRoute(['/admin/applications/app']);
+    renderRoute(['/admin/applications/app/access']);
     await user.click(await screen.findByRole('button', { name: '初始化 GuEarth 权限' }));
     expect(await screen.findByText(/共 14 项权限定义/)).toBeInTheDocument();
     expect(
@@ -290,7 +290,7 @@ describe('application permission catalog', () => {
     login(['application_admin']);
     mockDb.adminSession!.step_up_expires_at = null;
     seedAdminResource(mockDb, { id: 'app' });
-    renderRoute(['/admin/applications/app']);
+    renderRoute(['/admin/applications/app/access']);
     await user.click(await screen.findByRole('button', { name: '初始化 GuEarth 权限' }));
     await reasonAndConfirm(user, 'requires verification');
     expect(await screen.findByText('管理员二次验证')).toBeInTheDocument();
@@ -322,7 +322,7 @@ describe('resource service management', () => {
     const user = userEvent.setup();
     login();
     seedAdminResource(mockDb, { id: 'app' });
-    renderRoute(['/admin/applications/app']);
+    renderRoute(['/admin/applications/app/access']);
     await user.click(await screen.findByRole('button', { name: '注册资源服务器' }));
     fireEvent.change(screen.getByLabelText(/^资源服务器名称/), { target: { value: 'API' } });
     fireEvent.change(screen.getByLabelText(/^服务受众标识/), {
@@ -365,7 +365,7 @@ describe('resource service management', () => {
         },
       },
     ];
-    renderRoute(['/admin/applications/app']);
+    renderRoute(['/admin/applications/app/access']);
     await user.click(await screen.findByRole('button', { name: '批准' }, { timeout: 5000 }));
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getByText(/应由另一位审批人决定/)).toBeInTheDocument();
@@ -384,7 +384,7 @@ describe('resource service management', () => {
     const user = userEvent.setup();
     login(['application_admin']);
     seedResource();
-    renderRoute(['/admin/applications/app']);
+    renderRoute(['/admin/applications/app/access']);
     await user.click(await screen.findByRole('button', { name: '创建服务凭据' }));
     await reasonAndConfirm(user, 'request first credential');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
@@ -415,7 +415,7 @@ describe('resource service management', () => {
           },
         },
       ];
-      renderRoute(['/admin/applications/app']);
+      renderRoute(['/admin/applications/app/access']);
       expect(await screen.findByText('申请的配置')).toBeInTheDocument();
       expect(screen.getByText('Proposed API')).toBeInTheDocument();
       expect(screen.getByText('当前：Resource API')).toBeInTheDocument();
@@ -448,7 +448,7 @@ describe('resource service management', () => {
         },
       },
     ];
-    renderRoute(['/admin/applications/app']);
+    renderRoute(['/admin/applications/app/access']);
     await user.click(
       await screen.findByRole('button', { name: '领取已批准的服务凭据' }, { timeout: 5000 }),
     );
@@ -478,7 +478,7 @@ describe('resource service management', () => {
       secret_set: false,
     };
     mockDb.resourceServers.push(resource);
-    renderRoute(['/admin/applications/app']);
+    renderRoute(['/admin/applications/app/access']);
     await user.click(
       await screen.findByRole('button', { name: '编辑服务绑定' }, { timeout: 5000 }),
     );
@@ -523,7 +523,7 @@ describe('resource service management', () => {
           : HttpResponse.json(mockDb.resourceServers[0]),
       ),
     );
-    renderRoute(['/admin/applications/app']);
+    renderRoute(['/admin/applications/app/access']);
     await user.click(
       await screen.findByRole('button', { name: '创建服务凭据' }, { timeout: 5000 }),
     );
@@ -542,7 +542,7 @@ describe('resource service management', () => {
     const user = userEvent.setup();
     login();
     seedAdminResource(mockDb, { id: 'app' });
-    const { queryClient } = renderRoute(['/admin/applications/app']);
+    const { queryClient } = renderRoute(['/admin/applications/app/access']);
     await user.click(await screen.findByRole('button', { name: '注册资源服务器' }));
     await user.type(screen.getByLabelText(/^资源服务器名称/), 'Resource API');
     await user.type(screen.getByLabelText(/^服务受众标识/), 'https://api.example.test');
@@ -613,7 +613,7 @@ describe('resource service management', () => {
         },
       ],
     });
-    renderRoute(['/admin/applications/app']);
+    renderRoute(['/admin/applications/app/access']);
     await user.click(await screen.findByRole('button', { name: '批准' }, { timeout: 5000 }));
     await reasonAndConfirm(user, 'checked application ownership');
     await waitFor(() => expect(mockDb.resourceServers[0]?.status).toBe('active'));

@@ -1,9 +1,11 @@
 import {
   Alert,
+  Anchor,
   Avatar,
   Button,
   FileButton,
   Group,
+  SimpleGrid,
   Stack,
   Text,
   TextInput,
@@ -22,14 +24,14 @@ import {
   patchAdminResource,
   uploadApplicationLogo,
 } from '@/api/endpoints/admin/resources';
-import { SectionCard } from '@/components/AccountSections';
+import { InfoItem, SectionCard } from '@/components/AccountSections';
 import { describeApiError } from '@/i18n/errors';
 import { prepareAvatarFile } from '@/lib/image';
 
 import { adminKeys } from '../../keys';
 import { useAdminStepUp } from '../../step-up/useAdminStepUp';
-import type { ResourceSectionProps } from '../../pages/AdminResourceDetailPage';
 import { ReasonModal } from '../ReasonModal';
+import type { ResourceSectionProps } from './resourceTypes';
 
 function configString(configuration: Record<string, unknown>, key: string): string {
   const value = configuration[key];
@@ -66,12 +68,10 @@ export function ApplicationBrandingCard({
     ? `${apiUrl(`/admin/v1/applications/${encodeURIComponent(resource.id)}/logo`)}?v=${logoQuery.dataUpdatedAt}`
     : null;
 
-  const [developerName, setDeveloperName] = useState(() =>
-    configString(resource.configuration, 'developer_name'),
-  );
-  const [developerUrl, setDeveloperUrl] = useState(() =>
-    configString(resource.configuration, 'developer_url'),
-  );
+  const currentDeveloperName = configString(resource.configuration, 'developer_name');
+  const currentDeveloperUrl = configString(resource.configuration, 'developer_url');
+  const [developerName, setDeveloperName] = useState(currentDeveloperName);
+  const [developerUrl, setDeveloperUrl] = useState(currentDeveloperUrl);
   const [urlError, setUrlError] = useState(false);
   const [saveModal, setSaveModal] = useState(false);
 
@@ -132,18 +132,35 @@ export function ApplicationBrandingCard({
   };
 
   const dirty =
-    developerName.trim() !== configString(resource.configuration, 'developer_name') ||
-    developerUrl.trim() !== configString(resource.configuration, 'developer_url');
+    developerName.trim() !== currentDeveloperName || developerUrl.trim() !== currentDeveloperUrl;
+
+  const openEditModal = () => {
+    setDeveloperName(currentDeveloperName);
+    setDeveloperUrl(currentDeveloperUrl);
+    setUrlError(false);
+    saveMutation.reset();
+    setSaveModal(true);
+  };
 
   return (
-    <SectionCard title={t('admin.branding.card')} description={t('admin.branding.hint')}>
+    <SectionCard
+      title={t('admin.branding.card')}
+      description={t('admin.branding.hint')}
+      action={
+        canWrite ? (
+          <Button size="xs" variant="light" onClick={openEditModal}>
+            {t('admin.branding.save')}
+          </Button>
+        ) : undefined
+      }
+    >
       <Stack gap="md">
         <Group align="center" gap="md" wrap="nowrap">
           {logoUrl ? (
-            <Avatar src={logoUrl} alt={resource.display_name} size={72} radius="md" />
+            <Avatar src={logoUrl} alt={resource.display_name} size={64} radius="md" />
           ) : (
-            <ThemeIcon size={72} radius="md" variant="light" color="gray">
-              <IconPhoto size={32} stroke={1.5} />
+            <ThemeIcon size={64} radius="md" variant="light" color="gray">
+              <IconPhoto size={28} stroke={1.5} />
             </ThemeIcon>
           )}
           <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
@@ -202,44 +219,26 @@ export function ApplicationBrandingCard({
           </Alert>
         )}
 
-        <TextInput
-          label={t('admin.branding.developerName')}
-          value={developerName}
-          onChange={(event) => setDeveloperName(event.currentTarget.value)}
-          maxLength={160}
-          disabled={!canWrite}
-        />
-        <TextInput
-          label={t('admin.branding.developerUrl')}
-          value={developerUrl}
-          onChange={(event) => {
-            setDeveloperUrl(event.currentTarget.value);
-            setUrlError(false);
-          }}
-          placeholder="https://developer.example.com"
-          maxLength={2048}
-          disabled={!canWrite}
-          error={urlError ? t('admin.branding.invalidUrl') : undefined}
-        />
-        {canWrite && (
-          <Group gap="sm">
-            <Button
-              size="xs"
-              variant="light"
-              disabled={!dirty || saveMutation.isPending}
-              onClick={() => {
-                saveMutation.reset();
-                if (!validDeveloperUrl(developerUrl.trim())) {
-                  setUrlError(true);
-                  return;
-                }
-                setSaveModal(true);
-              }}
-            >
-              {t('admin.branding.save')}
-            </Button>
-          </Group>
-        )}
+        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+          <InfoItem label={t('admin.branding.developerName')}>
+            <Text size="sm">{currentDeveloperName || '—'}</Text>
+          </InfoItem>
+          <InfoItem label={t('admin.branding.developerUrl')}>
+            {currentDeveloperUrl ? (
+              <Anchor
+                href={currentDeveloperUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                size="sm"
+                style={{ wordBreak: 'break-all' }}
+              >
+                {currentDeveloperUrl}
+              </Anchor>
+            ) : (
+              <Text size="sm">—</Text>
+            )}
+          </InfoItem>
+        </SimpleGrid>
       </Stack>
 
       <ReasonModal
@@ -247,9 +246,39 @@ export function ApplicationBrandingCard({
         onClose={() => (saveMutation.isPending ? undefined : setSaveModal(false))}
         title={t('admin.branding.save')}
         confirmLabel={t('common.submit')}
+        confirmDisabled={!dirty || urlError}
         pending={saveMutation.isPending}
         error={saveMutation.error}
-        onSubmit={(reason) => saveMutation.mutate(reason)}
+        extraFields={
+          <Stack gap="sm">
+            <TextInput
+              label={t('admin.branding.developerName')}
+              value={developerName}
+              onChange={(event) => setDeveloperName(event.currentTarget.value)}
+              maxLength={160}
+              data-autofocus
+            />
+            <TextInput
+              label={t('admin.branding.developerUrl')}
+              value={developerUrl}
+              onChange={(event) => {
+                const next = event.currentTarget.value;
+                setDeveloperUrl(next);
+                setUrlError(!validDeveloperUrl(next.trim()));
+              }}
+              placeholder="https://developer.example.com"
+              maxLength={2048}
+              error={urlError ? t('admin.branding.invalidUrl') : undefined}
+            />
+          </Stack>
+        }
+        onSubmit={(reason) => {
+          if (!validDeveloperUrl(developerUrl.trim())) {
+            setUrlError(true);
+            return;
+          }
+          saveMutation.mutate(reason);
+        }}
       />
     </SectionCard>
   );

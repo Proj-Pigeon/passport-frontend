@@ -1,20 +1,24 @@
 import {
   Alert,
   Anchor,
-  Breadcrumbs,
+  Badge,
   Button,
   Code,
   Collapse,
+  Divider,
+  Grid,
   Group,
+  Paper,
   SimpleGrid,
   Stack,
   Text,
+  Tooltip,
 } from '@mantine/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { notifications } from '@mantine/notifications';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useParams } from 'react-router';
+import { Link, Navigate, useLocation, useOutletContext, useParams } from 'react-router';
 
 import type {
   AdminApprovableKind,
@@ -29,7 +33,7 @@ import {
   requestAdminActivation,
 } from '@/api/endpoints/admin/resources';
 import { isApiError } from '@/api/errors';
-import { AccountPageHeader, InfoItem, SectionCard } from '@/components/AccountSections';
+import { InfoItem, SectionCard } from '@/components/AccountSections';
 import { PageState } from '@/components/PageState';
 import { describeApiError } from '@/i18n/errors';
 import { formatDateTime } from '@/lib/format';
@@ -48,29 +52,28 @@ import {
 import { AdminPermissionCatalog } from '../components/AdminPermissionCatalog';
 import { ResourceServersCard } from '../components/ResourceServersCard';
 import { adminKeys } from '../keys';
-import { AdminStatusBadge } from '../components/AdminStatusBadge';
 import { ChangeRequestsCard } from '../components/ChangeRequestsCard';
 import { JsonConfigEditor } from '../components/JsonConfigEditor';
 import { ReasonModal } from '../components/ReasonModal';
-import {
-  ApplicationTypeBadge,
-  ApplicationTypeCard,
-} from '../components/resource/ApplicationTypeCard';
+import { ResourceDetailLayout } from '../components/ResourceDetailLayout';
+import { ApplicationTypeSection } from '../components/resource/ApplicationTypeCard';
 import { ApplicationBrandingCard } from '../components/resource/ApplicationBrandingCard';
-import { applicationType } from '../components/resource/applicationPresets';
+import { applicationType, sessionDurationDays } from '../components/resource/applicationPresets';
 import { ApplicationProtocolCard } from '../components/resource/ApplicationProtocolCard';
-import { OauthClientSections } from '../components/resource/OauthClientSections';
+import {
+  OauthClientSections,
+  OauthSecretRedeemBanner,
+} from '../components/resource/OauthClientSections';
 import { SamlProviderSections } from '../components/resource/SamlProviderSections';
 import { MetadataImportCard } from '../components/resource/MetadataImportCard';
+import type {
+  ResourceDetailContextValue,
+  ResourceSectionProps,
+} from '../components/resource/resourceTypes';
 import { hasAdminCapability, useAdminSession } from '../session/useAdminSession';
 import { useAdminStepUp } from '../step-up/useAdminStepUp';
 
-export interface ResourceSectionProps {
-  resource: AdminResourceView;
-  etag: string;
-  refresh: () => Promise<void>;
-  canWrite?: boolean;
-}
+export type { ResourceSectionProps };
 
 function configText(configuration: Record<string, unknown>, key: string): string {
   const value = configuration[key];
@@ -99,6 +102,13 @@ function useAdminResourceQuery(kind: AdminResourceKind, resourceId: string) {
     queryFn: ({ signal }) => getAdminResource(kind, resourceId, signal),
     enabled: resourceId.length > 0,
   });
+}
+
+export function AdminResourceSectionRedirect() {
+  const location = useLocation();
+  return (
+    <Navigate to={{ pathname: 'overview', search: location.search, hash: location.hash }} replace />
+  );
 }
 
 export function AdminResourceDetailPage({ kind }: { kind: AdminResourceKind }) {
@@ -135,7 +145,6 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
   const { data: session } = useAdminSession();
   const stepUp = useAdminStepUp();
   const resource = data.resource;
-  const providerType = configText(resource.configuration, 'provider_type');
   const parentApplicationId =
     kind === 'oauth' || kind === 'saml' ? (resource.application_id ?? null) : null;
   const parentQuery = useQuery({
@@ -156,7 +165,6 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
     decision: 'approve' | 'reject';
   } | null>(null);
   const [activationModal, setActivationModal] = useState<'activate' | 'deactivate' | null>(null);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const writeCapability = kind === 'federation' ? 'federation:write' : 'applications:write';
   const canWrite = hasAdminCapability(session, writeCapability);
@@ -227,284 +235,42 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
     },
   });
 
-  const sectionProps: ResourceSectionProps = { resource, etag: data.etag, refresh };
-
-  const breadcrumbs = [
-    ...(kind === 'federation'
-      ? [{ to: '/admin/federation-providers', label: t('admin.resources.federation.title') }]
-      : [{ to: '/admin/applications', label: t('admin.resources.application.title') }]),
-    ...(parentApplicationId
-      ? [
-          {
-            to: `/admin/applications/${encodeURIComponent(parentApplicationId)}`,
-            label: parentQuery.data?.resource.display_name ?? parentApplicationId,
-          },
-        ]
-      : []),
-    { to: '', label: resource.display_name },
-  ];
+  const contextValue: ResourceDetailContextValue = {
+    kind,
+    resourceId,
+    resource,
+    etag: data.etag,
+    refresh,
+    canWrite,
+    canApprove,
+    approvable,
+    rootType,
+    isDevice,
+    parentApplication: parentQuery.data?.resource ?? null,
+    parentApplicationId,
+    activationPending: activationMutation.isPending,
+    activationBlocked: lifecycleBlocked,
+    requestActivation: (action) => {
+      activationMutation.reset();
+      setActivationModal(action);
+    },
+    configPending: configMutation.isPending,
+    configError: configMutation.error,
+    configSubmittedPending:
+      Boolean(configMutation.data?.change_request_id) &&
+      configMutation.data?.change_request_status === 'pending',
+    saveConfig: (reason, configuration) => configMutation.mutate({ reason, configuration }),
+    decisionPending: decisionMutation.isPending,
+    decisionError: decisionMutation.error,
+    openDecision: (request, decision) => {
+      decisionMutation.reset();
+      setPendingDecision({ request, decision });
+    },
+  };
 
   return (
-    <Stack gap="lg" maw={960}>
-      <Breadcrumbs>
-        {breadcrumbs.map((crumb, index) =>
-          crumb.to ? (
-            <Anchor key={`${crumb.to}-${index}`} component={Link} to={crumb.to} size="sm">
-              {crumb.label}
-            </Anchor>
-          ) : (
-            <Anchor key={`current-${index}`} size="sm">
-              {crumb.label}
-            </Anchor>
-          ),
-        )}
-      </Breadcrumbs>
-
-      <AccountPageHeader
-        title={resource.display_name}
-        subtitle={
-          <Group gap="sm">
-            <AdminStatusBadge status={resource.status} />
-            {kind === 'application' && <ApplicationTypeBadge value={rootType} />}
-            <span>{resource.id}</span>
-            {resource.client_id && (
-              <span>
-                client_id: <code>{resource.client_id}</code>
-              </span>
-            )}
-          </Group>
-        }
-      />
-
-      <SectionCard title={t('admin.resources.infoCard')}>
-        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-          <InfoItem label={t('admin.resources.colVersion')}>{resource.version}</InfoItem>
-          <InfoItem label={t('admin.resources.configurationVersionId')}>
-            {resource.configuration_version_id ?? '—'}
-          </InfoItem>
-          <InfoItem label={t('admin.resources.colCreatedAt')}>
-            {formatDateTime(resource.created_at)}
-          </InfoItem>
-          <InfoItem label={t('admin.resources.colUpdatedAt')}>
-            {formatDateTime(resource.updated_at)}
-          </InfoItem>
-        </SimpleGrid>
-      </SectionCard>
-
-      {approvable && canWrite && (
-        <SectionCard
-          title={t('admin.resources.lifecycleCard')}
-          description={t('admin.resources.lifecycleHint')}
-        >
-          <Stack gap="xs">
-            <Group gap="sm">
-              {resource.status === 'active' ? (
-                <Button
-                  color="red"
-                  variant="light"
-                  disabled={lifecycleBlocked}
-                  onClick={() => setActivationModal('deactivate')}
-                >
-                  {t('admin.resources.requestDeactivate')}
-                </Button>
-              ) : (
-                <Button
-                  variant="light"
-                  disabled={lifecycleBlocked}
-                  onClick={() => setActivationModal('activate')}
-                >
-                  {t('admin.resources.requestActivate')}
-                </Button>
-              )}
-            </Group>
-            {lifecycleBlocked && (
-              <Text size="sm" c="dimmed">
-                {t('admin.resources.activationPendingHint')}
-              </Text>
-            )}
-          </Stack>
-        </SectionCard>
-      )}
-
-      {kind !== 'application' && kind !== 'federation' && (
-        <SectionCard
-          title={t('admin.resources.configCard')}
-          description={t(
-            resource.status === 'active'
-              ? 'admin.resources.configChangeRequest'
-              : 'admin.resources.configImmediate',
-          )}
-        >
-          {canWrite ? (
-            <Stack gap="sm">
-              {configMutation.data?.change_request_id &&
-                configMutation.data.change_request_status === 'pending' && (
-                  <Alert color="green" variant="light">
-                    {t('admin.resources.changeSubmitted')}
-                  </Alert>
-                )}
-              <JsonConfigEditor
-                key={data.etag}
-                initial={resource.configuration}
-                onSave={(reason, configuration) => configMutation.mutate({ reason, configuration })}
-                pending={configMutation.isPending}
-                error={configMutation.error}
-              />
-            </Stack>
-          ) : (
-            <Code block>{JSON.stringify(resource.configuration, null, 2)}</Code>
-          )}
-        </SectionCard>
-      )}
-
-      {kind === 'oauth' && !isDevice && (
-        <OidcConnectivityGuideCard
-          clientId={resource.client_id}
-          scopes={resource.configuration['allowed_scopes']}
-        />
-      )}
-      {kind === 'oauth' && isDevice && (
-        <SectionCard title={t('devices.authorizeTitle')}>
-          <Text size="sm">{t('devices.integrationHint')}</Text>
-        </SectionCard>
-      )}
-      {kind === 'saml' && <SamlConnectivityGuideCard configuration={resource.configuration} />}
-
-      {kind === 'federation' && (
-        <>
-          <FederationConnectionCard
-            key={`connection-${data.etag}`}
-            {...sectionProps}
-            canWrite={canWrite}
-          />
-          <FederationCredentialsCard
-            key={`credentials-${data.etag}`}
-            {...sectionProps}
-            canWrite={canWrite}
-          />
-          <FederationScopesCard key={`scopes-${data.etag}`} {...sectionProps} canWrite={canWrite} />
-          <FederationChecklistCard
-            isSaml={providerType === 'saml'}
-            secretConfigured={resource.secret_set === true}
-            secretRefConfigured={
-              configText(resource.configuration, 'client_secret_ref').trim() !== ''
-            }
-            clientIdConfigured={configText(resource.configuration, 'client_id').trim() !== ''}
-            endpointsConfigured={federationEndpointsConfigured(resource)}
-            discoveryAvailable={providerType === 'oidc'}
-            certificatesConfigured={
-              providerType === 'saml' &&
-              Array.isArray(resource.configuration['signing_certificates']) &&
-              (resource.configuration['signing_certificates'] as unknown[]).length > 0
-            }
-            canRequestActivation={approvable && canWrite}
-            onRequestActivation={() => setActivationModal('activate')}
-            activationPending={activationMutation.isPending}
-            activationBlocked={pendingChangeActions.has('activate')}
-          />
-          <UpstreamSpGuideCard
-            spEntityId={resource.sp_entity_id}
-            spAcsUrl={resource.sp_acs_url}
-            spMetadataUrl={resource.sp_metadata_url}
-            spCertificatePem={resource.sp_certificate_pem}
-            spCertificateFingerprint={resource.sp_certificate_fingerprint}
-          />
-        </>
-      )}
-
-      {kind === 'application' && (
-        <>
-          <ApplicationTypeCard {...sectionProps} canWrite={canWrite} />
-          <ApplicationBrandingCard {...sectionProps} canWrite={canWrite} />
-          <AdminPermissionCatalog key={`permissions-${resource.id}`} applicationId={resource.id} />
-          <ResourceServersCard key={`servers-${resource.id}`} applicationId={resource.id} />
-          <SectionCard
-            title={t('admin.applicationProtocols.clientsCard')}
-            description={t('admin.applicationProtocols.clientsHint')}
-          >
-            <ApplicationProtocolCard
-              kind="oauth"
-              applicationId={resource.id}
-              applicationType={rootType}
-            />
-          </SectionCard>
-          <SectionCard
-            title={t('admin.applicationProtocols.samlCard')}
-            description={t('admin.applicationProtocols.samlHint')}
-          >
-            <ApplicationProtocolCard
-              kind="saml"
-              applicationId={resource.id}
-              applicationType={rootType}
-            />
-          </SectionCard>
-        </>
-      )}
-
-      {kind === 'federation' && canWrite && (
-        <SectionCard title={t('admin.federation.advancedCard')}>
-          <Stack gap="sm">
-            <Button
-              variant="subtle"
-              size="compact-sm"
-              onClick={() => setAdvancedOpen((open) => !open)}
-            >
-              {advancedOpen
-                ? t('admin.federation.advancedHide')
-                : t('admin.federation.advancedShow')}
-            </Button>
-            <Collapse expanded={advancedOpen} transitionDuration={200}>
-              <Stack gap="sm">
-                <Text size="xs" c="dimmed">
-                  {t('admin.federation.advancedHint')}
-                </Text>
-                {configMutation.data?.change_request_id &&
-                  configMutation.data.change_request_status === 'pending' && (
-                    <Alert color="green" variant="light">
-                      {t('admin.resources.changeSubmitted')}
-                    </Alert>
-                  )}
-                <JsonConfigEditor
-                  key={data.etag}
-                  initial={resource.configuration}
-                  onSave={(reason, configuration) =>
-                    configMutation.mutate({ reason, configuration })
-                  }
-                  pending={configMutation.isPending}
-                  error={configMutation.error}
-                />
-              </Stack>
-            </Collapse>
-          </Stack>
-        </SectionCard>
-      )}
-
-      {kind === 'oauth' && (
-        <OauthClientSections {...sectionProps} canWrite={canWrite} device={isDevice} />
-      )}
-      {kind === 'saml' && <SamlProviderSections {...sectionProps} canWrite={canWrite} />}
-      {(kind === 'saml' || kind === 'federation') && canWrite && (
-        <MetadataImportCard kind={kind} {...sectionProps} canWrite={canWrite} />
-      )}
-
-      {resource.published_configuration && (
-        <SectionCard
-          title={t('admin.resources.publishedCard')}
-          description={t('admin.resources.publishedHint')}
-        >
-          <Code block>{JSON.stringify(resource.published_configuration, null, 2)}</Code>
-        </SectionCard>
-      )}
-
-      {resource.change_requests && resource.change_requests.length > 0 && (
-        <ChangeRequestsCard
-          requests={resource.change_requests}
-          canDecide={canApprove}
-          decisionPending={decisionMutation.isPending}
-          decisionError={decisionMutation.error}
-          onDecide={(request, decision) => setPendingDecision({ request, decision })}
-        />
-      )}
+    <>
+      <ResourceDetailLayout context={contextValue} />
 
       <ReasonModal
         opened={activationModal !== null}
@@ -575,6 +341,498 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
           }
         }}
       />
+    </>
+  );
+}
+
+function ResourceInfoGrid({ resource }: { resource: AdminResourceView }) {
+  const { t } = useTranslation();
+  return (
+    <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+      <InfoItem label={t('admin.resources.colVersion')}>{resource.version}</InfoItem>
+      <InfoItem label={t('admin.resources.configurationVersionId')}>
+        {resource.configuration_version_id ? (
+          <Tooltip
+            label={resource.configuration_version_id}
+            withArrow
+            events={{ hover: true, focus: true, touch: false }}
+          >
+            <Text truncate="end" tabIndex={0}>
+              {resource.configuration_version_id}
+            </Text>
+          </Tooltip>
+        ) : (
+          '—'
+        )}
+      </InfoItem>
+      <InfoItem label={t('admin.resources.colCreatedAt')}>
+        {formatDateTime(resource.created_at)}
+      </InfoItem>
+      <InfoItem label={t('admin.resources.colUpdatedAt')}>
+        {formatDateTime(resource.updated_at)}
+      </InfoItem>
+    </SimpleGrid>
+  );
+}
+
+export function AdminResourceOverviewSubpage() {
+  const { t } = useTranslation();
+  const context = useOutletContext<ResourceDetailContextValue>();
+  const {
+    kind,
+    resource,
+    etag,
+    refresh,
+    canWrite,
+    approvable,
+    parentApplication,
+    parentApplicationId,
+    activationPending,
+    activationBlocked,
+    requestActivation,
+  } = context;
+  const sectionProps: ResourceSectionProps = { resource, etag, refresh, canWrite };
+
+  if (kind === 'application') {
+    const pendingCount = (resource.change_requests ?? []).filter(
+      (item) => item.status === 'pending',
+    ).length;
+    return (
+      <Stack gap="lg">
+        <Grid>
+          <Grid.Col span={{ base: 12, md: 7 }}>
+            <ApplicationBrandingCard {...sectionProps} />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, md: 5 }}>
+            <SectionCard title={t('admin.resources.infoCard')}>
+              <Stack gap="md">
+                <ResourceInfoGrid resource={resource} />
+                <Divider />
+                <ApplicationTypeSection {...sectionProps} />
+              </Stack>
+            </SectionCard>
+          </Grid.Col>
+        </Grid>
+
+        <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+          <Paper p="md">
+            <Stack gap="xs" justify="space-between" h="100%">
+              <Stack gap={4}>
+                <Text fw={600} size="sm">
+                  {t('admin.resourceTabs.protocols')}
+                </Text>
+                <Text size="xs" c="dimmed">
+                  {t('admin.applicationProtocols.clientsHint')}
+                </Text>
+              </Stack>
+              <Group>
+                <Button component={Link} to="../protocols" size="xs" variant="light">
+                  {t('admin.resourceTabs.protocols')}
+                </Button>
+              </Group>
+            </Stack>
+          </Paper>
+          <Paper p="md">
+            <Stack gap="xs" justify="space-between" h="100%">
+              <Stack gap={4}>
+                <Text fw={600} size="sm">
+                  {t('admin.resourceTabs.access')}
+                </Text>
+                <Text size="xs" c="dimmed">
+                  {t('authorization.serversHint')}
+                </Text>
+              </Stack>
+              <Group>
+                <Button component={Link} to="../access" size="xs" variant="light">
+                  {t('admin.resourceTabs.access')}
+                </Button>
+              </Group>
+            </Stack>
+          </Paper>
+          <Paper p="md">
+            <Stack gap="xs" justify="space-between" h="100%">
+              <Stack gap={4}>
+                <Group gap="xs">
+                  <Text fw={600} size="sm">
+                    {t('admin.resourceTabs.activity')}
+                  </Text>
+                  {pendingCount > 0 && (
+                    <Badge size="xs" variant="light" color="yellow">
+                      {pendingCount}
+                    </Badge>
+                  )}
+                </Group>
+                <Text size="xs" c="dimmed">
+                  {t('admin.changeRequests.description')}
+                </Text>
+              </Stack>
+              <Group>
+                <Button component={Link} to="../activity" size="xs" variant="light">
+                  {t('admin.resourceTabs.activity')}
+                </Button>
+              </Group>
+            </Stack>
+          </Paper>
+        </SimpleGrid>
+      </Stack>
+    );
+  }
+
+  if (kind === 'federation') {
+    const providerType = configText(resource.configuration, 'provider_type');
+    return (
+      <Grid>
+        <Grid.Col span={{ base: 12, md: 6 }}>
+          <SectionCard title={t('admin.resources.infoCard')}>
+            <Stack gap="md">
+              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                <InfoItem label={t('admin.federation.field.provider_type')}>
+                  {providerType ? providerType.toUpperCase() : '—'}
+                </InfoItem>
+                <InfoItem label={t('admin.federation.field.slug')}>
+                  {configText(resource.configuration, 'slug') || '—'}
+                </InfoItem>
+              </SimpleGrid>
+              <Divider />
+              <ResourceInfoGrid resource={resource} />
+              <Group gap="xs">
+                <Button component={Link} to="../settings" size="xs" variant="light">
+                  {t('admin.resourceTabs.settings')}
+                </Button>
+                <Button component={Link} to="../integration" size="xs" variant="default">
+                  {t('admin.resourceTabs.integration')}
+                </Button>
+              </Group>
+            </Stack>
+          </SectionCard>
+        </Grid.Col>
+        <Grid.Col span={{ base: 12, md: 6 }}>
+          <FederationChecklistCard
+            isSaml={providerType === 'saml'}
+            secretConfigured={resource.secret_set === true}
+            secretRefConfigured={
+              configText(resource.configuration, 'client_secret_ref').trim() !== ''
+            }
+            clientIdConfigured={configText(resource.configuration, 'client_id').trim() !== ''}
+            endpointsConfigured={federationEndpointsConfigured(resource)}
+            discoveryAvailable={providerType === 'oidc'}
+            certificatesConfigured={
+              providerType === 'saml' &&
+              Array.isArray(resource.configuration['signing_certificates']) &&
+              (resource.configuration['signing_certificates'] as unknown[]).length > 0
+            }
+            canRequestActivation={approvable && Boolean(canWrite)}
+            onRequestActivation={() => requestActivation('activate')}
+            activationPending={activationPending}
+            activationBlocked={activationBlocked}
+          />
+        </Grid.Col>
+      </Grid>
+    );
+  }
+
+  if (kind === 'oauth') {
+    const redirectCount = Array.isArray(resource.configuration['redirect_uris'])
+      ? (resource.configuration['redirect_uris'] as unknown[]).length
+      : 0;
+    const sessionSeconds = Number(resource.configuration['refresh_token_ttl_seconds']) || 0;
+    const clientType = configText(resource.configuration, 'client_type') || 'confidential';
+
+    return (
+      <Stack gap="lg">
+        <OauthSecretRedeemBanner resource={resource} etag={etag} refresh={refresh} />
+        <Grid>
+          <Grid.Col span={{ base: 12, md: 6 }}>
+            <SectionCard title={t('admin.resources.infoCard')}>
+              <Stack gap="md">
+                {parentApplicationId && (
+                  <InfoItem label={t('admin.resources.parentApplication')}>
+                    <Anchor
+                      component={Link}
+                      to={`/admin/applications/${encodeURIComponent(parentApplicationId)}/overview`}
+                      size="sm"
+                    >
+                      {parentApplication?.display_name ?? parentApplicationId}
+                    </Anchor>
+                  </InfoItem>
+                )}
+                <ResourceInfoGrid resource={resource} />
+              </Stack>
+            </SectionCard>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, md: 6 }}>
+            <SectionCard title={t('admin.resourceTabs.settings')}>
+              <Stack gap="md">
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                  <InfoItem label={t('admin.resources.colClientId')}>
+                    <Code>{resource.client_id ?? '—'}</Code>
+                  </InfoItem>
+                  <InfoItem label={t('admin.oauth.redirectCard')}>{redirectCount}</InfoItem>
+                  <InfoItem label={t('admin.oauth.sessionCard')}>
+                    {sessionSeconds > 0
+                      ? t('admin.oauth.sessionCurrent', {
+                          hours: sessionSeconds / 3600,
+                          days: sessionDurationDays(sessionSeconds),
+                        })
+                      : t('admin.oauth.sessionDefault')}
+                  </InfoItem>
+                  <InfoItem label={t('admin.applicationCreate.authMethod')}>
+                    {configText(resource.configuration, 'token_endpoint_auth_method') || clientType}
+                  </InfoItem>
+                </SimpleGrid>
+                <Group gap="xs">
+                  <Button component={Link} to="../settings" size="xs" variant="light">
+                    {t('admin.resourceTabs.settings')}
+                  </Button>
+                  <Button component={Link} to="../integration" size="xs" variant="default">
+                    {t('admin.resourceTabs.integration')}
+                  </Button>
+                </Group>
+              </Stack>
+            </SectionCard>
+          </Grid.Col>
+        </Grid>
+      </Stack>
+    );
+  }
+
+  const acsCount = Array.isArray(resource.configuration['acs_urls'])
+    ? (resource.configuration['acs_urls'] as unknown[]).length
+    : 0;
+  const certCount = Array.isArray(resource.configuration['signing_certificates'])
+    ? (resource.configuration['signing_certificates'] as unknown[]).length
+    : 0;
+  const spEntityId = configText(resource.configuration, 'sp_entity_id');
+
+  return (
+    <Grid>
+      <Grid.Col span={{ base: 12, md: 6 }}>
+        <SectionCard title={t('admin.resources.infoCard')}>
+          <Stack gap="md">
+            {parentApplicationId && (
+              <InfoItem label={t('admin.resources.parentApplication')}>
+                <Anchor
+                  component={Link}
+                  to={`/admin/applications/${encodeURIComponent(parentApplicationId)}/overview`}
+                  size="sm"
+                >
+                  {parentApplication?.display_name ?? parentApplicationId}
+                </Anchor>
+              </InfoItem>
+            )}
+            <ResourceInfoGrid resource={resource} />
+          </Stack>
+        </SectionCard>
+      </Grid.Col>
+      <Grid.Col span={{ base: 12, md: 6 }}>
+        <SectionCard title={t('admin.resourceTabs.settings')}>
+          <Stack gap="md">
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+              <InfoItem label={t('admin.federation.spEntityId')}>
+                <Code>{spEntityId || '—'}</Code>
+              </InfoItem>
+              <InfoItem label={t('admin.saml.acsCard')}>{acsCount}</InfoItem>
+              <InfoItem label={t('admin.saml.certCard')}>{certCount}</InfoItem>
+            </SimpleGrid>
+            <Group gap="xs">
+              <Button component={Link} to="../settings" size="xs" variant="light">
+                {t('admin.resourceTabs.settings')}
+              </Button>
+              <Button component={Link} to="../integration" size="xs" variant="default">
+                {t('admin.resourceTabs.integration')}
+              </Button>
+            </Group>
+          </Stack>
+        </SectionCard>
+      </Grid.Col>
+    </Grid>
+  );
+}
+
+export function AdminResourceProtocolsSubpage() {
+  const { resource, rootType } = useOutletContext<ResourceDetailContextValue>();
+  return (
+    <Stack gap="lg">
+      <ApplicationProtocolCard
+        kind="oauth"
+        applicationId={resource.id}
+        applicationType={rootType}
+      />
+      <ApplicationProtocolCard kind="saml" applicationId={resource.id} applicationType={rootType} />
+    </Stack>
+  );
+}
+
+export function AdminResourceAccessSubpage() {
+  const { resource } = useOutletContext<ResourceDetailContextValue>();
+  return (
+    <Stack gap="lg">
+      <AdminPermissionCatalog key={`permissions-${resource.id}`} applicationId={resource.id} />
+      <ResourceServersCard key={`servers-${resource.id}`} applicationId={resource.id} />
+    </Stack>
+  );
+}
+
+export function AdminResourceSettingsSubpage() {
+  const context = useOutletContext<ResourceDetailContextValue>();
+  const { kind, resource, etag, refresh, canWrite, isDevice } = context;
+  const sectionProps: ResourceSectionProps = { resource, etag, refresh, canWrite };
+
+  if (kind === 'oauth') {
+    return (
+      <Stack gap="lg">
+        <OauthClientSections {...sectionProps} device={isDevice} />
+      </Stack>
+    );
+  }
+
+  if (kind === 'saml') {
+    return (
+      <Stack gap="lg">
+        <SamlProviderSections {...sectionProps} />
+        {canWrite && <MetadataImportCard kind="saml" {...sectionProps} />}
+      </Stack>
+    );
+  }
+
+  if (kind === 'federation') {
+    return (
+      <Stack gap="lg">
+        <FederationConnectionCard key={`connection-${etag}`} {...sectionProps} />
+        <FederationCredentialsCard key={`credentials-${etag}`} {...sectionProps} />
+        <FederationScopesCard key={`scopes-${etag}`} {...sectionProps} />
+        {canWrite && <MetadataImportCard kind="federation" {...sectionProps} />}
+      </Stack>
+    );
+  }
+
+  return null;
+}
+
+export function AdminResourceIntegrationSubpage() {
+  const { t } = useTranslation();
+  const context = useOutletContext<ResourceDetailContextValue>();
+  const {
+    kind,
+    resource,
+    etag,
+    canWrite,
+    isDevice,
+    configPending,
+    configError,
+    configSubmittedPending,
+    saveConfig,
+  } = context;
+  const [advancedOpen, setAdvancedOpen] = useState(kind !== 'federation');
+
+  return (
+    <Stack gap="lg">
+      {kind === 'oauth' && !isDevice && (
+        <OidcConnectivityGuideCard
+          clientId={resource.client_id}
+          scopes={resource.configuration['allowed_scopes']}
+        />
+      )}
+      {kind === 'oauth' && isDevice && (
+        <SectionCard title={t('devices.authorizeTitle')}>
+          <Text size="sm">{t('devices.integrationHint')}</Text>
+        </SectionCard>
+      )}
+      {kind === 'saml' && <SamlConnectivityGuideCard configuration={resource.configuration} />}
+      {kind === 'federation' && (
+        <UpstreamSpGuideCard
+          spEntityId={resource.sp_entity_id}
+          spAcsUrl={resource.sp_acs_url}
+          spMetadataUrl={resource.sp_metadata_url}
+          spCertificatePem={resource.sp_certificate_pem}
+          spCertificateFingerprint={resource.sp_certificate_fingerprint}
+        />
+      )}
+
+      {(kind === 'oauth' || kind === 'saml' || (kind === 'federation' && canWrite)) && (
+        <SectionCard
+          title={
+            kind === 'federation'
+              ? t('admin.federation.advancedCard')
+              : t('admin.resources.configCard')
+          }
+          description={
+            kind === 'federation'
+              ? t('admin.federation.advancedHint')
+              : t(
+                  resource.status === 'active'
+                    ? 'admin.resources.configChangeRequest'
+                    : 'admin.resources.configImmediate',
+                )
+          }
+          action={
+            canWrite ? (
+              <Button
+                variant="subtle"
+                size="compact-sm"
+                onClick={() => setAdvancedOpen((open) => !open)}
+              >
+                {advancedOpen
+                  ? t('admin.federation.advancedHide')
+                  : t('admin.federation.advancedShow')}
+              </Button>
+            ) : undefined
+          }
+        >
+          {canWrite ? (
+            <Collapse expanded={advancedOpen} transitionDuration={200}>
+              <Stack gap="sm">
+                {configSubmittedPending && (
+                  <Alert color="green" variant="light">
+                    {t('admin.resources.changeSubmitted')}
+                  </Alert>
+                )}
+                <JsonConfigEditor
+                  key={etag}
+                  initial={resource.configuration}
+                  onSave={saveConfig}
+                  pending={configPending}
+                  error={configError}
+                />
+              </Stack>
+            </Collapse>
+          ) : (
+            <Code block style={{ maxHeight: 360, overflow: 'auto' }}>
+              {JSON.stringify(resource.configuration, null, 2)}
+            </Code>
+          )}
+        </SectionCard>
+      )}
+    </Stack>
+  );
+}
+
+export function AdminResourceActivitySubpage() {
+  const { t } = useTranslation();
+  const { resource, canApprove, decisionPending, decisionError, openDecision } =
+    useOutletContext<ResourceDetailContextValue>();
+
+  return (
+    <Stack gap="lg">
+      <ChangeRequestsCard
+        requests={resource.change_requests ?? []}
+        canDecide={canApprove}
+        decisionPending={decisionPending}
+        decisionError={decisionError}
+        showEmpty
+        onDecide={openDecision}
+      />
+
+      {resource.published_configuration && (
+        <SectionCard
+          title={t('admin.resources.publishedCard')}
+          description={t('admin.resources.publishedHint')}
+        >
+          <Code block style={{ maxHeight: 360, overflow: 'auto' }}>
+            {JSON.stringify(resource.published_configuration, null, 2)}
+          </Code>
+        </SectionCard>
+      )}
     </Stack>
   );
 }

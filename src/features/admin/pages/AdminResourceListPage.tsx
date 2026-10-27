@@ -59,30 +59,28 @@ export function AdminResourceListPage({ kind }: { kind: 'application' | 'federat
         <AccountPageHeader
           title={t(`admin.resources.${kind}.title`)}
           subtitle={t(`admin.resources.${kind}.subtitle`)}
+          actions={<CreateButton kind={kind} onOpen={() => setCreateOpened(true)} />}
         />
-        <Group gap="sm" wrap="wrap" justify="space-between">
-          <Group gap="sm" wrap="wrap">
-            <AdminSearchInput
-              value={q}
-              onChange={(next) => {
-                setQ(next);
-                pager.reset();
-              }}
-            />
-            <Select
-              value={status}
-              onChange={(value) => {
-                setStatus((value as AdminResourceStatus | null) ?? null);
-                pager.reset();
-              }}
-              data={STATUS_OPTIONS.map((value) => ({ value, label: t(`admin.status.${value}`) }))}
-              placeholder={t('admin.resources.statusFilter')}
-              allowDeselect
-              clearable
-              w={160}
-            />
-          </Group>
-          <CreateButton kind={kind} onOpen={() => setCreateOpened(true)} />
+        <Group gap="sm" wrap="wrap">
+          <AdminSearchInput
+            value={q}
+            onChange={(next) => {
+              setQ(next);
+              pager.reset();
+            }}
+          />
+          <Select
+            value={status}
+            onChange={(value) => {
+              setStatus((value as AdminResourceStatus | null) ?? null);
+              pager.reset();
+            }}
+            data={STATUS_OPTIONS.map((value) => ({ value, label: t(`admin.status.${value}`) }))}
+            placeholder={t('admin.resources.statusFilter')}
+            allowDeselect
+            clearable
+            w={160}
+          />
         </Group>
 
         {query.isError ? (

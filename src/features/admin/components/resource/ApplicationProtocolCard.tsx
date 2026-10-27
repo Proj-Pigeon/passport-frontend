@@ -1,10 +1,11 @@
-import { Button, Group, Stack, Table, Text, UnstyledButton } from '@mantine/core';
+import { Anchor, Button, Stack, Table, Text, UnstyledButton } from '@mantine/core';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import { listAdminResources } from '@/api/endpoints/admin/resources';
+import { SectionCard } from '@/components/AccountSections';
 import { PageState } from '@/components/PageState';
 import { describeApiError } from '@/i18n/errors';
 import { formatDateTime } from '@/lib/format';
@@ -44,6 +45,14 @@ export function ApplicationProtocolCard({
   const canWrite =
     hasAdminCapability(session, 'applications:write') &&
     (!applicationType || (applicationType === 'saml' ? kind === 'saml' : kind === 'oauth'));
+  const titleKey =
+    kind === 'oauth'
+      ? 'admin.applicationProtocols.clientsCard'
+      : 'admin.applicationProtocols.samlCard';
+  const hintKey =
+    kind === 'oauth'
+      ? 'admin.applicationProtocols.clientsHint'
+      : 'admin.applicationProtocols.samlHint';
   const emptyKey =
     kind === 'oauth'
       ? 'admin.applicationProtocols.clientsEmpty'
@@ -58,7 +67,17 @@ export function ApplicationProtocolCard({
       : 'admin.applicationProtocols.addSaml';
 
   return (
-    <>
+    <SectionCard
+      title={t(titleKey)}
+      description={t(hintKey)}
+      action={
+        canWrite ? (
+          <Button size="xs" variant="light" onClick={() => setCreateOpened(true)}>
+            {t(addKey)}
+          </Button>
+        ) : undefined
+      }
+    >
       {query.isError ? (
         <PageState
           kind="error"
@@ -88,6 +107,7 @@ export function ApplicationProtocolCard({
                     {kind === 'oauth' && <Table.Th>{t('admin.resources.colClientId')}</Table.Th>}
                     <Table.Th>{t('admin.resources.colStatus')}</Table.Th>
                     <Table.Th>{t('admin.resources.colUpdatedAt')}</Table.Th>
+                    <Table.Th />
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -107,18 +127,16 @@ export function ApplicationProtocolCard({
                         <AdminStatusBadge status={resource.status} />
                       </Table.Td>
                       <Table.Td>{formatDateTime(resource.updated_at)}</Table.Td>
+                      <Table.Td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <Anchor component={Link} to={DETAIL_PATHS[kind](resource.id)} size="sm">
+                          {t('admin.resources.openDetail')}
+                        </Anchor>
+                      </Table.Td>
                     </Table.Tr>
                   ))}
                 </Table.Tbody>
               </Table>
             </Table.ScrollContainer>
-          )}
-          {canWrite && (
-            <Group>
-              <Button size="xs" variant="light" onClick={() => setCreateOpened(true)}>
-                {t(addKey)}
-              </Button>
-            </Group>
           )}
         </Stack>
       )}
@@ -129,6 +147,6 @@ export function ApplicationProtocolCard({
         opened={createOpened}
         onClose={() => setCreateOpened(false)}
       />
-    </>
+    </SectionCard>
   );
 }

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { patchAdminResource } from '@/api/endpoints/admin/resources';
 import { SectionCard } from '@/components/AccountSections';
-import type { ResourceSectionProps } from '../pages/AdminResourceDetailPage';
+import type { ResourceSectionProps } from '../components/resource/resourceTypes';
 import { ReasonModal } from '../components/ReasonModal';
 import { useAdminStepUp } from '../step-up/useAdminStepUp';
 
