@@ -28,7 +28,7 @@ describe('admin guards', () => {
 
     renderRoute(['/admin/login']);
 
-    expect(await screen.findByRole('heading', { name: '管理概览' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '概览' })).toBeInTheDocument();
   });
 
   it('signs an administrator in with a password', async () => {
@@ -40,7 +40,7 @@ describe('admin guards', () => {
     await user.type(screen.getByLabelText(/^密码/), PASSWORD);
     await user.click(screen.getByRole('button', { name: '登录管理控制台' }));
 
-    expect(await screen.findByRole('heading', { name: '管理概览' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '概览' })).toBeInTheDocument();
   });
 
   it('rejects a password login without administrator roles', async () => {
@@ -55,7 +55,7 @@ describe('admin guards', () => {
     expect(
       await screen.findByText('当前操作不被允许，可能需要额外的身份验证。'),
     ).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: '管理概览' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '概览' })).not.toBeInTheDocument();
   });
 
   it('rejects a wrong password', async () => {

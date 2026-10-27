@@ -5,7 +5,7 @@ import type {
 
 import { apiDelete, apiGet, apiPost, apiVoid } from '../../http';
 import type { WebAuthnCeremony } from '@/api/types';
-import type { AdminLoginRequest, AdminSessionInfo } from './types';
+import type { AdminLoginRequest, AdminOverview, AdminSessionInfo } from './types';
 
 export type AdminPasskeyCeremony = WebAuthnCeremony<PublicKeyCredentialRequestOptionsJSON>;
 
@@ -17,6 +17,10 @@ export function getCurrentAdminSession(signal?: AbortSignal) {
     scope: 'admin',
     suppressUnauthorized: true,
   });
+}
+
+export function getAdminOverview(signal?: AbortSignal) {
+  return apiGet<AdminOverview>('/admin/v1/overview', { signal, scope: 'admin' });
 }
 
 export function adminPasswordLogin(input: AdminLoginRequest) {

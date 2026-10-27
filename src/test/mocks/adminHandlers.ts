@@ -183,6 +183,92 @@ function adminSessionView(db: MockDb) {
   };
 }
 
+const OVERVIEW_WINDOW_DAYS = 30;
+
+function overviewDates(): string[] {
+  const dates: string[] = [];
+  const now = new Date();
+  for (let offset = OVERVIEW_WINDOW_DAYS - 1; offset >= 0; offset -= 1) {
+    const day = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    day.setUTCDate(day.getUTCDate() - offset);
+    dates.push(day.toISOString().slice(0, 10));
+  }
+  return dates;
+}
+
+function overviewSeries(timestamps: string[], dates: string[]) {
+  const counts = new Map<string, number>();
+  for (const timestamp of timestamps) {
+    const date = timestamp.slice(0, 10);
+    counts.set(date, (counts.get(date) ?? 0) + 1);
+  }
+  return dates.map((date) => ({ date, count: counts.get(date) ?? 0 }));
+}
+
+function adminOverviewView(db: MockDb) {
+  const session = db.adminSession;
+  const capabilities = session?.capabilities ?? [];
+  const dates = overviewDates();
+  const view: Record<string, unknown> = {
+    window_days: OVERVIEW_WINDOW_DAYS,
+    generated_at: new Date().toISOString(),
+  };
+  if (capabilities.includes('users:read')) {
+    const users = db.adminUsers;
+    view['users'] = {
+      total: users.length,
+      active: users.filter((user) => user.status === 'active').length,
+      pending_verification: users.filter((user) => user.status === 'pending_verification').length,
+      suspended: users.filter((user) => user.status === 'suspended').length,
+      deactivated: users.filter((user) => user.status === 'deactivated').length,
+      active_sessions: users.reduce((sum, user) => sum + user.active_session_count, 0),
+      daily_new: overviewSeries(
+        users.map((user) => user.created_at),
+        dates,
+      ),
+      daily_logins: overviewSeries(
+        users.map((user) => user.created_at),
+        dates,
+      ),
+    };
+  }
+  if (capabilities.includes('applications:read')) {
+    const resources = db.adminResources;
+    const ofKind = (kind: string, active = false) =>
+      resources.filter(
+        (resource) => resource.kind === kind && (!active || resource.status === 'active'),
+      ).length;
+    view['applications'] = {
+      total: ofKind('application'),
+      active: ofKind('application', true),
+      oauth_clients: ofKind('oauth'),
+      oauth_clients_active: ofKind('oauth', true),
+      saml_service_providers: ofKind('saml'),
+      active_grants: 0,
+      authorization_requests_total: db.interactions.size,
+      authorization_requests_window: db.interactions.size,
+      daily_authorizations: overviewSeries([], dates),
+      ...(capabilities.includes('federation:read')
+        ? { federation_providers: ofKind('federation') }
+        : {}),
+    };
+  }
+  if (capabilities.includes('audit:read')) {
+    const events = db.adminAuditEvents;
+    view['audit'] = {
+      events_window: events.length,
+      failures_window: events.filter((event) => event.result !== 'success').length,
+      http_requests_window: db.adminHttpAccessRecords.length,
+      daily_events: overviewSeries(
+        events.map((event) => event.occurred_at),
+        dates,
+      ),
+      daily_http_requests: overviewSeries([], dates),
+    };
+  }
+  return view;
+}
+
 export function createAdminHandlers(db: MockDb): RequestHandler[] {
   const handlers: RequestHandler[] = [];
 
@@ -270,6 +356,16 @@ export function createAdminHandlers(db: MockDb): RequestHandler[] {
         return unauthorized();
       }
       return HttpResponse.json(view, { headers: { 'X-Request-ID': REQUEST_ID } });
+    }),
+
+    http.get('*/admin/v1/overview', ({ request }) => {
+      const guard = adminGuard(db, request);
+      if (guard) {
+        return guard;
+      }
+      return HttpResponse.json(adminOverviewView(db), {
+        headers: { 'X-Request-ID': REQUEST_ID },
+      });
     }),
 
     http.delete('*/admin/v1/sessions/current', ({ request }) => {

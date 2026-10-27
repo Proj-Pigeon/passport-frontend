@@ -334,3 +334,48 @@ export interface AdminGrantRevocationInput {
   reason: string;
   user_id?: string;
 }
+
+export interface AdminOverviewPoint {
+  date: string;
+  count: number;
+}
+
+export interface AdminUsersOverview {
+  total: number;
+  active: number;
+  pending_verification: number;
+  suspended: number;
+  deactivated: number;
+  active_sessions: number;
+  daily_new: AdminOverviewPoint[];
+  daily_logins: AdminOverviewPoint[];
+}
+
+export interface AdminApplicationsOverview {
+  total: number;
+  active: number;
+  oauth_clients: number;
+  oauth_clients_active: number;
+  saml_service_providers: number;
+  active_grants: number;
+  authorization_requests_total: number;
+  authorization_requests_window: number;
+  daily_authorizations: AdminOverviewPoint[];
+  federation_providers?: number;
+}
+
+export interface AdminAuditOverview {
+  events_window: number;
+  failures_window: number;
+  http_requests_window: number;
+  daily_events: AdminOverviewPoint[];
+  daily_http_requests: AdminOverviewPoint[];
+}
+
+export interface AdminOverview {
+  window_days: number;
+  generated_at: string;
+  users?: AdminUsersOverview;
+  applications?: AdminApplicationsOverview;
+  audit?: AdminAuditOverview;
+}
