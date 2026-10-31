@@ -32,10 +32,17 @@ import {
 import { AdminUsersPage } from '@/features/admin/pages/AdminUsersPage';
 import { AdminGuestOnly, RequireAdmin } from '@/features/admin/session/guards';
 import { AdminOriginGate } from '@/features/admin/session/AdminOriginGate';
+import { DeveloperPanelPage } from '@/features/developer/components/DeveloperPanelPage';
 import {
-  DeveloperApplicationsPage,
-  DeveloperPermissionsPage,
-} from '@/features/developer/DeveloperApplicationsPage';
+  DeveloperResourceAccessSubpage,
+  DeveloperResourceActivitySubpage,
+  DeveloperResourceDetailPage,
+  DeveloperResourceIntegrationSubpage,
+  DeveloperResourceOverviewSubpage,
+  DeveloperResourceProtocolsSubpage,
+  DeveloperResourceSectionRedirect,
+  DeveloperResourceSettingsSubpage,
+} from '@/features/developer/components/DeveloperResourceDetailPage';
 import { OverviewPage } from '@/features/account/OverviewPage';
 import { ProfilePage } from '@/features/account/ProfilePage';
 import { SecurityPage } from '@/features/account/SecurityPage';
@@ -59,6 +66,14 @@ const protocolDetailChildren: RouteObject[] = [
   { path: 'settings', element: <AdminResourceSettingsSubpage /> },
   { path: 'integration', element: <AdminResourceIntegrationSubpage /> },
   { path: 'activity', element: <AdminResourceActivitySubpage /> },
+];
+
+const developerProtocolDetailChildren: RouteObject[] = [
+  { index: true, element: <DeveloperResourceSectionRedirect /> },
+  { path: 'overview', element: <DeveloperResourceOverviewSubpage /> },
+  { path: 'settings', element: <DeveloperResourceSettingsSubpage /> },
+  { path: 'integration', element: <DeveloperResourceIntegrationSubpage /> },
+  { path: 'activity', element: <DeveloperResourceActivitySubpage /> },
 ];
 
 export const routes: RouteObject[] = [
@@ -136,8 +151,28 @@ export const routes: RouteObject[] = [
           { index: true, element: <OverviewPage /> },
           { path: 'profile', element: <ProfilePage /> },
           { path: 'security', element: <SecurityPage /> },
-          { path: 'developer', element: <DeveloperApplicationsPage /> },
-          { path: 'developer/:applicationId/permissions', element: <DeveloperPermissionsPage /> },
+          { path: 'developer', element: <DeveloperPanelPage /> },
+          {
+            path: 'developer/applications/:resourceId',
+            element: <DeveloperResourceDetailPage kind="application" />,
+            children: [
+              { index: true, element: <DeveloperResourceSectionRedirect /> },
+              { path: 'overview', element: <DeveloperResourceOverviewSubpage /> },
+              { path: 'protocols', element: <DeveloperResourceProtocolsSubpage /> },
+              { path: 'access', element: <DeveloperResourceAccessSubpage /> },
+              { path: 'activity', element: <DeveloperResourceActivitySubpage /> },
+            ],
+          },
+          {
+            path: 'developer/oauth-clients/:resourceId',
+            element: <DeveloperResourceDetailPage kind="oauth" />,
+            children: developerProtocolDetailChildren,
+          },
+          {
+            path: 'developer/saml-service-providers/:resourceId',
+            element: <DeveloperResourceDetailPage kind="saml" />,
+            children: developerProtocolDetailChildren,
+          },
         ],
       },
 

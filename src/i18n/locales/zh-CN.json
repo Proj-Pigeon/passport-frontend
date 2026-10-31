@@ -18,7 +18,11 @@
     "name": "权限名称",
     "description": "描述",
     "statusLabel": "状态",
-    "status": { "active": "有效", "disabled": "已停用", "deleted": "已删除" },
+    "status": {
+      "active": "有效",
+      "disabled": "已停用",
+      "deleted": "已删除"
+    },
     "search": "搜索名称、代码或描述",
     "searchApplications": "搜索权限或应用 ID",
     "empty": "没有匹配的权限。",
@@ -27,7 +31,7 @@
     "grantsTitle": "用户权限",
     "grantsHint": "角色、内置直接授权和应用直接授权将一起保存。应用所有者和管理员不会自动获得应用数据权限。",
     "superAdminOnly": "只有超级管理员可以调整角色或直接授权，仅有用户管理能力不足以执行此操作。",
-    "noSelf": "不能修改自己的角色或直接授权，请联系另一位超级管理员。",
+    "selfGrantUnsupported": "不能修改自己的角色或直接授权，请由其他超级管理员操作。",
     "roles": "平台角色",
     "builtinGrants": "内置能力直接授权",
     "applicationGrants": "应用权限直接授权",
@@ -107,7 +111,74 @@
     "yes": "是",
     "no": "否",
     "enabled": "已启用",
-    "disabled": "已禁用"
+    "disabled": "已禁用",
+    "uploadImage": "上传图片"
+  },
+  "developer": {
+    "panel": {
+      "title": "开发者面板",
+      "subtitle": "管理你的应用、接入配置和使用情况。",
+      "applications": "我的应用",
+      "applicationsHint": "创建应用后，在详情页完成资料与接入配置。",
+      "emptyHint": "点击“创建应用”新建你的第一个应用。"
+    },
+    "create": {
+      "title": "创建应用",
+      "description": "先为应用命名并选择类型，其他信息稍后再填。",
+      "name": "应用名称",
+      "namePlaceholder": "输入一个便于识别的名称",
+      "nameInvalid": "请输入 1–80 个字符的应用名称。",
+      "type": "应用类型",
+      "draftHint": "创建后进入应用详情，可配置图标、回调地址和权限。应用类型创建后不可更改，完成配置并激活前不会对外提供服务。",
+      "hint": "请确认你的账户已通过验证，然后重试。",
+      "submit": "创建应用"
+    },
+    "details": {
+      "card": "应用资料",
+      "hint": "完善应用名称、图标与开发者信息，帮助用户识别你的应用。",
+      "edit": "编辑资料"
+    },
+    "protocolSettings": {
+      "card": "协议设置",
+      "hint": "管理此连接的身份验证与授权方式。",
+      "edit": "编辑协议设置"
+    },
+    "overview": {
+      "applications": "应用数量",
+      "applicationsHint": "当前总量，其中 {{active}} 个已激活",
+      "users": "使用人数",
+      "usersHint": "当前仍持有有效授权的用户总数",
+      "activeUsers": "活跃人数",
+      "activeUsersHint": "所选期间成功授权的去重用户数",
+      "trendCard": "{{start}} 至 {{end}} 授权趋势",
+      "seriesAuthorized": "成功授权次数"
+    },
+    "range": {
+      "preset": "最近时间段",
+      "days": "{{count}} 天",
+      "months12": "12 个月",
+      "custom": "自定义",
+      "start": "开始日期",
+      "end": "结束日期",
+      "selectDate": "选择日期",
+      "clearStart": "清除开始日期",
+      "clearEnd": "清除结束日期",
+      "quick": "从开始日期一键选择并查看",
+      "hint": "按协调世界时（UTC）统计，包含首尾日期，最长 12 个月。结束日期不能晚于今天，超出范围的快捷选项不可用。",
+      "apply": "查看此时间段",
+      "selected": "当前显示：{{start}} 至 {{end}}（UTC）",
+      "nextMonth": "下个月",
+      "previousMonth": "上个月",
+      "nextYear": "下一年",
+      "previousYear": "上一年",
+      "nextDecade": "下一个十年",
+      "previousDecade": "上一个十年",
+      "chooseMonth": "选择月份",
+      "chooseYear": "选择年份"
+    },
+    "detail": {
+      "applicationTypeHint": "应用类型在创建后锁定。"
+    }
   },
   "nav": {
     "account": "概览",
@@ -483,12 +554,8 @@
       "saveFailed": "保存失败，请重试"
     },
     "avatar": {
-      "hint": "选择图片后需再次确认上传才会生效。",
       "current": "当前头像",
-      "choose": "选择图片",
-      "upload": "上传头像",
       "uploadSuccess": "头像已更新",
-      "fileMeta": "{{type}} · {{size}} · {{dimensions}}",
       "deleteTitle": "删除头像",
       "deleteBody": "删除后将恢复为首字母占位头像。",
       "deleteSuccess": "头像已删除",
@@ -615,7 +682,8 @@
       "auditor": "审计员",
       "key_admin": "密钥管理员",
       "key_approver": "密钥审批员",
-      "operator": "运维"
+      "operator": "运维",
+      "developer": "开发者"
     },
     "amr": {
       "pwd": "密码",
@@ -641,11 +709,6 @@
       "running": "进行中",
       "trusted": "信任",
       "retired": "已退役"
-    },
-    "reason": {
-      "label": "操作原因",
-      "hint": "最多 1000 个字符，会写入审计日志。",
-      "placeholder": "请说明本次操作的原因…"
     },
     "login": {
       "title": "管理员登录",
@@ -758,19 +821,19 @@
       "infoCard": "基本信息",
       "configurationVersionId": "配置版本 ID",
       "lifecycleCard": "生命周期",
-      "lifecycleHint": "激活与停用需要审批。",
-      "requestActivate": "申请激活",
-      "requestDeactivate": "申请停用",
-      "activationConfirm": "将提交 {{name}} 的状态变更申请。",
+      "lifecycleHint": "激活与停用会直接生效，可随时调整应用状态。",
+      "requestActivate": "激活",
+      "requestDeactivate": "停用",
+      "activationConfirm": "确认变更 {{name}} 的启用状态？",
       "activationConflictHint": "当前状态不允许该操作，或存在待处理的变更。",
       "activationSubmitted": "申请已提交，等待审批。",
-      "activationAutoApproved": "申请已提交，并已自动通过审核。",
+      "activationAutoApproved": "状态变更已生效。",
       "activationPendingHint": "已有同类申请等待审批，请先在下方变更请求中处理。",
       "configCard": "配置",
       "configImmediate": "草稿状态下修改立即生效。",
-      "configChangeRequest": "修改会生成变更请求，需审批后生效。",
+      "configChangeRequest": "修改会立即发布并生效。",
       "changeSubmitted": "变更请求已提交，等待审批。",
-      "changeAutoApproved": "变更已提交，并已自动通过审核。",
+      "changeAutoApproved": "配置变更已生效。",
       "publishedCard": "已发布配置",
       "publishedHint": "当前对外生效的配置快照。",
       "application": {
@@ -845,10 +908,10 @@
       "grantsConfirm": "撤销后用户需要重新授权。",
       "secretCard": "客户端密钥",
       "secretHint": "机密客户端的密钥创建与轮换。",
-      "secretFlow": "先申请密钥，审批通过后由申请人兑换明文。",
-      "requestSecret": "申请新密钥",
-      "requestRotation": "申请轮换密钥",
-      "secretRequestConfirm": "将为 {{name}} 提交密钥申请。",
+      "secretFlow": "创建或轮换后，明文密钥仅显示一次，请立即妥善保存。",
+      "requestSecret": "创建新密钥",
+      "requestRotation": "轮换密钥",
+      "secretRequestConfirm": "确认直接为 {{name}} 创建或轮换密钥？",
       "redeemReady": "有已批准的密钥请求，可以兑换明文。",
       "redeem": "兑换（{{action}}）",
       "redeemTitle": "兑换客户端密钥",
@@ -1021,7 +1084,7 @@
       "presetsLoadFailed": "无法加载提供方预设",
       "connectionCard": "连接配置",
       "connectionHint": "{{type}} 端点与信任配置",
-      "connectionConfirm": "确认配置和操作原因",
+      "connectionConfirm": "请核对并确认配置",
       "saveConnection": "保存连接配置",
       "githubFixedEndpoints": "GitHub 使用预设端点",
       "addCertificate": "添加签名证书",
@@ -1150,7 +1213,7 @@
       "signedRequests": "要求 SP 签名登录请求",
       "idpInitiated": "允许由 Passport 发起登录",
       "nameIdHint": "NameID 使用按应用隔离的 persistent 标识。",
-      "draftHint": "创建后为草稿，需申请激活并审批后才能使用。",
+      "draftHint": "创建后为草稿，管理员或所属开发者激活后即可使用。",
       "invalid": "请检查此字段的格式或长度。",
       "sessionDuration": "登录态保持时长（小时）",
       "sessionDurationHint": "留空则用户在应用内默认保持登录 93 天。",
@@ -1165,8 +1228,6 @@
       "hint": "应用图标与开发者信息会展示在授权同意页。",
       "logo": "应用图标",
       "logoHint": "支持 PNG 或 JPEG，不超过 512 KB。",
-      "logoUpload": "上传图标",
-      "logoReplace": "更换图标",
       "logoRemove": "移除图标",
       "logoMissing": "尚未上传图标。",
       "developerName": "开发者名称",

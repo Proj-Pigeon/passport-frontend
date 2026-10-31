@@ -3,6 +3,7 @@ import { http, HttpResponse, type PathParams, type RequestHandler } from 'msw';
 import type { ApiFieldError } from '@/api/errors';
 
 import {
+  ACCOUNT_ROLE_CAPABILITIES,
   consumeCeremony,
   currentUser,
   findUserByIdentifier,
@@ -305,6 +306,10 @@ export function createHandlers(db: MockDb): RequestHandler[] {
       if (!db.session || !user) {
         return unauthorized();
       }
+      const roles = db.accountRolesOf.get(user.id) ?? [];
+      const capabilities = [
+        ...new Set(roles.flatMap((role) => ACCOUNT_ROLE_CAPABILITIES[role] ?? [])),
+      ];
       return HttpResponse.json(
         {
           session: db.session,
@@ -318,6 +323,8 @@ export function createHandlers(db: MockDb): RequestHandler[] {
             has_password: user.has_password,
             has_passkey: passkeysOf(db, user.id).length > 0,
             step_up_required: user.step_up_required,
+            roles,
+            capabilities,
           },
         },
         { headers: { 'X-Request-ID': REQUEST_ID } },

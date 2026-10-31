@@ -159,6 +159,9 @@ export interface MockDb {
   permissionDefinitions: PermissionDefinition[];
   permissionGrants: Map<string, PermissionGrants>;
   developerApplications: (DeveloperApplication & { owner_user_id: string })[];
+  accountRolesOf: Map<string, string[]>;
+  developerResources: (MockAdminResource & { owner_user_id?: string })[];
+  developerSecretCounter: number;
   resourceServers: ResourceServer[];
   resourceServerDrafts: Map<string, ResourceServerInput>;
 }
@@ -202,11 +205,17 @@ const ROLE_CAPABILITIES: Record<AdminRole, AdminCapability[]> = {
   key_admin: ['keys:write', 'config:read'],
   key_approver: ['keys:approve', 'config:read'],
   operator: ['operations:read', 'config:read'],
+  developer: [],
 };
 
 export function capabilitiesForRoles(roles: AdminRole[]): AdminCapability[] {
   return [...new Set(roles.flatMap((role) => ROLE_CAPABILITIES[role] ?? []))];
 }
+
+// Mirrors the backend effective_admin_capabilities view for the account session.
+export const ACCOUNT_ROLE_CAPABILITIES: Record<string, AdminCapability[]> = {
+  developer: [],
+};
 
 export const STEP_UP_TTL_MS = 10 * 60_000;
 
@@ -250,6 +259,9 @@ export function createMockDb(): MockDb {
     })),
     permissionGrants: new Map(),
     developerApplications: [],
+    accountRolesOf: new Map(),
+    developerResources: [],
+    developerSecretCounter: 0,
     resourceServers: [],
     resourceServerDrafts: new Map(),
   };
@@ -436,6 +448,10 @@ export function grantAdminRole(db: MockDb, userId: string, roles: AdminRole[]): 
   db.adminRolesOf.set(userId, roles);
 }
 
+export function grantAccountRole(db: MockDb, userId: string, roles: string[]): void {
+  db.accountRolesOf.set(userId, roles);
+}
+
 export function adminRolesFor(db: MockDb, userId: string): AdminRole[] {
   return db.adminRolesOf.get(userId) ?? [];
 }
@@ -519,6 +535,29 @@ export function seedAdminResource(
   return resource;
 }
 
+export function seedDeveloperResource(
+  db: MockDb,
+  overrides: Partial<MockAdminResource & { owner_user_id: string }> = {},
+): MockAdminResource & { owner_user_id?: string } {
+  const index = db.developerResources.length + 1;
+  const resource: MockAdminResource & { owner_user_id?: string } = {
+    id: `dev_${index}`,
+    kind: 'application',
+    display_name: `Developer App ${index}`,
+    status: 'draft',
+    version: 1,
+    configuration: {},
+    published_configuration: null,
+    configuration_version_id: null,
+    change_requests: [],
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+    ...overrides,
+  };
+  db.developerResources.push(resource);
+  return resource;
+}
+
 export function seedAdminChangeRequest(
   resource: MockAdminResource,
   overrides: Partial<AdminChangeRequest> = {},
@@ -532,7 +571,6 @@ export function seedAdminChangeRequest(
     created_at: new Date().toISOString(),
     evaluated_diff: null,
     requested_by: 'adu_other',
-    reason: 'mock reason',
     ...overrides,
   };
   resource.change_requests.push(change);

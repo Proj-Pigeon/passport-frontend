@@ -18,7 +18,11 @@
     "name": "Permission name",
     "description": "Description",
     "statusLabel": "Status",
-    "status": { "active": "Active", "disabled": "Disabled", "deleted": "Deleted" },
+    "status": {
+      "active": "Active",
+      "disabled": "Disabled",
+      "deleted": "Deleted"
+    },
     "search": "Search name, code or description",
     "searchApplications": "Search permission or application ID",
     "empty": "No matching permissions.",
@@ -27,7 +31,7 @@
     "grantsTitle": "User permissions",
     "grantsHint": "Roles, direct platform capabilities and application grants are saved together. Application owners and administrators do not automatically receive application access.",
     "superAdminOnly": "Only a super administrator may change roles or direct grants. A user-management capability alone is not sufficient.",
-    "noSelf": "You cannot change your own roles or direct grants. Ask another super administrator.",
+    "selfGrantUnsupported": "You cannot change your own roles or direct grants. Ask another super administrator to perform this operation.",
     "roles": "Platform roles",
     "builtinGrants": "Direct platform capabilities",
     "applicationGrants": "Direct application permissions",
@@ -107,7 +111,74 @@
     "yes": "Yes",
     "no": "No",
     "enabled": "Enabled",
-    "disabled": "Disabled"
+    "disabled": "Disabled",
+    "uploadImage": "Upload image"
+  },
+  "developer": {
+    "panel": {
+      "title": "Developer panel",
+      "subtitle": "Manage your applications, connections and usage.",
+      "applications": "My applications",
+      "applicationsHint": "Create an application, then complete its details and connection settings.",
+      "emptyHint": "Click \"Create application\" to create your first application."
+    },
+    "create": {
+      "title": "Create application",
+      "description": "Choose a name and application type. Everything else can wait.",
+      "name": "Application name",
+      "namePlaceholder": "Enter a recognizable name",
+      "nameInvalid": "Enter an application name between 1 and 80 characters.",
+      "type": "Application type",
+      "draftHint": "Next, configure the icon, redirect URLs and permissions on the details page. The application type cannot be changed after creation. Your app stays offline until configured and activated.",
+      "hint": "Please make sure your account is verified, then try again.",
+      "submit": "Create application"
+    },
+    "details": {
+      "card": "Application details",
+      "hint": "Help users recognize your app with its name, icon and developer details.",
+      "edit": "Edit details"
+    },
+    "protocolSettings": {
+      "card": "Protocol settings",
+      "hint": "Manage authentication and authorization for this connection.",
+      "edit": "Edit protocol settings"
+    },
+    "overview": {
+      "applications": "Applications",
+      "applicationsHint": "Current total, {{active}} active",
+      "users": "Users",
+      "usersHint": "Current total of users with a valid authorization",
+      "activeUsers": "Active users",
+      "activeUsersHint": "Unique users who successfully authorized in the selected range",
+      "trendCard": "Authorization trend, {{start}} to {{end}}",
+      "seriesAuthorized": "Successful authorizations"
+    },
+    "range": {
+      "preset": "Recent range",
+      "days": "{{count}} days",
+      "months12": "12 months",
+      "custom": "Custom",
+      "start": "Start date",
+      "end": "End date",
+      "selectDate": "Select a date",
+      "clearStart": "Clear start date",
+      "clearEnd": "Clear end date",
+      "quick": "Select and view a duration from the start date",
+      "hint": "Dates use UTC and include both endpoints, up to 12 months. The end date cannot be after today; unavailable shortcuts exceed these limits.",
+      "apply": "View this range",
+      "selected": "Showing: {{start}} to {{end}} (UTC)",
+      "nextMonth": "Next month",
+      "previousMonth": "Previous month",
+      "nextYear": "Next year",
+      "previousYear": "Previous year",
+      "nextDecade": "Next decade",
+      "previousDecade": "Previous decade",
+      "chooseMonth": "Choose month",
+      "chooseYear": "Choose year"
+    },
+    "detail": {
+      "applicationTypeHint": "The application type is locked after creation."
+    }
   },
   "nav": {
     "account": "Overview",
@@ -483,12 +554,8 @@
       "saveFailed": "Could not save. Please try again."
     },
     "avatar": {
-      "hint": "Choose an image, then confirm the upload to apply it.",
       "current": "Current avatar",
-      "choose": "Choose an image",
-      "upload": "Upload avatar",
       "uploadSuccess": "Avatar updated",
-      "fileMeta": "{{type}} · {{size}} · {{dimensions}}",
       "deleteTitle": "Delete avatar",
       "deleteBody": "You will fall back to an initials placeholder.",
       "deleteSuccess": "Avatar deleted",
@@ -615,7 +682,8 @@
       "auditor": "Auditor",
       "key_admin": "Key admin",
       "key_approver": "Key approver",
-      "operator": "Operator"
+      "operator": "Operator",
+      "developer": "Developer"
     },
     "amr": {
       "pwd": "Password",
@@ -641,11 +709,6 @@
       "running": "Running",
       "trusted": "Trusted",
       "retired": "Retired"
-    },
-    "reason": {
-      "label": "Reason",
-      "hint": "Up to 1000 characters, recorded in the audit log.",
-      "placeholder": "Describe why you are performing this action…"
     },
     "login": {
       "title": "Administrator sign-in",
@@ -758,19 +821,19 @@
       "infoCard": "Details",
       "configurationVersionId": "Configuration version ID",
       "lifecycleCard": "Lifecycle",
-      "lifecycleHint": "Activation and deactivation require approval.",
-      "requestActivate": "Request activation",
-      "requestDeactivate": "Request deactivation",
-      "activationConfirm": "Submit a status change request for {{name}}?",
+      "lifecycleHint": "Activation and deactivation take effect immediately, and application status can be changed at any time.",
+      "requestActivate": "Activate",
+      "requestDeactivate": "Deactivate",
+      "activationConfirm": "Change the activation status of {{name}}?",
       "activationConflictHint": "The current state does not allow this action, or a change is already pending.",
       "activationSubmitted": "Request submitted and awaiting approval.",
-      "activationAutoApproved": "Request submitted and automatically approved.",
+      "activationAutoApproved": "Status change applied.",
       "activationPendingHint": "A matching request is already awaiting approval. Resolve it in the change requests below.",
       "configCard": "Configuration",
       "configImmediate": "Changes apply immediately while this is a draft.",
-      "configChangeRequest": "Changes create a request that needs approval.",
+      "configChangeRequest": "Changes are published and applied immediately.",
       "changeSubmitted": "Change request submitted and awaiting approval.",
-      "changeAutoApproved": "Change submitted and automatically approved.",
+      "changeAutoApproved": "Configuration change applied.",
       "publishedCard": "Published configuration",
       "publishedHint": "The configuration snapshot currently in effect.",
       "application": {
@@ -845,10 +908,10 @@
       "grantsConfirm": "Users will need to re-consent after revocation.",
       "secretCard": "Client secret",
       "secretHint": "Creation and rotation of confidential-client secrets.",
-      "secretFlow": "Request a secret, get it approved, then redeem the plaintext.",
-      "requestSecret": "Request new secret",
-      "requestRotation": "Request rotation",
-      "secretRequestConfirm": "Submit a secret request for {{name}}?",
+      "secretFlow": "The plaintext secret is shown only once after creation or rotation. Save it securely.",
+      "requestSecret": "Create new secret",
+      "requestRotation": "Rotate secret",
+      "secretRequestConfirm": "Create or rotate the secret for {{name}} now?",
       "redeemReady": "An approved secret request is ready to redeem.",
       "redeem": "Redeem ({{action}})",
       "redeemTitle": "Redeem client secret",
@@ -1021,7 +1084,7 @@
       "presetsLoadFailed": "Could not load provider presets",
       "connectionCard": "Connection",
       "connectionHint": "{{type}} endpoints and trust settings",
-      "connectionConfirm": "Review the configuration and provide a reason",
+      "connectionConfirm": "Review and confirm the configuration",
       "saveConnection": "Save connection",
       "githubFixedEndpoints": "GitHub uses preset endpoints",
       "addCertificate": "Add signing certificate",
@@ -1150,7 +1213,7 @@
       "signedRequests": "Require signed SP login requests",
       "idpInitiated": "Allow Passport-initiated login",
       "nameIdHint": "NameID uses a persistent identifier isolated per application.",
-      "draftHint": "Saved as a draft; request activation and approval before use.",
+      "draftHint": "Saved as a draft; an administrator or the owning developer can activate it for use.",
       "invalid": "Check the format or length of this field.",
       "sessionDuration": "Sign-in duration (hours)",
       "sessionDurationHint": "Leave empty to keep users signed in to the app for the default 93 days.",
@@ -1165,8 +1228,6 @@
       "hint": "The app icon and developer details are shown on the authorization consent page.",
       "logo": "App icon",
       "logoHint": "PNG or JPEG, up to 512 KB.",
-      "logoUpload": "Upload icon",
-      "logoReplace": "Replace icon",
       "logoRemove": "Remove icon",
       "logoMissing": "No icon uploaded yet.",
       "developerName": "Developer name",

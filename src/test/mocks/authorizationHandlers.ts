@@ -1,12 +1,19 @@
 import { http, HttpResponse, type RequestHandler } from 'msw';
-import type { AdminCapability, AdminRole } from '@/api/endpoints/admin/types';
+import type { AdminCapability, AdminChangeAction, AdminRole } from '@/api/endpoints/admin/types';
 import type { PermissionDefinition, PermissionGrants } from '@/api/endpoints/permissions';
 import type {
   ResourceServer,
   ResourceServerChangeRequest,
   ResourceServerInput,
 } from '@/api/endpoints/admin/resourceServers';
-import { capabilitiesForRoles, currentUser, hasAdminStepUp, hasStepUp, type MockDb } from './db';
+import {
+  adminResourceView,
+  capabilitiesForRoles,
+  hasAdminStepUp,
+  hasStepUp,
+  type MockAdminResource,
+  type MockDb,
+} from './db';
 import { envelope, notFound, readJson, str, unauthorized } from './handlers';
 
 const roles: AdminRole[] = [
@@ -19,6 +26,7 @@ const roles: AdminRole[] = [
   'key_admin',
   'key_approver',
   'operator',
+  'developer',
 ];
 const presetCodes = [
   'api.access',
@@ -71,11 +79,6 @@ function match(request: Request, version: number) {
     : envelope(412, 'precondition_failed', 'The resource version does not match.');
 }
 
-const validReason = (value: unknown) => {
-  const length = [...str(value).trim()].length;
-  return length >= 3 && length <= 1000;
-};
-
 function countedDefinition(db: MockDb, definition: PermissionDefinition): PermissionDefinition {
   return {
     ...definition,
@@ -88,6 +91,49 @@ function countedDefinition(db: MockDb, definition: PermissionDefinition): Permis
             ),
           ).length,
   };
+}
+
+const DEVELOPER_KIND_PATHS: Record<'application' | 'oauth' | 'saml', string> = {
+  application: '*/v1/developer/applications',
+  oauth: '*/v1/developer/oauth-clients',
+  saml: '*/v1/developer/saml-service-providers',
+};
+
+function developerGuard(db: MockDb, request: Request) {
+  if (!db.session) return unauthorized();
+  const roles = db.accountRolesOf.get(db.currentUserId ?? '') ?? [];
+  if (!roles.includes('developer'))
+    return envelope(403, 'forbidden', 'The developer role is required.');
+  if (request.method !== 'GET') {
+    if (db.requireCsrf && request.headers.get('x-csrf-token') !== db.csrfToken)
+      return envelope(403, 'forbidden', 'A valid CSRF token is required.');
+    if (!hasStepUp(db))
+      return envelope(403, 'account_step_up_required', 'A recent verification is required.');
+  }
+  return null;
+}
+
+function ownedDeveloperResources(
+  db: MockDb,
+  kind: 'application' | 'oauth' | 'saml',
+): (MockAdminResource & { owner_user_id?: string })[] {
+  const userId = db.currentUserId ?? '';
+  const ownedApplicationIds = new Set(
+    db.developerResources
+      .filter((item) => item.kind === 'application' && item.owner_user_id === userId)
+      .map((item) => item.id),
+  );
+  return db.developerResources.filter(
+    (item) =>
+      item.kind === kind &&
+      (item.kind === 'application'
+        ? item.owner_user_id === userId
+        : item.application_id !== undefined && ownedApplicationIds.has(item.application_id)),
+  );
+}
+
+function developerEtag(resource: { version: number }) {
+  return `"${resource.version}"`;
 }
 
 function grantsFor(db: MockDb, userId: string): PermissionGrants {
@@ -180,7 +226,6 @@ function requestChange(
   db: MockDb,
   server: ResourceServer,
   action: string,
-  reason: string,
   snapshot = snapshotOf(server),
 ) {
   if (
@@ -193,7 +238,6 @@ function requestChange(
     id: `chg_${server.id}_${server.version + 1}`,
     action,
     status: 'pending',
-    reason,
     requested_by: db.adminSession!.user_id,
     base_version: server.version + 1,
     snapshot,
@@ -228,14 +272,14 @@ export function createAuthorizationHandlers(db: MockDb): RequestHandler[] {
       const denied = guard(db, request, 'admin');
       if (denied) return denied;
       const userId = String(params.id);
-      if (!db.adminSession?.roles.includes('super_admin') || db.adminSession.user_id === userId)
-        return envelope(403, 'forbidden', 'A different super administrator is required.');
+      if (!db.adminSession?.roles.includes('super_admin') || userId === db.adminSession.user_id)
+        return envelope(403, 'forbidden', 'Self authorization is not supported.');
+      if (userId === db.adminSession?.user_id)
+        return envelope(403, 'forbidden', 'Self authorization is not supported.');
       const current = grantsFor(db, userId);
       const conflict = match(request, current.version);
       if (conflict) return conflict;
       const body = await readJson(request);
-      if (!validReason(body?.reason))
-        return envelope(400, 'invalid_request', 'A reason is required.');
       const builtin = strings(body?.builtin_permission_ids);
       const applications = strings(body?.application_permission_ids);
       const nextRoles = strings(body?.roles);
@@ -276,16 +320,22 @@ export function createAuthorizationHandlers(db: MockDb): RequestHandler[] {
       });
       return HttpResponse.json(grantsFor(db, userId));
     }),
-    http.get(
-      '*/v1/developer/applications',
-      ({ request }) =>
-        guard(db, request, 'account') ??
-        HttpResponse.json({
-          items: db.developerApplications
-            .filter((item) => item.owner_user_id === currentUser(db)?.id)
-            .map(({ owner_user_id: _owner, ...item }) => item),
-        }),
-    ),
+    http.get('*/v1/developer/applications', ({ request }) => {
+      const denied = developerGuard(db, request);
+      if (denied) return denied;
+      const url = new URL(request.url);
+      const q = (url.searchParams.get('q') ?? '').toLowerCase();
+      const status = url.searchParams.get('status');
+      let items = ownedDeveloperResources(db, 'application');
+      if (q) items = items.filter((item) => item.display_name.toLowerCase().includes(q));
+      if (status) items = items.filter((item) => item.status === status);
+      const limit = Math.min(Number(url.searchParams.get('limit')) || 20, 100);
+      const page = items.slice(0, limit);
+      return HttpResponse.json({
+        items: page.map((item) => adminResourceView(item, db.developerResources)),
+        next_cursor: items.length > limit ? `cursor_${limit}` : null,
+      });
+    }),
   ];
 
   for (const scope of ['admin', 'account'] as const) {
@@ -305,8 +355,16 @@ export function createAuthorizationHandlers(db: MockDb): RequestHandler[] {
           : undefined,
       ) ??
       (scope === 'account' &&
-      !db.developerApplications.some(
-        (item) => item.id === id && item.owner_user_id === db.currentUserId,
+      !(
+        db.developerApplications.some(
+          (item) => item.id === id && item.owner_user_id === db.currentUserId,
+        ) ||
+        db.developerResources.some(
+          (item) =>
+            item.kind === 'application' &&
+            item.id === id &&
+            item.owner_user_id === db.currentUserId,
+        )
       )
         ? notFound()
         : null);
@@ -326,8 +384,8 @@ export function createAuthorizationHandlers(db: MockDb): RequestHandler[] {
         if (denied) return denied;
         const body = await readJson(request);
         const code = str(body?.code);
-        if (!code || !str(body?.name).trim() || !validReason(body?.reason))
-          return envelope(400, 'invalid_request', 'Code, name and reason are required.');
+        if (!code || !str(body?.name).trim())
+          return envelope(400, 'invalid_request', 'Code and name are required.');
         if (
           db.permissionDefinitions.some(
             (item) => item.application_id === params.id && item.code === code,
@@ -358,7 +416,6 @@ export function createAuthorizationHandlers(db: MockDb): RequestHandler[] {
         if (conflict) return conflict;
         const body = await readJson(request);
         if (
-          !validReason(body?.reason) ||
           !str(body?.name).trim() ||
           body?.code !== undefined ||
           !['active', 'disabled'].includes(str(body?.status))
@@ -381,9 +438,6 @@ export function createAuthorizationHandlers(db: MockDb): RequestHandler[] {
         if (!definition) return notFound();
         const conflict = match(request, definition.version);
         if (conflict) return conflict;
-        const body = await readJson(request);
-        if (!validReason(body?.reason))
-          return envelope(400, 'invalid_request', 'A reason is required.');
         definition.status = 'deleted';
         definition.version++;
         return new HttpResponse(null, { status: 204 });
@@ -396,9 +450,6 @@ export function createAuthorizationHandlers(db: MockDb): RequestHandler[] {
       async ({ request, params }) => {
         const denied = guard(db, request, 'admin', 'applications:write');
         if (denied) return denied;
-        const body = await readJson(request);
-        if (!validReason(body?.reason))
-          return envelope(400, 'invalid_request', 'A reason is required.');
         for (const code of presetCodes) {
           if (
             !db.permissionDefinitions.some(
@@ -422,6 +473,291 @@ export function createAuthorizationHandlers(db: MockDb): RequestHandler[] {
             .map((item) => countedDefinition(db, item)),
         });
       },
+    ),
+  );
+
+  // Developer panel: overview + ownership-scoped resource CRUD mirroring the
+  // backend /v1/developer endpoints.
+  handlers.push(
+    http.get('*/v1/developer/overview', ({ request }) => {
+      const denied = developerGuard(db, request);
+      if (denied) return denied;
+      const params = new URL(request.url).searchParams;
+      const now = new Date();
+      const today = now.toISOString().slice(0, 10);
+      let start = params.get('start_date');
+      let end = params.get('end_date');
+      if (params.has('start_date') || params.has('end_date')) {
+        if (!start || !end || params.has('days'))
+          return envelope(400, 'invalid_request', 'Provide both dates without days.');
+      } else {
+        const days = Number(params.get('days') ?? 30);
+        if (!Number.isInteger(days) || days < 1 || days > 366)
+          return envelope(400, 'invalid_request', 'Invalid day count.');
+        end = today;
+        start = new Date(Date.parse(`${today}T00:00:00Z`) - (days - 1) * 86400_000)
+          .toISOString()
+          .slice(0, 10);
+      }
+      const validDate = (value: string) => {
+        const parsed = new Date(`${value}T00:00:00Z`);
+        return (
+          /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+          Number.isFinite(parsed.getTime()) &&
+          parsed.toISOString().slice(0, 10) === value
+        );
+      };
+      if (!validDate(start) || !validDate(end) || start > end || end > today)
+        return envelope(400, 'invalid_request', 'Invalid date range.');
+      const startTime = Date.parse(`${start}T00:00:00Z`);
+      const days = (Date.parse(`${end}T00:00:00Z`) - startTime) / 86400_000 + 1;
+      const anniversary = new Date(startTime);
+      anniversary.setUTCFullYear(anniversary.getUTCFullYear() + 1);
+      if (
+        days > 366 ||
+        (params.has('start_date') && startTime + days * 86400_000 > anniversary.getTime())
+      )
+        return envelope(400, 'invalid_request', 'Date range exceeds 12 months.');
+      const applications = ownedDeveloperResources(db, 'application');
+      const daily: { date: string; count: number }[] = [];
+      for (let offset = 0; offset < days; offset++) {
+        const date = new Date(startTime + offset * 86400_000);
+        daily.push({ date: date.toISOString().slice(0, 10), count: 0 });
+      }
+      return HttpResponse.json({
+        start_date: start,
+        end_date: end,
+        window_days: days,
+        generated_at: now.toISOString(),
+        applications: applications.length,
+        active_applications: applications.filter((item) => item.status === 'active').length,
+        oauth_clients: ownedDeveloperResources(db, 'oauth').length,
+        saml_providers: ownedDeveloperResources(db, 'saml').length,
+        users: 0,
+        active_users: 0,
+        daily_authorized: daily,
+      });
+    }),
+    http.get('*/v1/developer/protocol-info', ({ request }) => {
+      const denied = developerGuard(db, request);
+      if (denied) return denied;
+      return HttpResponse.json({
+        issuer: 'https://passport.example.com',
+        oidc: {
+          discovery_url: 'https://passport.example.com/.well-known/openid-configuration',
+          authorization_endpoint: 'https://passport.example.com/v1/authorize',
+          token_endpoint: 'https://passport.example.com/v1/token',
+          jwks_uri: 'https://passport.example.com/v1/jwks',
+          userinfo_endpoint: 'https://passport.example.com/v1/userinfo',
+          revocation_endpoint: 'https://passport.example.com/v1/revocation',
+          introspection_endpoint: 'https://passport.example.com/v1/introspection',
+          end_session_endpoint: 'https://passport.example.com/v1/logout',
+          scopes_supported: ['openid', 'profile', 'email'],
+          code_challenge_methods: ['S256'],
+          grant_types: ['authorization_code', 'refresh_token'],
+          id_token_signing_alg: ['RS256'],
+          subject_types: ['pairwise', 'public'],
+        },
+        saml: {
+          available: false,
+        },
+      });
+    }),
+  );
+
+  for (const [kind, path] of Object.entries(DEVELOPER_KIND_PATHS) as [
+    'application' | 'oauth' | 'saml',
+    string,
+  ][]) {
+    handlers.push(
+      // The application list route is served by the merged handler above.
+      ...(kind === 'application'
+        ? []
+        : [
+            http.get(path, ({ request }) => {
+              const denied = developerGuard(db, request);
+              if (denied) return denied;
+              const url = new URL(request.url);
+              const q = (url.searchParams.get('q') ?? '').toLowerCase();
+              const status = url.searchParams.get('status');
+              const applicationId = url.searchParams.get('application_id');
+              const limit = Math.min(Number(url.searchParams.get('limit')) || 20, 100);
+              let items = ownedDeveloperResources(db, kind);
+              if (applicationId)
+                items = items.filter((item) => item.application_id === applicationId);
+              if (q) items = items.filter((item) => item.display_name.toLowerCase().includes(q));
+              if (status) items = items.filter((item) => item.status === status);
+              const page = items.slice(0, limit);
+              return HttpResponse.json({
+                items: page.map((item) => adminResourceView(item, db.developerResources)),
+                next_cursor: items.length > limit ? `cursor_${limit}` : null,
+              });
+            }),
+          ]),
+      http.get(`${path}/:id`, ({ request, params }) => {
+        const denied = developerGuard(db, request);
+        if (denied) return denied;
+        const resource = ownedDeveloperResources(db, kind).find((item) => item.id === params.id);
+        if (!resource) return notFound();
+        return HttpResponse.json(adminResourceView(resource, db.developerResources), {
+          headers: { ETag: developerEtag(resource) },
+        });
+      }),
+      http.post(path, async ({ request }) => {
+        const denied = developerGuard(db, request);
+        if (denied) return denied;
+        const body = (await readJson(request)) as {
+          application_id?: unknown;
+          configuration?: Record<string, unknown>;
+        } | null;
+        const displayName =
+          typeof body?.configuration?.display_name === 'string'
+            ? body.configuration.display_name.trim()
+            : '';
+        if (!displayName || [...displayName].length > 80)
+          return envelope(400, 'invalid_request', 'The name or reason has an invalid length.');
+        const index = db.developerResources.length + 1;
+        const prefix = kind === 'application' ? 'apl' : kind === 'oauth' ? 'oc' : 'sp';
+        const resource: MockAdminResource & { owner_user_id?: string } = {
+          id: `${prefix}_dev_${index}`,
+          kind,
+          ...(kind !== 'application'
+            ? { application_id: str(body?.application_id) || undefined }
+            : {}),
+          ...(kind === 'oauth' ? { client_id: `client_dev_${index}` } : {}),
+          display_name: displayName,
+          status: 'draft',
+          version: 1,
+          configuration: { ...(body?.configuration ?? {}) },
+          published_configuration: null,
+          configuration_version_id: null,
+          change_requests: [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          ...(kind === 'application' ? { owner_user_id: db.currentUserId ?? '' } : {}),
+        };
+        db.developerResources.push(resource);
+        return HttpResponse.json(adminResourceView(resource, db.developerResources), {
+          status: 201,
+        });
+      }),
+      http.patch(`${path}/:id`, async ({ request, params }) => {
+        const denied = developerGuard(db, request);
+        if (denied) return denied;
+        const resource = ownedDeveloperResources(db, kind).find((item) => item.id === params.id);
+        if (!resource) return notFound();
+        const conflict = match(request, resource.version);
+        if (conflict) return conflict;
+        const body = await readJson(request);
+        const configuration = (body?.configuration ?? {}) as Record<string, unknown>;
+        resource.configuration = { ...resource.configuration, ...configuration };
+        if (typeof configuration.display_name === 'string' && configuration.display_name)
+          resource.display_name = configuration.display_name;
+        const changeRequestId = `cr_dev_${resource.id}_${resource.version + 1}`;
+        if (resource.status === 'active') {
+          resource.published_configuration = { ...resource.configuration };
+          resource.change_requests.push({
+            id: changeRequestId,
+            action: 'configuration',
+            base_version: resource.version,
+            status: 'applied',
+            policy_version: 'developer-v1',
+            created_at: new Date().toISOString(),
+            evaluated_diff: null,
+            requested_by: db.currentUserId ?? '',
+          });
+        }
+        resource.version++;
+        resource.updated_at = new Date().toISOString();
+        return HttpResponse.json(
+          {
+            ...adminResourceView(resource, db.developerResources),
+            ...(resource.status === 'active'
+              ? { change_request_id: changeRequestId, change_request_status: 'applied' }
+              : {}),
+          },
+          { headers: { ETag: developerEtag(resource) } },
+        );
+      }),
+      http.post(`${path}/:id/activation-requests`, async ({ request, params }) => {
+        const denied = developerGuard(db, request);
+        if (denied) return denied;
+        const resource = ownedDeveloperResources(db, kind).find((item) => item.id === params.id);
+        if (!resource) return notFound();
+        const conflict = match(request, resource.version);
+        if (conflict) return conflict;
+        const body = await readJson(request);
+        const action = str(body?.action) || 'activate';
+        if (!['activate', 'deactivate'].includes(action))
+          return envelope(400, 'invalid_request', 'A valid action is required.');
+        if (
+          (action === 'activate' && resource.status === 'active') ||
+          (action === 'deactivate' && resource.status !== 'active')
+        )
+          return envelope(409, 'conflict', 'The lifecycle state does not permit this action.');
+        const changeId = `cr_dev_act_${resource.id}_${resource.version + 1}`;
+        resource.change_requests.push({
+          id: changeId,
+          action: action as AdminChangeAction,
+          base_version: resource.version,
+          status: 'applied',
+          policy_version: 'developer-v1',
+          created_at: new Date().toISOString(),
+          evaluated_diff: null,
+          requested_by: db.currentUserId ?? '',
+        });
+        resource.version++;
+        resource.status = action === 'activate' ? 'active' : 'disabled';
+        if (action === 'activate') resource.published_configuration = { ...resource.configuration };
+        return HttpResponse.json({ id: changeId, status: 'applied' }, { status: 201 });
+      }),
+    );
+  }
+
+  handlers.push(
+    http.put('*/v1/developer/applications/:id/logo', async ({ request, params }) => {
+      const denied = developerGuard(db, request);
+      if (denied) return denied;
+      if (!ownedDeveloperResources(db, 'application').some((item) => item.id === params.id))
+        return notFound();
+      const body = await readJson(request);
+      if (!str(body?.content))
+        return envelope(400, 'invalid_request', 'Image content is required.');
+      return new HttpResponse(null, { status: 204 });
+    }),
+    http.get('*/v1/developer/applications/:id/logo', ({ request, params }) => {
+      const denied = developerGuard(db, request);
+      if (denied) return denied;
+      if (!ownedDeveloperResources(db, 'application').some((item) => item.id === params.id))
+        return notFound();
+      return new HttpResponse(null, { status: 404 });
+    }),
+    http.delete('*/v1/developer/applications/:id/logo', ({ request, params }) => {
+      const denied = developerGuard(db, request);
+      if (denied) return denied;
+      if (!ownedDeveloperResources(db, 'application').some((item) => item.id === params.id))
+        return notFound();
+      return new HttpResponse(null, { status: 204 });
+    }),
+    ...['secrets', 'secret-rotations'].map((operation) =>
+      http.post(`*/v1/developer/oauth-clients/:id/${operation}`, async ({ request, params }) => {
+        const denied = developerGuard(db, request);
+        if (denied) return denied;
+        const resource = ownedDeveloperResources(db, 'oauth').find((item) => item.id === params.id);
+        if (!resource) return notFound();
+        const conflict = match(request, resource.version);
+        if (conflict) return conflict;
+        const body = await readJson(request);
+        db.developerSecretCounter++;
+        return HttpResponse.json(
+          {
+            client_secret: `dev_secret_${db.developerSecretCounter}`,
+            secret_version: db.developerSecretCounter,
+            overlap_seconds: Number(body?.overlap_seconds ?? 0),
+          },
+          { status: 201 },
+        );
+      }),
     ),
   );
 
@@ -449,7 +785,6 @@ export function createAuthorizationHandlers(db: MockDb): RequestHandler[] {
       if (denied) return denied;
       const body = await readJson(request);
       if (
-        !validReason(body?.reason) ||
         !str(body?.application_id) ||
         !str(body?.name).trim() ||
         !str(body?.audience).trim() ||
@@ -478,18 +813,17 @@ export function createAuthorizationHandlers(db: MockDb): RequestHandler[] {
       const conflict = match(request, server.version);
       if (conflict) return conflict;
       const body = await readJson(request);
-      if (!validReason(body?.reason) || !str(body?.name) || !str(body?.audience))
+      if (!str(body?.name) || !str(body?.audience))
         return envelope(400, 'invalid_request', 'Required fields are missing.');
       const input: ResourceServerInput = {
         name: str(body?.name),
         audience: str(body?.audience),
         client_ids: strings(body?.client_ids),
-        reason: str(body?.reason),
       };
       if (!input.client_ids.length)
         return envelope(400, 'invalid_request', 'Client IDs are required.');
       if (server.status === 'active') {
-        const result = requestChange(db, server, 'configuration', input.reason, {
+        const result = requestChange(db, server, 'configuration', {
           name: input.name,
           audience: input.audience,
           client_ids: input.client_ids,
@@ -518,8 +852,6 @@ export function createAuthorizationHandlers(db: MockDb): RequestHandler[] {
       const conflict = match(request, server.version);
       if (conflict) return conflict;
       const body = await readJson(request);
-      if (!validReason(body?.reason))
-        return envelope(400, 'invalid_request', 'A reason is required.');
       if (params.operation === 'secrets') {
         const change = server.change_requests?.find((item) => item.id === body?.change_request_id);
         if (!change) return notFound();
@@ -556,7 +888,7 @@ export function createAuthorizationHandlers(db: MockDb): RequestHandler[] {
           (action === 'rotate_secret' && !server.secret_set)
         )
           return envelope(409, 'conflict', 'Resource state does not permit this action.');
-        return requestChange(db, server, action, str(body?.reason));
+        return requestChange(db, server, action);
       }
       if (params.operation === 'approval-decisions') {
         const change = server.change_requests?.find((item) => item.id === body?.change_request_id);

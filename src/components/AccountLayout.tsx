@@ -45,6 +45,7 @@ interface NavItem {
   to: string;
   labelKey: string;
   icon: (props: { size: number; stroke: number }) => ReactNode;
+  developerOnly?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -53,14 +54,17 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/account/security', labelKey: 'nav.security', icon: (p) => <IconShieldLock {...p} /> },
   {
     to: '/account/developer',
-    labelKey: 'authorization.developerTitle',
+    labelKey: 'developer.panel.title',
     icon: (p) => <IconDeviceDesktop {...p} />,
+    developerOnly: true,
   },
 ];
 
 export function AccountLayout() {
   const { t, i18n } = useTranslation();
   const { user, isLoading } = useSession();
+  const isDeveloper = user?.roles?.includes('developer') ?? false;
+  const visibleNavItems = NAV_ITEMS.filter((item) => !item.developerOnly || isDeveloper);
   const logout = useLogout();
   const navigate = useNavigate();
   const location = useLocation();
@@ -143,17 +147,6 @@ export function AccountLayout() {
                   )}
                 </Menu.Label>
                 <Menu.Divider />
-                {NAV_ITEMS.map((item) => (
-                  <Menu.Item
-                    key={item.to}
-                    component={Link}
-                    to={item.to}
-                    leftSection={item.icon({ size: 14, stroke: 1.5 })}
-                    onClick={close}
-                  >
-                    {t(item.labelKey)}
-                  </Menu.Item>
-                ))}
                 {(user?.capabilities?.length ?? user?.roles?.length ?? 0) > 0 && (
                   <Menu.Item
                     leftSection={<IconArrowsExchange size={14} stroke={1.5} />}
@@ -250,7 +243,7 @@ export function AccountLayout() {
 
       <AppShell.Navbar p="xs">
         <Stack gap={4}>
-          {NAV_ITEMS.map((item) => (
+          {visibleNavItems.map((item) => (
             <NavLink
               key={item.to}
               component={Link}
