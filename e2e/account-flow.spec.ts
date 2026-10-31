@@ -96,12 +96,15 @@ test.describe('account profile', () => {
 
     await page.goto('/account/profile');
     await expect(page.getByRole('button', { name: '删除' })).not.toBeVisible();
+    await expect(page.getByRole('button', { name: '上传图片' })).toBeEnabled();
 
+    const uploaded = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === '/v1/me/avatar' &&
+        response.request().method() === 'PUT',
+    );
     await page.locator('input[type="file"]').setInputFiles(AVATAR_PATH);
-    await expect(page.getByText('avatar.png')).toBeVisible();
-    await expect(page.getByText(/PNG · 136 B · 64 × 64/)).toBeVisible();
-
-    await page.getByRole('button', { name: '上传头像' }).click();
+    expect((await uploaded).ok()).toBe(true);
     await expect(page.getByText('头像已更新')).toBeVisible();
     await expect(page.locator('img[src*="/v1/me/avatar"]').first()).toBeVisible();
 
@@ -116,6 +119,12 @@ test.describe('account profile', () => {
 
   test('rejects an oversized image in the browser before uploading', async ({ page, request }) => {
     await createVerifiedAccount(page, request);
+    const uploads: string[] = [];
+    page.on('request', (entry) => {
+      if (new URL(entry.url()).pathname === '/v1/me/avatar' && entry.method() === 'PUT') {
+        uploads.push(entry.url());
+      }
+    });
 
     await page.goto('/account/profile');
     await page.locator('input[type="file"]').setInputFiles({
@@ -125,7 +134,8 @@ test.describe('account profile', () => {
     });
 
     await expect(page.getByText('图片超过 512 KB 限制。')).toBeVisible();
-    await expect(page.getByRole('button', { name: '上传头像' })).not.toBeVisible();
+    await expect(page.getByRole('button', { name: '上传图片' })).toBeEnabled();
+    expect(uploads).toEqual([]);
   });
 
   test('shows the account summary with verification state and sign-in method', async ({

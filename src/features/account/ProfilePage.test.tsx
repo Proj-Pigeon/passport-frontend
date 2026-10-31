@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -112,29 +112,56 @@ describe('ProfilePage display name', () => {
 });
 
 describe('ProfilePage avatar', () => {
-  it('previews a chosen file before uploading it', async () => {
-    signIn(mockDb, seedUser(mockDb), 'pwd');
-    const user = userEvent.setup();
-    await openProfilePage();
+  const uploadRequest = vi.fn();
+  const trackUploadRequest = ({ request }: { request: Request }) => {
+    if (request.method === 'PUT' && new URL(request.url).pathname === '/v1/me/avatar') {
+      uploadRequest(request);
+    }
+  };
 
-    await user.upload(fileInput(), imageFile(PNG_HEADER, 'avatar.png', 'image/png'));
-
-    expect(await screen.findByText('avatar.png')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '上传头像' })).toBeEnabled();
-    expect(mockDb.avatar).toBeNull();
+  beforeEach(() => {
+    uploadRequest.mockClear();
+    server.events.on('request:start', trackUploadRequest);
   });
 
-  it('uploads the previewed image and refreshes the profile', async () => {
+  afterEach(() => {
+    server.events.removeListener('request:start', trackUploadRequest);
+  });
+
+  it('uploads a chosen image immediately and displays the saved avatar', async () => {
     signIn(mockDb, seedUser(mockDb), 'pwd');
     const user = userEvent.setup();
     await openProfilePage();
 
+    const uploadButton = screen.getByRole('button', { name: '上传图片' });
+    expect(uploadButton.querySelector('svg.tabler-icon-upload')).toBeInTheDocument();
+    expect(screen.queryByText('选择图片后需再次确认上传才会生效。')).not.toBeInTheDocument();
     await user.upload(fileInput(), imageFile(PNG_HEADER, 'avatar.png', 'image/png'));
-    await user.click(await screen.findByRole('button', { name: '上传头像' }));
 
     await waitFor(() => expect(mockDb.avatar?.mediaType).toBe('image/png'));
+    expect(uploadRequest).toHaveBeenCalledTimes(1);
     expect(await screen.findByText('头像已更新')).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByText('avatar.png')).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(document.querySelector('img[src*="/v1/me/avatar"]')).toBeInTheDocument(),
+    );
+    expect(screen.queryByText('avatar.png')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '上传头像' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '取消' })).not.toBeInTheDocument();
+    expect(document.querySelector('img[src^="blob:"]')).not.toBeInTheDocument();
+    expect(uploadButton).toBeEnabled();
+  });
+
+  it('does not upload when the file picker is cancelled', async () => {
+    signIn(mockDb, seedUser(mockDb), 'pwd');
+    const user = userEvent.setup();
+    await openProfilePage();
+
+    await user.click(screen.getByRole('button', { name: '上传图片' }));
+    fireEvent.change(fileInput(), { target: { files: [] } });
+
+    expect(uploadRequest).not.toHaveBeenCalled();
+    expect(mockDb.avatar).toBeNull();
+    expect(screen.getByRole('button', { name: '上传图片' })).toBeEnabled();
   });
 
   it('rejects an unsupported file type before contacting the server', async () => {
@@ -145,7 +172,8 @@ describe('ProfilePage avatar', () => {
     await user.upload(fileInput(), imageFile(GIF_HEADER, 'avatar.gif', 'image/gif'));
 
     expect(await screen.findByText('仅支持 JPEG 或 PNG 格式。')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '上传头像' })).not.toBeInTheDocument();
+    expect(uploadRequest).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: '上传图片' })).toBeEnabled();
     expect(mockDb.avatar).toBeNull();
   });
 
@@ -157,43 +185,140 @@ describe('ProfilePage avatar', () => {
     await user.upload(fileInput(), imageFile(PNG_HEADER, 'avatar.jpg', 'image/jpeg'));
 
     expect(await screen.findByText('文件真实格式与声明的类型不一致。')).toBeInTheDocument();
+    expect(uploadRequest).not.toHaveBeenCalled();
+    expect(mockDb.avatar).toBeNull();
   });
 
-  it('surfaces a server-side rejection with the matching copy', async () => {
+  it('rejects an oversized file before contacting the server', async () => {
+    signIn(mockDb, seedUser(mockDb), 'pwd');
+    const user = userEvent.setup();
+    await openProfilePage();
+
+    const oversized = new File([new Uint8Array(512 * 1024 + 1)], 'oversized.png', {
+      type: 'image/png',
+    });
+    await user.upload(fileInput(), oversized);
+
+    expect(await screen.findByText('图片超过 512 KB 限制。')).toBeInTheDocument();
+    expect(uploadRequest).not.toHaveBeenCalled();
+    expect(mockDb.avatar).toBeNull();
+  });
+
+  it('shows a server rejection and retries when the same file is selected again', async () => {
     signIn(mockDb, seedUser(mockDb), 'pwd');
     server.use(
-      http.put('*/v1/me/avatar', () =>
-        HttpResponse.json(
-          {
-            error: {
-              code: 'validation_failed',
-              message: 'The request is not valid.',
-              fields: [{ name: 'avatar', code: 'too_large' }],
+      http.put(
+        '*/v1/me/avatar',
+        () =>
+          HttpResponse.json(
+            {
+              error: {
+                code: 'validation_failed',
+                message: 'The request is not valid.',
+                fields: [{ name: 'avatar', code: 'too_large' }],
+              },
             },
-          },
-          { status: 422 },
-        ),
+            { status: 422 },
+          ),
+        { once: true },
       ),
     );
     const user = userEvent.setup();
     await openProfilePage();
+    const file = imageFile(PNG_HEADER, 'avatar.png', 'image/png');
 
-    await user.upload(fileInput(), imageFile(PNG_HEADER, 'avatar.png', 'image/png'));
-    await user.click(await screen.findByRole('button', { name: '上传头像' }));
+    await user.upload(fileInput(), file);
 
     expect(await screen.findByText('图片超过 512 KB 限制。')).toBeInTheDocument();
-    expect(screen.getByText('avatar.png')).toBeInTheDocument();
+    expect(uploadRequest).toHaveBeenCalledTimes(1);
+    expect(mockDb.avatar).toBeNull();
+    expect(screen.queryByText('avatar.png')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '上传图片' })).toBeEnabled();
+
+    await user.upload(fileInput(), file);
+
+    expect(await screen.findByText('头像已更新')).toBeInTheDocument();
+    expect(uploadRequest).toHaveBeenCalledTimes(2);
+    expect(mockDb.avatar?.mediaType).toBe('image/png');
+    expect(screen.queryByText('图片超过 512 KB 限制。')).not.toBeInTheDocument();
   });
 
-  it('discards the preview when the user cancels', async () => {
+  it('disables uploads and deletion while preparing and uploading an image', async () => {
+    mockDb.avatar = { mediaType: 'image/png', content: new Uint8Array(PNG_HEADER) };
     signIn(mockDb, seedUser(mockDb), 'pwd');
+    const bitmap = { width: 512, height: 512, close: vi.fn() };
+    let finishReading!: (value: typeof bitmap) => void;
+    const reading = new Promise<typeof bitmap>((resolve) => {
+      finishReading = resolve;
+    });
+    const readImage = vi.fn(() => reading);
+    vi.stubGlobal('createImageBitmap', readImage);
+    let finishUpload!: () => void;
+    const uploading = new Promise<void>((resolve) => {
+      finishUpload = resolve;
+    });
+    server.use(
+      http.put('*/v1/me/avatar', async () => {
+        await uploading;
+        return HttpResponse.json({
+          url: '/v1/me/avatar',
+          media_type: 'image/png',
+          width: 512,
+          height: 512,
+          bytes: PNG_HEADER.length,
+        });
+      }),
+    );
     const user = userEvent.setup();
     await openProfilePage();
+    const uploadButton = screen.getByRole('button', { name: '上传图片' });
+    const deleteButton = await screen.findByRole('button', { name: '删除' });
+    const file = imageFile(PNG_HEADER, 'avatar.png', 'image/png');
+
+    await user.upload(fileInput(), file);
+    await waitFor(() => expect(readImage).toHaveBeenCalledTimes(1));
+    expect(uploadButton).toBeDisabled();
+    expect(deleteButton).toBeDisabled();
+    expect(fileInput()).toBeDisabled();
+    expect(uploadRequest).not.toHaveBeenCalled();
+    fireEvent.change(fileInput(), { target: { files: [file] } });
+    expect(readImage).toHaveBeenCalledTimes(1);
+
+    await act(async () => finishReading(bitmap));
+    await waitFor(() => expect(uploadRequest).toHaveBeenCalledTimes(1));
+    expect(uploadButton).toBeDisabled();
+    expect(deleteButton).toBeDisabled();
+    expect(fileInput()).toBeDisabled();
+    fireEvent.change(fileInput(), { target: { files: [file] } });
+    expect(readImage).toHaveBeenCalledTimes(1);
+
+    await act(async () => finishUpload());
+    expect(await screen.findByText('头像已更新')).toBeInTheDocument();
+    expect(uploadButton).toBeEnabled();
+    expect(deleteButton).toBeEnabled();
+    expect(uploadRequest).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not upload an image whose validation finishes after unmounting', async () => {
+    signIn(mockDb, seedUser(mockDb), 'pwd');
+    const bitmap = { width: 512, height: 512, close: vi.fn() };
+    let finishReading!: (value: typeof bitmap) => void;
+    const reading = new Promise<typeof bitmap>((resolve) => {
+      finishReading = resolve;
+    });
+    const readImage = vi.fn(() => reading);
+    vi.stubGlobal('createImageBitmap', readImage);
+    const user = userEvent.setup();
+    const { unmount } = renderRoute(['/account/profile']);
+    await screen.findByLabelText(/^昵称/);
 
     await user.upload(fileInput(), imageFile(PNG_HEADER, 'avatar.png', 'image/png'));
-    await user.click(await screen.findByRole('button', { name: '取消' }));
+    await waitFor(() => expect(readImage).toHaveBeenCalledTimes(1));
+    unmount();
+    await act(async () => finishReading(bitmap));
 
-    await waitFor(() => expect(screen.queryByText('avatar.png')).not.toBeInTheDocument());
+    expect(bitmap.close).toHaveBeenCalledTimes(1);
+    expect(uploadRequest).not.toHaveBeenCalled();
     expect(mockDb.avatar).toBeNull();
   });
 
@@ -212,6 +337,38 @@ describe('ProfilePage avatar', () => {
 
     await waitFor(() => expect(mockDb.avatar).toBeNull());
     expect(await screen.findByText('头像已删除')).toBeInTheDocument();
+  });
+
+  it('disables image uploads while deleting the current avatar', async () => {
+    mockDb.avatar = { mediaType: 'image/png', content: new Uint8Array(PNG_HEADER) };
+    signIn(mockDb, seedUser(mockDb), 'pwd');
+    let finishDelete!: () => void;
+    const deleting = new Promise<void>((resolve) => {
+      finishDelete = resolve;
+    });
+    server.use(
+      http.delete('*/v1/me/avatar', async () => {
+        await deleting;
+        mockDb.avatar = null;
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const user = userEvent.setup();
+    await openProfilePage();
+    await user.click(await screen.findByRole('button', { name: '删除' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: '删除' }));
+
+    expect(screen.getByRole('button', { name: '上传图片' })).toBeDisabled();
+    expect(fileInput()).toBeDisabled();
+    fireEvent.change(fileInput(), {
+      target: { files: [imageFile(PNG_HEADER, 'avatar.png', 'image/png')] },
+    });
+    await act(async () => finishDelete());
+
+    expect(await screen.findByText('头像已删除')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '上传图片' })).toBeEnabled();
+    expect(uploadRequest).not.toHaveBeenCalled();
   });
 
   it('hides the delete action when there is no avatar', async () => {
