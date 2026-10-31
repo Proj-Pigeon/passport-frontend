@@ -22,26 +22,23 @@ export function getAdminUser(userId: string, signal?: AbortSignal) {
   });
 }
 
-export function suspendAdminUser(userId: string, reason: string) {
+export function suspendAdminUser(userId: string) {
   return apiVoid(`/admin/v1/users/${encodeURIComponent(userId)}/suspension`, {
     method: 'POST',
-    body: { reason },
     scope: 'admin',
   });
 }
 
-export function restoreAdminUser(userId: string, reason: string) {
+export function restoreAdminUser(userId: string) {
   return apiVoid(`/admin/v1/users/${encodeURIComponent(userId)}/suspension`, {
     method: 'DELETE',
-    body: { reason },
     scope: 'admin',
   });
 }
 
-export function revokeAdminUserSessions(userId: string, reason: string) {
+export function revokeAdminUserSessions(userId: string) {
   return apiVoid(`/admin/v1/users/${encodeURIComponent(userId)}/session-revocations`, {
     method: 'POST',
-    body: { reason },
     scope: 'admin',
   });
 }

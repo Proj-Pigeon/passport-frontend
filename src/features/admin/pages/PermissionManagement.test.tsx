@@ -39,58 +39,33 @@ function seedGrants(): PermissionGrants {
 
 async function reasonAndConfirm(
   user: ReturnType<typeof userEvent.setup>,
-  reason: string,
+  _reason: string,
   label = '确认',
 ) {
+  void _reason;
   const dialog = await screen.findByRole('dialog');
-  await user.type(within(dialog).getByLabelText(/^操作原因/), reason);
+  expect(within(dialog).queryByLabelText(/^操作原因/)).not.toBeInTheDocument();
   await user.click(within(dialog).getByRole('button', { name: label }));
 }
 
-describe('sensitive reason validation', () => {
-  it('counts trimmed Unicode code points and shows field errors on blur', async () => {
+describe('operation confirmation', () => {
+  it('submits without an operation note', async () => {
     const user = userEvent.setup();
-    const submitted: string[] = [];
+    let submitted = 0;
     renderWithProviders(
       <ReasonModal
         opened
-        title="Reason"
-        required
-        minReasonLength={3}
-        confirmLabel="Submit reason"
+        title="Confirm operation"
+        confirmLabel="Confirm"
         onClose={() => {}}
-        onSubmit={(reason) => submitted.push(reason)}
+        onSubmit={() => {
+          submitted++;
+        }}
       />,
     );
-    const input = screen.getByLabelText(/^操作原因/);
-    const submit = screen.getByRole('button', { name: 'Submit reason' });
-    const astral = String.fromCodePoint(0x10400);
-    fireEvent.change(input, { target: { value: ` ${astral.repeat(2)} ` } });
-    fireEvent.blur(input);
-    expect(submit).toBeDisabled();
-    expect(input).toHaveAttribute('aria-invalid', 'true');
-    fireEvent.change(input, { target: { value: ` ${astral.repeat(3)} ` } });
-    await user.click(submit);
-    expect(submitted).toEqual([astral.repeat(3)]);
-    fireEvent.change(input, { target: { value: 'a'.repeat(1001) } });
-    expect(submit).toBeDisabled();
-    fireEvent.change(input, { target: { value: 'a'.repeat(1000) } });
-    expect(submit).toBeEnabled();
-  });
-
-  it('preserves one-character reasons for existing dialogs by default', () => {
-    renderWithProviders(
-      <ReasonModal
-        opened
-        title="Reason"
-        required
-        confirmLabel="Submit reason"
-        onClose={() => {}}
-        onSubmit={() => {}}
-      />,
-    );
-    fireEvent.change(screen.getByLabelText(/^操作原因/), { target: { value: 'a' } });
-    expect(screen.getByRole('button', { name: 'Submit reason' })).toBeEnabled();
+    expect(screen.queryByLabelText(/^操作原因/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(submitted).toBe(1);
   });
 });
 
@@ -106,7 +81,7 @@ describe('user permission management', () => {
     expect(screen.getByText('仍从角色继承的能力: users:read, users:write')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '核对并保存权限' }));
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByRole('button', { name: '保存' })).toBeDisabled();
+    expect(within(dialog).getByRole('button', { name: '保存' })).toBeEnabled();
     expect(
       within(dialog).getByText('保存后的平台有效能力: users:read, users:write'),
     ).toBeInTheDocument();
@@ -115,22 +90,28 @@ describe('user permission management', () => {
     expect(mockDb.permissionGrants.get('target')?.roles).toEqual(['user_admin']);
   });
 
-  it.each(['user_admin', 'self'] as const)('does not permit grant editing for %s', async (mode) => {
-    const user = login(mode === 'self' ? ['super_admin'] : ['user_admin']);
+  it('prevents a super administrator from editing their own grants', async () => {
+    const account = login();
     const grants = seedGrants();
-    if (mode === 'self') {
-      seedAdminUser(mockDb, { id: user.id });
-      mockDb.permissionGrants.set(user.id, grants);
-    }
+    seedAdminUser(mockDb, { id: account.id });
+    mockDb.permissionGrants.set(account.id, { ...grants, roles: ['super_admin'] });
+    renderRoute([`/admin/users/${account.id}/access`]);
+    expect(await screen.findByRole('checkbox', { name: '开发者' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: '核对并保存权限' })).not.toBeInTheDocument();
+    expect(mockDb.permissionGrants.get(account.id)?.roles).toEqual(['super_admin']);
+  });
+
+  it('does not permit grant editing for user_admin', async () => {
+    login(['user_admin']);
+    seedGrants();
     let catalogRequests = 0;
-    if (mode === 'user_admin')
-      server.use(
-        http.get('*/admin/v1/permissions', () => {
-          catalogRequests++;
-          return new HttpResponse(null, { status: 403 });
-        }),
-      );
-    renderRoute([`/admin/users/${mode === 'self' ? user.id : 'target'}/access`]);
+    server.use(
+      http.get('*/admin/v1/permissions', () => {
+        catalogRequests++;
+        return new HttpResponse(null, { status: 403 });
+      }),
+    );
+    renderRoute(['/admin/users/target/access']);
     expect(await screen.findByRole('checkbox', { name: '超级管理员' })).toBeDisabled();
     expect(screen.queryByRole('button', { name: '核对并保存权限' })).not.toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'users:read' })).toBeDisabled();
@@ -318,7 +299,7 @@ function seedResource(overrides: Partial<ResourceServer> = {}) {
 }
 
 describe('resource service management', () => {
-  it('requires nonempty client IDs and a three-character reason before creating a service', async () => {
+  it('requires nonempty client IDs but no operation note before creating a service', async () => {
     const user = userEvent.setup();
     login();
     seedAdminResource(mockDb, { id: 'app' });
@@ -328,8 +309,9 @@ describe('resource service management', () => {
     fireEvent.change(screen.getByLabelText(/^服务受众标识/), {
       target: { value: 'https://api.example.test' },
     });
-    fireEvent.change(screen.getByLabelText(/^操作原因/), { target: { value: 'valid reason' } });
-    const confirm = within(screen.getByRole('dialog')).getByRole('button', { name: '确认' });
+    const dialog = screen.getByRole('dialog');
+    const confirm = within(dialog).getByRole('button', { name: '确认' });
+    expect(within(dialog).queryByLabelText(/^操作原因/)).not.toBeInTheDocument();
     expect(confirm).toBeDisabled();
     fireEvent.change(screen.getByLabelText(/^允许的 OAuth 客户端 ID/), {
       target: { value: ', ,\n' },
@@ -338,9 +320,6 @@ describe('resource service management', () => {
     fireEvent.change(screen.getByLabelText(/^允许的 OAuth 客户端 ID/), {
       target: { value: 'oc_device' },
     });
-    fireEvent.change(screen.getByLabelText(/^操作原因/), { target: { value: 'ab' } });
-    expect(confirm).toBeDisabled();
-    fireEvent.change(screen.getByLabelText(/^操作原因/), { target: { value: 'abc' } });
     expect(confirm).toBeEnabled();
     expect(mockDb.resourceServers).toHaveLength(0);
   });
@@ -356,7 +335,6 @@ describe('resource service management', () => {
         action: 'issue_secret',
         status: 'pending',
         requested_by: account.id,
-        reason: 'credential request',
         base_version: 1,
         snapshot: {
           name: resource.name,
@@ -376,7 +354,7 @@ describe('resource service management', () => {
         within(dialog).getByText('当前操作不被允许，可能需要额外的身份验证。'),
       ).toBeInTheDocument(),
     );
-    expect(resource.change_requests[0]?.status).toBe('pending');
+    expect(resource.change_requests?.[0]?.status).toBe('pending');
     expect(mockDb.adminSecretCounter).toBe(0);
   });
 
@@ -406,7 +384,6 @@ describe('resource service management', () => {
           action: 'issue_secret',
           status: mode === 'stale-pending' ? 'pending' : 'approved',
           requested_by: mode === 'other-requester' ? 'another' : account.id,
-          reason: 'review this request',
           base_version: mode === 'other-requester' ? 1 : 0,
           snapshot: {
             name: 'Proposed API',
@@ -439,7 +416,6 @@ describe('resource service management', () => {
         action: 'issue_secret',
         status: 'approved',
         requested_by: account.id,
-        reason: 'credential request',
         base_version: 1,
         snapshot: {
           name: resource.name,
@@ -606,7 +582,6 @@ describe('resource service management', () => {
           id: 'change',
           action: 'activate',
           status: 'pending',
-          reason: 'release service',
           requested_by: 'other',
           base_version: 1,
           snapshot: { name: 'Resource API', audience: 'service', client_ids: ['oc_device'] },

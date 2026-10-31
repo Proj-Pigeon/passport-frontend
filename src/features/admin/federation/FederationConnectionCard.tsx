@@ -59,7 +59,7 @@ export function FederationConnectionCard({
   const [confirm, setConfirm] = useState<null | 'patch' | 'certificate'>(null);
 
   const mutation = useMutation({
-    mutationFn: async (input: { reason: string; configuration: Record<string, unknown> }) =>
+    mutationFn: async (input: { configuration: Record<string, unknown> }) =>
       stepUp.runWithAdminStepUp(() => patchAdminResource('federation', resource.id, input, etag)),
     onSuccess: async () => {
       setConfirm(null);
@@ -230,17 +230,16 @@ export function FederationConnectionCard({
             />
           ) : undefined
         }
-        onSubmit={(reason) => {
+        onSubmit={() => {
           if (confirm === 'certificate') {
             const existing = (resource.configuration['signing_certificates'] as unknown[]) ?? [];
             mutation.mutate({
-              reason,
               configuration: {
                 signing_certificates: [...existing, { pem: certificatePem.trim() }],
               },
             });
           } else {
-            mutation.mutate({ reason, configuration: buildPatch() });
+            mutation.mutate({ configuration: buildPatch() });
           }
         }}
       />

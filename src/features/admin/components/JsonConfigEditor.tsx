@@ -8,7 +8,7 @@ import { describeApiError } from '@/i18n/errors';
 
 export interface JsonConfigEditorProps {
   initial: Record<string, unknown>;
-  onSave: (reason: string, configuration: Record<string, unknown>) => void;
+  onSave: (configuration: Record<string, unknown>) => void;
   pending?: boolean;
   error?: unknown;
   disabled?: boolean;
@@ -29,11 +29,7 @@ export function JsonConfigEditor({
 }: JsonConfigEditorProps) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState(() => formatJson(initial));
-  const [reason, setReason] = useState('');
   const [parseError, setParseError] = useState<string | null>(null);
-
-  const trimmedReason = reason.trim();
-  const reasonInvalid = [...trimmedReason].length > 1000;
 
   const submit = () => {
     try {
@@ -43,7 +39,7 @@ export function JsonConfigEditor({
         return;
       }
       setParseError(null);
-      onSave(trimmedReason, parsed as Record<string, unknown>);
+      onSave(parsed as Record<string, unknown>);
     } catch {
       setParseError(t('admin.config.invalidJson'));
     }
@@ -66,16 +62,6 @@ export function JsonConfigEditor({
         ff="monospace"
         readOnly={disabled}
       />
-      <Textarea
-        label={t('admin.reason.label')}
-        description={t('admin.reason.hint')}
-        placeholder={t('admin.reason.placeholder')}
-        value={reason}
-        onChange={(event) => setReason(event.currentTarget.value)}
-        autosize
-        minRows={2}
-        maxRows={6}
-      />
       {disabled && disabledReason && (
         <Alert color="yellow" variant="light">
           <Text size="sm">{disabledReason}</Text>
@@ -95,11 +81,7 @@ export function JsonConfigEditor({
         </Alert>
       )}
       <Group justify="flex-end">
-        <Button
-          disabled={disabled || parseError !== null || reasonInvalid}
-          loading={pending}
-          onClick={submit}
-        >
+        <Button disabled={disabled || parseError !== null} loading={pending} onClick={submit}>
           {t('admin.config.save')}
         </Button>
       </Group>

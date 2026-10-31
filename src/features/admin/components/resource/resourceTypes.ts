@@ -22,7 +22,7 @@ export interface ResourceDetailContextValue extends ResourceSectionProps {
   configPending: boolean;
   configError: unknown;
   configSubmittedPending: boolean;
-  saveConfig: (reason: string, configuration: Record<string, unknown>) => void;
+  saveConfig: (configuration: Record<string, unknown>) => void;
   decisionPending: boolean;
   decisionError: unknown;
   openDecision: (

@@ -5,7 +5,6 @@ export interface ResourceServerChangeRequest {
   id: string;
   action: string;
   status: string;
-  reason: string;
   requested_by: string;
   base_version: number;
   snapshot: Pick<ResourceServer, 'name' | 'audience' | 'client_ids'>;
@@ -27,7 +26,6 @@ export interface ResourceServerInput {
   name: string;
   audience: string;
   client_ids: string[];
-  reason: string;
 }
 
 export interface ResourceServerSecret {
@@ -61,14 +59,10 @@ export function updateResourceServer(server: ResourceServer, input: ResourceServ
   return apiPatch<ResourceServer>(detail(server.id), input, options(server.version));
 }
 
-export function createResourceServerSecret(
-  server: ResourceServer,
-  reason: string,
-  changeRequestId: string,
-) {
+export function createResourceServerSecret(server: ResourceServer, changeRequestId: string) {
   return apiPost<ResourceServerSecret>(
     `${detail(server.id)}/secrets`,
-    { reason, change_request_id: changeRequestId },
+    { change_request_id: changeRequestId },
     options(server.version),
   );
 }
@@ -76,18 +70,17 @@ export function createResourceServerSecret(
 export function requestResourceServerActivation(
   server: ResourceServer,
   action: 'activate' | 'deactivate' | 'issue_secret' | 'rotate_secret',
-  reason: string,
 ) {
   return apiPost<{ id: string; status: 'pending' | 'approved' | 'applied' }>(
     `${detail(server.id)}/activation-requests`,
-    { action, reason },
+    { action },
     options(server.version),
   );
 }
 
 export function decideResourceServerApproval(
   server: ResourceServer,
-  input: { change_request_id: string; decision: 'approve' | 'reject'; reason: string },
+  input: { change_request_id: string; decision: 'approve' | 'reject' },
 ) {
   return apiPost<{ id: string; status: string }>(
     `${detail(server.id)}/approval-decisions`,

@@ -79,7 +79,8 @@ describe('AdminComplianceDocumentsPage HTML safety and tab drafts', () => {
     const createButtons = await screen.findAllByRole('button', { name: '创建轮换请求' });
     await user.click(createButtons[0]!);
     const createDialog = await screen.findByRole('dialog');
-    await user.type(within(createDialog).getByLabelText(/^操作原因/), 'scheduled key rotation');
+    expect(within(createDialog).queryByLabelText(/^操作原因/)).not.toBeInTheDocument();
+    expect(within(createDialog).getByRole('button', { name: '创建轮换请求' })).toBeEnabled();
     await user.click(within(createDialog).getByRole('button', { name: '创建轮换请求' }));
 
     expect(await screen.findByText('kr_1')).toBeInTheDocument();
@@ -89,7 +90,8 @@ describe('AdminComplianceDocumentsPage HTML safety and tab drafts', () => {
     const approveDialog = await screen.findByRole('dialog');
     expect(within(approveDialog).getByLabelText(/^轮换请求 ID/)).toHaveValue('kr_1');
     expect(within(approveDialog).getByLabelText(/^版本/)).toHaveValue('1');
-    await user.type(within(approveDialog).getByLabelText(/^操作原因/), 'promote to published');
+    expect(within(approveDialog).queryByLabelText(/^操作原因/)).not.toBeInTheDocument();
+    expect(within(approveDialog).getByRole('button', { name: '提交审批' })).toBeEnabled();
     await user.click(within(approveDialog).getByRole('button', { name: '提交审批' }));
 
     await waitFor(() => expect(mockDb.adminKeyRotations[0]?.state).toBe('published'));

@@ -112,15 +112,13 @@ function GrantEditor({
   const [selection, setSelection] = useState(() => initialGrantSelection(baseline.grants));
   const [search, setSearch] = useState('');
   const [confirm, setConfirm] = useState(false);
-  const self = session?.user_id === userId;
-  const canWrite = !!session?.roles.includes('super_admin') && !self && catalogComplete;
+  const isSelf = session?.user_id === userId;
+  const canWrite = !!session?.roles.includes('super_admin') && catalogComplete && !isSelf;
   const preview = grantPreview(baseline.grants, selection, baseline.definitions);
   const mutation = useMutation({
-    mutationFn: async (reason: string) => {
+    mutationFn: async () => {
       if (!canWrite || !baseline.etag) return;
-      await runWithAdminStepUp(() =>
-        putPermissionGrants(userId, { ...selection, reason }, baseline.etag),
-      );
+      await runWithAdminStepUp(() => putPermissionGrants(userId, selection, baseline.etag));
     },
     onSuccess: async () => {
       setConfirm(false);
@@ -264,8 +262,10 @@ function GrantEditor({
   );
   return (
     <Stack gap="md">
-      {!canWrite && (
-        <Alert>{t(self ? 'authorization.noSelf' : 'authorization.superAdminOnly')}</Alert>
+      {isSelf ? (
+        <Alert>{t('authorization.selfGrantUnsupported')}</Alert>
+      ) : (
+        !canWrite && <Alert>{t('authorization.superAdminOnly')}</Alert>
       )}
       <Text size="sm">
         {t('authorization.currentEffective')}:{' '}
@@ -347,8 +347,6 @@ function GrantEditor({
         }}
         title={t('authorization.previewTitle')}
         confirmLabel={t('common.save')}
-        required
-        minReasonLength={3}
         pending={mutation.isPending}
         error={mutation.error}
         confirmDisabled={!canWrite || conflict || !baseline.etag}
@@ -358,7 +356,7 @@ function GrantEditor({
             {conflict && <Button onClick={refresh}>{t('authorization.refresh')}</Button>}
           </Stack>
         }
-        onSubmit={(reason) => mutation.mutate(reason)}
+        onSubmit={() => mutation.mutate()}
       />
     </Stack>
   );

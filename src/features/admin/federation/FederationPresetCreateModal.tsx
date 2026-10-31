@@ -10,7 +10,6 @@ import {
   Stack,
   TagsInput,
   Text,
-  Textarea,
   TextInput,
   ThemeIcon,
   Title,
@@ -171,7 +170,6 @@ function FederationPresetForm({
   const queryClient = useQueryClient();
   const stepUp = useAdminStepUp();
   const [displayName, setDisplayName] = useState('');
-  const [reason, setReason] = useState('');
   const [values, setValues] = useState<Record<string, string>>({});
   const [scopes, setScopes] = useState<string[]>(preset.defaults?.scopes ?? []);
 
@@ -186,9 +184,7 @@ function FederationPresetForm({
       createdId.current = id;
       setDraftCreated(true);
       if (secret) {
-        await stepUp.runWithAdminStepUp(() =>
-          setFederationSecret(id, { reason: input.reason, secret }),
-        );
+        await stepUp.runWithAdminStepUp(() => setFederationSecret(id, { secret }));
       }
       setValues((current) => ({ ...current, client_secret: '' }));
     },
@@ -214,8 +210,6 @@ function FederationPresetForm({
     .some((field) => !(values[field.name] ?? '').trim());
   const slug = preset.slug ?? (values.slug ?? '').trim();
   const slugInvalid = !preset.slug && !/^[a-z][a-z0-9-]{0,63}$/.test(slug);
-  const trimmedReason = reason.trim();
-  const reasonInvalid = [...trimmedReason].length > 1000;
   const nameInvalid = displayName.trim().length < 1 || [...displayName.trim()].length > 120;
   const needsScopes = preset.provider_type !== 'saml';
 
@@ -238,7 +232,7 @@ function FederationPresetForm({
     if (needsScopes && scopes.length > 0) {
       configuration.scopes = scopes;
     }
-    mutation.mutate({ reason: trimmedReason, configuration });
+    mutation.mutate({ configuration });
   };
 
   return (
@@ -337,16 +331,6 @@ function FederationPresetForm({
         {t('admin.federation.postCreateHint')}
       </Text>
 
-      <Textarea
-        label={t('admin.reason.label')}
-        description={t('admin.reason.hint')}
-        placeholder={t('admin.reason.placeholder')}
-        value={reason}
-        onChange={(event) => setReason(event.currentTarget.value)}
-        autosize
-        minRows={2}
-        maxRows={6}
-      />
       {draftCreated && mutation.isError && (
         <Text size="sm">{t('admin.federation.secretRetryHint')}</Text>
       )}
@@ -357,9 +341,7 @@ function FederationPresetForm({
           {t('admin.federation.backToPresets')}
         </Button>
         <Button
-          disabled={
-            mutation.isPending || reasonInvalid || nameInvalid || slugInvalid || missingRequired
-          }
+          disabled={mutation.isPending || nameInvalid || slugInvalid || missingRequired}
           loading={mutation.isPending}
           onClick={submit}
         >

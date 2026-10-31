@@ -103,7 +103,7 @@ export function requestAdminActivation(
 }
 
 export function decideAdminApproval(
-  kind: AdminApprovableKind,
+  kind: 'federation',
   resourceId: string,
   input: AdminApprovalDecisionInput,
   etag: string,
@@ -143,11 +143,7 @@ export function getApplicationLogo(resourceId: string, signal?: AbortSignal) {
   });
 }
 
-export function addOauthRedirectUri(
-  resourceId: string,
-  input: { reason: string; uri: string },
-  etag: string,
-) {
+export function addOauthRedirectUri(resourceId: string, input: { uri: string }, etag: string) {
   return apiPost<AdminResourceView>(
     `/admin/v1/oauth-clients/${encodeURIComponent(resourceId)}/redirect-uris`,
     input,
@@ -155,15 +151,10 @@ export function addOauthRedirectUri(
   );
 }
 
-export function removeOauthRedirectUri(
-  resourceId: string,
-  childId: string,
-  reason: string,
-  etag: string,
-) {
+export function removeOauthRedirectUri(resourceId: string, childId: string, etag: string) {
   return apiVoid(
     `/admin/v1/oauth-clients/${encodeURIComponent(resourceId)}/redirect-uris/${encodeURIComponent(childId)}`,
-    { method: 'DELETE', body: { reason }, headers: { 'If-Match': etag }, scope: 'admin' },
+    { method: 'DELETE', headers: { 'If-Match': etag }, scope: 'admin' },
   );
 }
 
@@ -212,11 +203,7 @@ export function importResourceMetadata(
   );
 }
 
-export function addSamlAcsUrl(
-  resourceId: string,
-  input: { reason: string; uri: string },
-  etag: string,
-) {
+export function addSamlAcsUrl(resourceId: string, input: { uri: string }, etag: string) {
   return apiPost<AdminResourceView>(
     `/admin/v1/saml-service-providers/${encodeURIComponent(resourceId)}/acs-urls`,
     input,
@@ -224,21 +211,16 @@ export function addSamlAcsUrl(
   );
 }
 
-export function removeSamlAcsUrl(
-  resourceId: string,
-  childId: string,
-  reason: string,
-  etag: string,
-) {
+export function removeSamlAcsUrl(resourceId: string, childId: string, etag: string) {
   return apiVoid(
     `/admin/v1/saml-service-providers/${encodeURIComponent(resourceId)}/acs-urls/${encodeURIComponent(childId)}`,
-    { method: 'DELETE', body: { reason }, headers: { 'If-Match': etag }, scope: 'admin' },
+    { method: 'DELETE', headers: { 'If-Match': etag }, scope: 'admin' },
   );
 }
 
 export function addSamlSigningCertificate(
   resourceId: string,
-  input: { reason: string; pem: string },
+  input: { pem: string },
   etag: string,
 ) {
   return apiPost<AdminResourceView>(
@@ -248,21 +230,16 @@ export function addSamlSigningCertificate(
   );
 }
 
-export function removeSamlSigningCertificate(
-  resourceId: string,
-  childId: string,
-  reason: string,
-  etag: string,
-) {
+export function removeSamlSigningCertificate(resourceId: string, childId: string, etag: string) {
   return apiVoid(
     `/admin/v1/saml-service-providers/${encodeURIComponent(resourceId)}/signing-certificates/${encodeURIComponent(childId)}`,
-    { method: 'DELETE', body: { reason }, headers: { 'If-Match': etag }, scope: 'admin' },
+    { method: 'DELETE', headers: { 'If-Match': etag }, scope: 'admin' },
   );
 }
 
 export function putSamlAttributePolicy(
   resourceId: string,
-  input: { reason: string; attribute_policy: Record<string, string> },
+  input: { attribute_policy: Record<string, string> },
   etag: string,
 ) {
   return apiPut<AdminResourceView>(

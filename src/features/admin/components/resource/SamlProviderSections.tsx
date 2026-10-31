@@ -66,8 +66,7 @@ export function SamlProviderSections({ resource, etag, refresh }: ResourceSectio
   const wrap = <T,>(action: () => Promise<T>) => stepUp.runWithAdminStepUp(action);
 
   const addAcsMutation = useMutation({
-    mutationFn: (input: { reason: string }) =>
-      wrap(() => addSamlAcsUrl(resource.id, { reason: input.reason, uri: newAcs.trim() }, etag)),
+    mutationFn: () => wrap(() => addSamlAcsUrl(resource.id, { uri: newAcs.trim() }, etag)),
     onSuccess: async () => {
       setAddAcsModal(false);
       setNewAcs('');
@@ -76,8 +75,8 @@ export function SamlProviderSections({ resource, etag, refresh }: ResourceSectio
   });
 
   const removeAcsMutation = useMutation({
-    mutationFn: (input: { reason: string; entry: UriEntry }) =>
-      wrap(() => removeSamlAcsUrl(resource.id, input.entry.id, input.reason, etag)),
+    mutationFn: (input: { entry: UriEntry }) =>
+      wrap(() => removeSamlAcsUrl(resource.id, input.entry.id, etag)),
     onSuccess: async () => {
       setRemoveAcs(null);
       await refresh();
@@ -85,14 +84,8 @@ export function SamlProviderSections({ resource, etag, refresh }: ResourceSectio
   });
 
   const addCertMutation = useMutation({
-    mutationFn: (input: { reason: string }) =>
-      wrap(() =>
-        addSamlSigningCertificate(
-          resource.id,
-          { reason: input.reason, pem: pemDraft.trim() },
-          etag,
-        ),
-      ),
+    mutationFn: () =>
+      wrap(() => addSamlSigningCertificate(resource.id, { pem: pemDraft.trim() }, etag)),
     onSuccess: async () => {
       setAddCertModal(false);
       setPemDraft('');
@@ -101,8 +94,8 @@ export function SamlProviderSections({ resource, etag, refresh }: ResourceSectio
   });
 
   const removeCertMutation = useMutation({
-    mutationFn: (input: { reason: string; entry: CertificateEntry }) =>
-      wrap(() => removeSamlSigningCertificate(resource.id, input.entry.id, input.reason, etag)),
+    mutationFn: (input: { entry: CertificateEntry }) =>
+      wrap(() => removeSamlSigningCertificate(resource.id, input.entry.id, etag)),
     onSuccess: async () => {
       setRemoveCert(null);
       await refresh();
@@ -110,7 +103,7 @@ export function SamlProviderSections({ resource, etag, refresh }: ResourceSectio
   });
 
   const policyMutation = useMutation({
-    mutationFn: (input: { reason: string; attribute_policy: Record<string, string> }) =>
+    mutationFn: (input: { attribute_policy: Record<string, string> }) =>
       wrap(() => putSamlAttributePolicy(resource.id, input, etag)),
     onSuccess: async () => {
       setPolicyModal(false);
@@ -126,7 +119,7 @@ export function SamlProviderSections({ resource, etag, refresh }: ResourceSectio
     setPolicyModal(true);
   };
 
-  const submitPolicy = (reason: string) => {
+  const submitPolicy = () => {
     try {
       const parsed: unknown = JSON.parse(policyDraft);
       if (
@@ -139,7 +132,7 @@ export function SamlProviderSections({ resource, etag, refresh }: ResourceSectio
         return;
       }
       setPolicyError(null);
-      policyMutation.mutate({ reason, attribute_policy: parsed as Record<string, string> });
+      policyMutation.mutate({ attribute_policy: parsed as Record<string, string> });
     } catch {
       setPolicyError(t('admin.config.invalidJson'));
     }
@@ -302,7 +295,7 @@ export function SamlProviderSections({ resource, etag, refresh }: ResourceSectio
             required
           />
         }
-        onSubmit={(reason) => addAcsMutation.mutate({ reason })}
+        onSubmit={() => addAcsMutation.mutate()}
       />
 
       <ReasonModal
@@ -315,9 +308,9 @@ export function SamlProviderSections({ resource, etag, refresh }: ResourceSectio
         pending={removeAcsMutation.isPending}
         error={removeAcsMutation.error}
         errorHint={conflictHint(removeAcsMutation.error, t)}
-        onSubmit={(reason) => {
+        onSubmit={() => {
           if (removeAcs) {
-            removeAcsMutation.mutate({ reason, entry: removeAcs });
+            removeAcsMutation.mutate({ entry: removeAcs });
           }
         }}
       />
@@ -344,7 +337,7 @@ export function SamlProviderSections({ resource, etag, refresh }: ResourceSectio
         pending={addCertMutation.isPending}
         error={addCertMutation.error}
         errorHint={conflictHint(addCertMutation.error, t)}
-        onSubmit={(reason) => addCertMutation.mutate({ reason })}
+        onSubmit={() => addCertMutation.mutate()}
       />
 
       <ReasonModal
@@ -357,9 +350,9 @@ export function SamlProviderSections({ resource, etag, refresh }: ResourceSectio
         pending={removeCertMutation.isPending}
         error={removeCertMutation.error}
         errorHint={conflictHint(removeCertMutation.error, t)}
-        onSubmit={(reason) => {
+        onSubmit={() => {
           if (removeCert) {
-            removeCertMutation.mutate({ reason, entry: removeCert });
+            removeCertMutation.mutate({ entry: removeCert });
           }
         }}
       />

@@ -2,13 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
-import {
-  grantAdminStepUp,
-  seedAdminChangeRequest,
-  seedAdminResource,
-  seedUser,
-  signInAdmin,
-} from '@/test/mocks/db';
+import { grantAdminStepUp, seedAdminResource, seedUser, signInAdmin } from '@/test/mocks/db';
 import { mockDb } from '@/test/mocks/server';
 import { renderRoute } from '@/test/render';
 
@@ -73,17 +67,16 @@ describe('admin resource detail page', () => {
     await user.click(await screen.findByRole('button', { name: '展开配置 JSON' }));
     const editor = screen.getByLabelText(/^配置 JSON/);
     fireEvent.change(editor, { target: { value: '{"issuer":"https://idp.example/v2"}' } });
-    await user.type(screen.getByLabelText(/^操作原因/), 'rotate issuer');
     const resource = mockDb.adminResources[0];
     if (resource) {
       resource.version = 2;
     }
-    await user.click(screen.getByRole('button', { name: '保存配置' }));
+    await user.click(await screen.findByRole('button', { name: '保存配置' }));
 
     expect(await screen.findByText('资源已被修改，请刷新后重试。')).toBeInTheDocument();
   });
 
-  it('notifies when the sole administrator activation request is auto-approved', async () => {
+  it('activates an application immediately without an operation note or approval', async () => {
     const user = userEvent.setup();
     const maker = seedUser(mockDb);
     signInAdmin(mockDb, maker, ['super_admin']);
@@ -96,40 +89,23 @@ describe('admin resource detail page', () => {
 
     renderRoute(['/admin/applications/adr_app']);
 
-    await user.click(await screen.findByRole('button', { name: '申请激活' }));
+    await user.click(await screen.findByRole('button', { name: '激活' }));
     const dialog = await screen.findByRole('dialog');
-    await user.type(within(dialog).getByLabelText(/^操作原因/), 'go live');
+    expect(within(dialog).queryByLabelText(/^操作原因/)).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: '提交' }));
 
-    expect(await screen.findByText('申请已提交，并已自动通过审核。')).toBeInTheDocument();
+    expect(await screen.findByText('状态变更已生效。')).toBeInTheDocument();
+    await waitFor(() => expect(mockDb.adminResources[0]?.status).toBe('active'));
+    expect(mockDb.adminResources[0]?.change_requests[0]?.status).toBe('applied');
   });
 
-  it('blocks duplicate activation requests while one is pending', async () => {
-    const maker = seedUser(mockDb);
-    signInAdmin(mockDb, maker, ['super_admin']);
-    grantAdminStepUp(mockDb);
-    const resource = seedAdminResource(mockDb, {
-      id: 'adr_app',
-      kind: 'application',
-      display_name: 'Demo App',
-    });
-    seedAdminChangeRequest(resource);
-
-    renderRoute(['/admin/applications/adr_app']);
-
-    expect(await screen.findByRole('button', { name: '申请激活' })).toBeDisabled();
-    expect(
-      await screen.findByText('已有同类申请等待审批，请先在下方变更请求中处理。'),
-    ).toBeInTheDocument();
-  });
-
-  it('reveals a redeemed secret once without caching it and navigates back to parent application', async () => {
+  it('reveals a directly created secret once without caching it and navigates back to parent application', async () => {
     const user = userEvent.setup();
     const maker = seedUser(mockDb);
     signInAdmin(mockDb, maker, ['super_admin']);
     grantAdminStepUp(mockDb);
     seedAdminResource(mockDb, { id: 'adr_app', display_name: 'Parent App' });
-    const client = seedAdminResource(mockDb, {
+    seedAdminResource(mockDb, {
       id: 'adr_oc',
       kind: 'oauth',
       application_id: 'adr_app',
@@ -137,21 +113,15 @@ describe('admin resource detail page', () => {
       display_name: 'Web Client',
       configuration: { client_type: 'confidential' },
     });
-    seedAdminChangeRequest(client, {
-      id: 'cr_secret',
-      action: 'create_secret',
-      status: 'approved',
-      requested_by: 'usr_seed',
-    });
 
-    const { queryClient, router } = renderRoute(['/admin/oauth-clients/adr_oc']);
+    const { queryClient, router } = renderRoute(['/admin/oauth-clients/adr_oc/settings']);
 
     expect(await screen.findByRole('heading', { name: 'Web Client' })).toBeInTheDocument();
-    await user.click(await screen.findByRole('button', { name: '兑换（创建密钥）' }));
+    await user.click(await screen.findByRole('button', { name: '创建新密钥' }));
 
     const dialog = await screen.findByRole('dialog');
-    await user.type(within(dialog).getByLabelText(/^操作原因/), 'redeem approved secret');
-    await user.click(within(dialog).getByRole('button', { name: '兑换并显示密钥' }));
+    expect(within(dialog).queryByLabelText(/^操作原因/)).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: '提交' }));
 
     expect(await screen.findByDisplayValue('sec_mock_1')).toBeInTheDocument();
     const cached = JSON.stringify(

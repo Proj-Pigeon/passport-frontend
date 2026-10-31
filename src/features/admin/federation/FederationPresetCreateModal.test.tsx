@@ -15,9 +15,7 @@ async function fillGithub() {
   fireEvent.change(screen.getByLabelText(/^Client Secret/), {
     target: { value: '  secret-with-spaces  ' },
   });
-  fireEvent.change(screen.getByLabelText(/^操作原因/), {
-    target: { value: 'register login provider' },
-  });
+  expect(screen.queryByLabelText(/^操作原因/)).not.toBeInTheDocument();
   return user;
 }
 function open(onClose = vi.fn()) {

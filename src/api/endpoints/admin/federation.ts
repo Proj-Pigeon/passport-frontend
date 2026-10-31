@@ -71,7 +71,7 @@ export function getAdminProtocolInfo(signal?: AbortSignal) {
   return apiGet<AdminProtocolInfo>('/admin/v1/protocol-info', { signal, scope: 'admin' });
 }
 
-export function setFederationSecret(resourceId: string, input: { reason: string; secret: string }) {
+export function setFederationSecret(resourceId: string, input: { secret: string }) {
   return apiPut<{ secret_set: boolean }>(
     `/admin/v1/federation-providers/${encodeURIComponent(resourceId)}/secrets`,
     input,
@@ -79,10 +79,9 @@ export function setFederationSecret(resourceId: string, input: { reason: string;
   );
 }
 
-export function clearFederationSecret(resourceId: string, input: { reason: string }) {
+export function clearFederationSecret(resourceId: string) {
   return apiVoid(`/admin/v1/federation-providers/${encodeURIComponent(resourceId)}/secrets`, {
     method: 'DELETE',
-    body: input,
     scope: 'admin',
   });
 }

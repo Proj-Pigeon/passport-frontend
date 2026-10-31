@@ -2,10 +2,20 @@ import { Alert, Badge, Button, Code, CopyButton, Group, Stack, Table } from '@ma
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
-import { getAdminProtocolInfo } from '@/api/endpoints/admin/federation';
+import { getAdminProtocolInfo, type AdminProtocolInfo } from '@/api/endpoints/admin/federation';
 import { SectionCard } from '@/components/AccountSections';
 
 import { adminKeys } from '../keys';
+
+type ProtocolInfoSource = {
+  queryKey: readonly string[];
+  getProtocolInfo: (signal?: AbortSignal) => Promise<AdminProtocolInfo>;
+};
+
+const adminProtocolInfoSource: ProtocolInfoSource = {
+  queryKey: adminKeys.protocolInfo,
+  getProtocolInfo: getAdminProtocolInfo,
+};
 
 function CopyRow({ label, value }: { label: string; value: string }) {
   const { t } = useTranslation();
@@ -33,10 +43,10 @@ function CopyRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function useProtocolInfo() {
+function useProtocolInfo(source: ProtocolInfoSource = adminProtocolInfoSource) {
   return useQuery({
-    queryKey: adminKeys.protocolInfo,
-    queryFn: ({ signal }) => getAdminProtocolInfo(signal),
+    queryKey: source.queryKey,
+    queryFn: ({ signal }) => source.getProtocolInfo(signal),
     staleTime: 60_000,
   });
 }
@@ -44,12 +54,14 @@ function useProtocolInfo() {
 export function OidcConnectivityGuideCard({
   clientId,
   scopes,
+  protocolInfoSource,
 }: {
   clientId?: string;
   scopes?: unknown;
+  protocolInfoSource?: ProtocolInfoSource;
 }) {
   const { t } = useTranslation();
-  const info = useProtocolInfo();
+  const info = useProtocolInfo(protocolInfoSource);
   if (!info.data) {
     return null;
   }
@@ -92,11 +104,13 @@ export function OidcConnectivityGuideCard({
 
 export function SamlConnectivityGuideCard({
   configuration,
+  protocolInfoSource,
 }: {
   configuration: Record<string, unknown>;
+  protocolInfoSource?: ProtocolInfoSource;
 }) {
   const { t } = useTranslation();
-  const info = useProtocolInfo();
+  const info = useProtocolInfo(protocolInfoSource);
   if (!info.data) {
     return null;
   }

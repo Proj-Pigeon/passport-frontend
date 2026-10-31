@@ -65,27 +65,25 @@ export function PermissionCatalog({
   const [status, setStatus] = useState<'active' | 'disabled'>('active');
 
   const mutation = useMutation({
-    mutationFn: async (reason: string) => {
+    mutationFn: async () => {
       if (!canWrite || !action) return;
       await runProtected(async () => {
         if (action.kind === 'preset') {
           if (scope !== 'admin') return;
-          await initializeGuEarthPermissions(applicationId, reason);
+          await initializeGuEarthPermissions(applicationId);
         } else if (action.kind === 'delete') {
-          await deleteApplicationPermission(scope, applicationId, action.definition, reason);
+          await deleteApplicationPermission(scope, applicationId, action.definition);
         } else if (action.kind === 'edit') {
           await updateApplicationPermission(scope, applicationId, action.definition, {
             name: name.trim(),
             description: description.trim(),
             status,
-            reason,
           });
         } else {
           await createApplicationPermission(scope, applicationId, {
             code: code.trim(),
             name: name.trim(),
             description: description.trim(),
-            reason,
           });
         }
       });
@@ -229,8 +227,6 @@ export function PermissionCatalog({
           title={action ? labels[action.kind] : ''}
           confirmLabel={t('common.confirm')}
           confirmColor={action?.kind === 'delete' ? 'red' : undefined}
-          required
-          minReasonLength={3}
           pending={mutation.isPending}
           error={mutation.error}
           confirmDisabled={!canWrite || conflict || (editing && (!name.trim() || !code.trim()))}
@@ -311,7 +307,7 @@ export function PermissionCatalog({
               )}
             </Stack>
           }
-          onSubmit={(reason) => mutation.mutate(reason)}
+          onSubmit={() => mutation.mutate()}
         />
       </Stack>
     </SectionCard>

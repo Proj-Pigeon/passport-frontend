@@ -11,7 +11,7 @@ import {
   TextInput,
   ThemeIcon,
 } from '@mantine/core';
-import { IconPhoto } from '@tabler/icons-react';
+import { IconPhoto, IconUpload } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -94,13 +94,12 @@ export function ApplicationBrandingCard({
     },
   });
   const saveMutation = useMutation({
-    mutationFn: (reason: string) =>
+    mutationFn: () =>
       stepUp.runWithAdminStepUp(() =>
         patchAdminResource(
           'application',
           resource.id,
           {
-            reason,
             configuration: {
               display_name: resource.display_name,
               developer_name: developerName.trim(),
@@ -148,7 +147,7 @@ export function ApplicationBrandingCard({
       description={t('admin.branding.hint')}
       action={
         canWrite ? (
-          <Button size="xs" variant="light" onClick={openEditModal}>
+          <Button size="xs" variant="light" style={{ flexShrink: 0 }} onClick={openEditModal}>
             {t('admin.branding.save')}
           </Button>
         ) : undefined
@@ -176,11 +175,18 @@ export function ApplicationBrandingCard({
                   resetRef={fileResetRef}
                   onChange={handleFile}
                   accept="image/png,image/jpeg"
-                  disabled={uploadMutation.isPending}
+                  disabled={uploadMutation.isPending || deleteMutation.isPending}
                 >
                   {(props) => (
-                    <Button size="xs" variant="light" loading={uploadMutation.isPending} {...props}>
-                      {logoUrl ? t('admin.branding.logoReplace') : t('admin.branding.logoUpload')}
+                    <Button
+                      size="xs"
+                      variant="light"
+                      leftSection={<IconUpload size={16} />}
+                      loading={uploadMutation.isPending}
+                      disabled={deleteMutation.isPending}
+                      {...props}
+                    >
+                      {t('common.uploadImage')}
                     </Button>
                   )}
                 </FileButton>
@@ -190,6 +196,7 @@ export function ApplicationBrandingCard({
                     color="red"
                     variant="subtle"
                     loading={deleteMutation.isPending}
+                    disabled={uploadMutation.isPending}
                     onClick={() => {
                       deleteMutation.reset();
                       deleteMutation.mutate();
@@ -272,12 +279,12 @@ export function ApplicationBrandingCard({
             />
           </Stack>
         }
-        onSubmit={(reason) => {
+        onSubmit={() => {
           if (!validDeveloperUrl(developerUrl.trim())) {
             setUrlError(true);
             return;
           }
-          saveMutation.mutate(reason);
+          saveMutation.mutate();
         }}
       />
     </SectionCard>

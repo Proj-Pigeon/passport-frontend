@@ -168,7 +168,7 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
 
   const writeCapability = kind === 'federation' ? 'federation:write' : 'applications:write';
   const canWrite = hasAdminCapability(session, writeCapability);
-  const canApprove = hasAdminCapability(session, 'applications:approve');
+  const canApprove = kind === 'federation' && hasAdminCapability(session, 'applications:approve');
   const approvable = kind === 'application' || kind === 'federation';
   const pendingChangeActions = new Set(
     (resource.change_requests ?? [])
@@ -176,10 +176,10 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
       .map((request) => request.action),
   );
   const lifecycleAction = resource.status === 'active' ? 'deactivate' : 'activate';
-  const lifecycleBlocked = approvable && pendingChangeActions.has(lifecycleAction);
+  const lifecycleBlocked = kind === 'federation' && pendingChangeActions.has(lifecycleAction);
 
   const configMutation = useMutation({
-    mutationFn: async (input: { reason: string; configuration: Record<string, unknown> }) =>
+    mutationFn: async (input: { configuration: Record<string, unknown> }) =>
       stepUp.runWithAdminStepUp(() => patchAdminResource(kind, resourceId, input, data.etag)),
     onSuccess: async (result) => {
       if (result.change_request_id) {
@@ -197,7 +197,7 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
   });
 
   const activationMutation = useMutation({
-    mutationFn: async (input: { action: 'activate' | 'deactivate'; reason: string }) =>
+    mutationFn: async (input: { action: 'activate' | 'deactivate' }) =>
       stepUp.runWithAdminStepUp(() =>
         requestAdminActivation(kind as AdminApprovableKind, resourceId, input, data.etag),
       ),
@@ -216,18 +216,9 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
   });
 
   const decisionMutation = useMutation({
-    mutationFn: async (input: {
-      change_request_id: string;
-      decision: 'approve' | 'reject';
-      reason: string;
-    }) =>
+    mutationFn: async (input: { change_request_id: string; decision: 'approve' | 'reject' }) =>
       stepUp.runWithAdminStepUp(() =>
-        decideAdminApproval(
-          kind === 'oauth' || kind === 'saml' ? 'application' : (kind as AdminApprovableKind),
-          resourceId,
-          input,
-          data.etag,
-        ),
+        decideAdminApproval('federation', resourceId, input, data.etag),
       ),
     onSuccess: async () => {
       setPendingDecision(null);
@@ -257,9 +248,10 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
     configPending: configMutation.isPending,
     configError: configMutation.error,
     configSubmittedPending:
+      kind === 'federation' &&
       Boolean(configMutation.data?.change_request_id) &&
       configMutation.data?.change_request_status === 'pending',
-    saveConfig: (reason, configuration) => configMutation.mutate({ reason, configuration }),
+    saveConfig: (configuration) => configMutation.mutate({ configuration }),
     decisionPending: decisionMutation.isPending,
     decisionError: decisionMutation.error,
     openDecision: (request, decision) => {
@@ -289,9 +281,9 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
             ? t('admin.resources.activationConflictHint')
             : undefined
         }
-        onSubmit={(reason) => {
+        onSubmit={() => {
           if (activationModal) {
-            activationMutation.mutate({ action: activationModal, reason });
+            activationMutation.mutate({ action: activationModal });
           }
         }}
       />
@@ -308,10 +300,7 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
         }
         description={
           pendingDecision
-            ? [
-                t(`admin.changeAction.${pendingDecision.request.action}`),
-                pendingDecision.request.reason,
-              ]
+            ? [t(`admin.changeAction.${pendingDecision.request.action}`)]
                 .filter(Boolean)
                 .join(' · ')
             : ''
@@ -331,12 +320,11 @@ function AdminResourceDetail({ kind, resourceId, data }: AdminResourceDetailProp
             ? t('admin.approval.staleHint')
             : undefined
         }
-        onSubmit={(reason) => {
+        onSubmit={() => {
           if (pendingDecision) {
             decisionMutation.mutate({
               change_request_id: pendingDecision.request.id,
               decision: pendingDecision.decision,
-              reason,
             });
           }
         }}
@@ -809,19 +797,21 @@ export function AdminResourceIntegrationSubpage() {
 
 export function AdminResourceActivitySubpage() {
   const { t } = useTranslation();
-  const { resource, canApprove, decisionPending, decisionError, openDecision } =
+  const { kind, resource, canApprove, decisionPending, decisionError, openDecision } =
     useOutletContext<ResourceDetailContextValue>();
 
   return (
     <Stack gap="lg">
-      <ChangeRequestsCard
-        requests={resource.change_requests ?? []}
-        canDecide={canApprove}
-        decisionPending={decisionPending}
-        decisionError={decisionError}
-        showEmpty
-        onDecide={openDecision}
-      />
+      {kind === 'federation' && (
+        <ChangeRequestsCard
+          requests={resource.change_requests ?? []}
+          canDecide={canApprove}
+          decisionPending={decisionPending}
+          decisionError={decisionError}
+          showEmpty
+          onDecide={openDecision}
+        />
+      )}
 
       {resource.published_configuration && (
         <SectionCard

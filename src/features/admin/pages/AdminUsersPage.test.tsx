@@ -88,7 +88,7 @@ describe('admin users page', () => {
     await user.click(screen.getByRole('button', { name: '挂起用户' }));
 
     const dialog = await screen.findByRole('dialog');
-    await user.type(within(dialog).getByLabelText(/^操作原因/), 'policy violation');
+    expect(within(dialog).queryByLabelText(/^操作原因/)).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: '挂起用户' }));
 
     expect(await screen.findByText('管理员二次验证')).toBeInTheDocument();
@@ -104,9 +104,8 @@ describe('admin users page', () => {
     expect(await screen.findByRole('heading', { name: 'Bob' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '挂起用户' }));
 
-    const reasonDialog = await screen.findByRole('dialog');
-    await user.type(within(reasonDialog).getByLabelText(/^操作原因/), 'policy violation');
-    await user.click(within(reasonDialog).getByRole('button', { name: '挂起用户' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: '挂起用户' }));
 
     expect(await screen.findByText('管理员二次验证')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '验证通行密钥' }));

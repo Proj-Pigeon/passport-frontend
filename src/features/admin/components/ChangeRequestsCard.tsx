@@ -51,7 +51,6 @@ export function ChangeRequestsCard({
                     <Table.Th>{t('admin.audit.colAction')}</Table.Th>
                     <Table.Th>{t('admin.resources.colStatus')}</Table.Th>
                     <Table.Th>{t('admin.changeRequests.requestedBy')}</Table.Th>
-                    <Table.Th>{t('admin.reason.label')}</Table.Th>
                     <Table.Th>{t('admin.changeRequests.baseVersion')}</Table.Th>
                     <Table.Th>{t('admin.audit.colTime')}</Table.Th>
                     <Table.Th />
@@ -71,11 +70,6 @@ export function ChangeRequestsCard({
                       <Table.Td>
                         <Text size="sm" ff="monospace">
                           {request.requested_by}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text size="sm" lineClamp={1} maw={220}>
-                          {request.reason || '—'}
                         </Text>
                       </Table.Td>
                       <Table.Td>
@@ -160,9 +154,6 @@ export function ChangeRequestsCard({
                 <Text size="sm">{selected.policy_version}</Text>
               </InfoItem>
             </SimpleGrid>
-            <InfoItem label={t('admin.reason.label')}>
-              <Text size="sm">{selected.reason || '—'}</Text>
-            </InfoItem>
             {canDecide && onDecide && selected.status === 'pending' && (
               <Group justify="flex-end" gap="sm">
                 <Button

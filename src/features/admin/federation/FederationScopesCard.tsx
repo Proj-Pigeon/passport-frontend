@@ -22,14 +22,9 @@ export function FederationScopesCard({
   const [scopes, setScopes] = useState(original);
   const [opened, setOpened] = useState(false);
   const mutation = useMutation({
-    mutationFn: (input: { reason: string }) =>
+    mutationFn: () =>
       stepUp.runWithAdminStepUp(() =>
-        patchAdminResource(
-          'federation',
-          resource.id,
-          { ...input, configuration: { scopes } },
-          etag,
-        ),
+        patchAdminResource('federation', resource.id, { configuration: { scopes } }, etag),
       ),
     onSuccess: async () => {
       setOpened(false);
@@ -61,7 +56,7 @@ export function FederationScopesCard({
           confirmLabel={t('common.save')}
           pending={mutation.isPending}
           error={mutation.error}
-          onSubmit={(reason) => mutation.mutate({ reason })}
+          onSubmit={() => mutation.mutate()}
         />
       </Stack>
     </SectionCard>

@@ -32,8 +32,8 @@ export function DevicesCard({ userId, canWrite = true }: { userId?: string; canW
     getNextPageParam: (page) => page.next_cursor ?? undefined,
   });
   const mutation = useMutation({
-    mutationFn: ({ device, reason }: { device: Device; reason?: string }) => {
-      const run = () => revokeDevice(device.id, userId, reason);
+    mutationFn: ({ device }: { device: Device }) => {
+      const run = () => revokeDevice(device.id, userId);
       return userId
         ? adminStepUp.runWithAdminStepUp(run)
         : device.current
@@ -154,11 +154,10 @@ export function DevicesCard({ userId, canWrite = true }: { userId?: string; canW
         description={t('devices.revokeWarning', { name: target?.device_name })}
         confirmLabel={t('devices.revoke')}
         confirmColor="red"
-        required
         pending={mutation.isPending}
         error={mutation.error}
-        onSubmit={(reason) => {
-          if (target) mutation.mutate({ device: target, reason });
+        onSubmit={() => {
+          if (target) mutation.mutate({ device: target });
         }}
       />
     </SectionCard>

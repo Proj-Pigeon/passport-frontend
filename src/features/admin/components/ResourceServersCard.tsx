@@ -311,7 +311,6 @@ function ResourceServerRow({
               </Group>
             )}
           </Group>
-          <Text size="sm">{request.reason}</Text>
           <ChangeReview server={server} request={request} />
           {request.status === 'approved' &&
             credentialAction(request.action) &&
@@ -427,14 +426,13 @@ function ServerActionModal({
   const mutation = useMutation({
     gcTime: 0,
     retry: false,
-    mutationFn: async (reason: string) => {
+    mutationFn: async () => {
       if (!canAct) return;
       await runWithAdminStepUp(async () => {
         const input: ResourceServerInput = {
           name: name.trim(),
           audience: audience.trim(),
           client_ids: clientIds,
-          reason,
         };
         if (action.kind === 'create') {
           await createResourceServer({ ...input, application_id: applicationId });
@@ -444,7 +442,7 @@ function ServerActionModal({
             if (baseline.status === 'active')
               notifications.show({ message: t('authorization.bindingSubmitted') });
           } else if (action.kind === 'redeem') {
-            const result = await createResourceServerSecret(baseline, reason, action.requestId);
+            const result = await createResourceServerSecret(baseline, action.requestId);
             onSecret?.(result);
           } else if (
             action.kind === 'activate' ||
@@ -452,7 +450,7 @@ function ServerActionModal({
             action.kind === 'issue_secret' ||
             action.kind === 'rotate_secret'
           ) {
-            const result = await requestResourceServerActivation(baseline, action.kind, reason);
+            const result = await requestResourceServerActivation(baseline, action.kind);
             const messages = {
               pending: t('authorization.requestPending'),
               approved: t('authorization.requestApproved'),
@@ -463,7 +461,6 @@ function ServerActionModal({
             await decideResourceServerApproval(baseline, {
               change_request_id: action.requestId,
               decision: action.kind,
-              reason,
             });
           }
         }
@@ -502,8 +499,6 @@ function ServerActionModal({
           ? 'red'
           : undefined
       }
-      required
-      minReasonLength={3}
       pending={mutation.isPending}
       error={mutation.error}
       confirmDisabled={
@@ -553,7 +548,6 @@ function ServerActionModal({
           )}
           {selectedRequest && baseline && (
             <>
-              <Text size="sm">{selectedRequest.reason}</Text>
               <ChangeReview server={server ?? baseline} request={selectedRequest} />
               {selectedRequest.status === 'pending' &&
                 selectedRequest.requested_by === session?.user_id && (
@@ -573,7 +567,7 @@ function ServerActionModal({
           )}
         </Stack>
       }
-      onSubmit={(reason) => mutation.mutate(reason)}
+      onSubmit={() => mutation.mutate()}
     />
   );
 }

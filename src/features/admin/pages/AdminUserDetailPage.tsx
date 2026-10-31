@@ -77,15 +77,15 @@ export function AdminUserDetailPage() {
   });
 
   const mutation = useMutation({
-    mutationFn: async ({ action: target, reason }: { action: UserAction; reason: string }) => {
+    mutationFn: async ({ action: target }: { action: UserAction }) => {
       const run = () => {
         if (target === 'suspend') {
-          return suspendAdminUser(userId, reason);
+          return suspendAdminUser(userId);
         }
         if (target === 'restore') {
-          return restoreAdminUser(userId, reason);
+          return restoreAdminUser(userId);
         }
-        return revokeAdminUserSessions(userId, reason);
+        return revokeAdminUserSessions(userId);
       };
       return stepUp.runWithAdminStepUp(run);
     },
@@ -242,9 +242,9 @@ export function AdminUserDetailPage() {
         pending={mutation.isPending}
         error={mutation.error}
         errorHint={errorHint}
-        onSubmit={(reason) => {
+        onSubmit={() => {
           if (action) {
-            mutation.mutate({ action, reason });
+            mutation.mutate({ action });
           }
         }}
       />

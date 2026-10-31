@@ -14,15 +14,13 @@ import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { AdminChangeRequest, AdminSecretResult } from '@/api/endpoints/admin/types';
+import type { AdminSecretResult } from '@/api/endpoints/admin/types';
 import {
   addOauthRedirectUri,
-  getAdminResource,
   patchAdminResource,
   redeemOauthClientSecret,
   redeemOauthClientSecretRotation,
   removeOauthRedirectUri,
-  requestAdminActivation,
   revokeOauthClientGrants,
 } from '@/api/endpoints/admin/resources';
 import { isApiError } from '@/api/errors';
@@ -53,27 +51,21 @@ export function OauthSecretRedeemBanner({
   const { t } = useTranslation();
   const stepUp = useAdminStepUp();
   const { data: session } = useAdminSession();
-  const [redeemTarget, setRedeemTarget] = useState<AdminChangeRequest | null>(null);
+  const [redeemTarget, setRedeemTarget] = useState<'create_secret' | 'rotate_secret' | null>(null);
   const [overlapSeconds, setOverlapSeconds] = useState<number>(0);
   const [revealedSecret, setRevealedSecret] = useState<AdminSecretResult | null>(null);
 
-  const approvedSecretRequests = (resource.change_requests ?? []).filter(
-    (request) =>
-      request.status === 'approved' &&
-      (request.action === 'create_secret' || request.action === 'rotate_secret') &&
-      request.requested_by === session?.user_id,
-  );
+  const canWrite = hasAdminCapability(session, 'applications:write');
+  const secretActions = ['create_secret', 'rotate_secret'] as const;
 
   const redeemMutation = useMutation({
-    mutationFn: async (input: { reason: string }) => {
-      const rotate = redeemTarget?.action === 'rotate_secret';
+    mutationFn: async () => {
+      const rotate = redeemTarget === 'rotate_secret';
       const call = rotate ? redeemOauthClientSecretRotation : redeemOauthClientSecret;
       return stepUp.runWithAdminStepUp(() =>
         call(
           resource.id,
           {
-            reason: input.reason,
-            change_request_id: redeemTarget?.id ?? '',
             overlap_seconds: rotate ? overlapSeconds : undefined,
           },
           etag,
@@ -87,31 +79,27 @@ export function OauthSecretRedeemBanner({
     },
   });
 
-  if (approvedSecretRequests.length === 0 && revealedSecret === null && redeemTarget === null) {
-    return null;
-  }
-
-  const redeemable = redeemTarget ?? approvedSecretRequests[0] ?? null;
+  if (!canWrite || resource.configuration['client_type'] !== 'confidential') return null;
 
   return (
     <>
-      {approvedSecretRequests.length > 0 && (
+      {canWrite && (
         <Alert color="green" variant="light">
           <Group justify="space-between" align="center" wrap="wrap" gap="sm">
             <Text size="sm">{t('admin.oauth.redeemReady')}</Text>
             <Group gap="sm">
-              {approvedSecretRequests.map((request) => (
+              {secretActions.map((action) => (
                 <Button
-                  key={request.id}
+                  key={action}
                   size="xs"
                   onClick={() => {
                     redeemMutation.reset();
-                    setRedeemTarget(request);
+                    setRedeemTarget(action);
                     setOverlapSeconds(0);
                   }}
                 >
                   {t('admin.oauth.redeem', {
-                    action: t(`admin.changeAction.${request.action}`),
+                    action: t(`admin.changeAction.${action}`),
                   })}
                 </Button>
               ))}
@@ -136,7 +124,7 @@ export function OauthSecretRedeemBanner({
               : undefined
         }
         extraFields={
-          redeemable?.action === 'rotate_secret' ? (
+          redeemTarget === 'rotate_secret' ? (
             <NumberInput
               label={t('admin.oauth.overlap')}
               description={t('admin.oauth.overlapHint')}
@@ -148,7 +136,7 @@ export function OauthSecretRedeemBanner({
             />
           ) : undefined
         }
-        onSubmit={(reason) => redeemMutation.mutate({ reason })}
+        onSubmit={() => redeemMutation.mutate()}
       />
 
       <SecretRevealModal
@@ -195,13 +183,12 @@ export function OauthClientSections({
   const invalidate = refresh;
 
   const sessionMutation = useMutation({
-    mutationFn: (reason: string) =>
+    mutationFn: () =>
       stepUp.runWithAdminStepUp(() =>
         patchAdminResource(
           'oauth',
           resource.id,
           {
-            reason,
             configuration: { refresh_token_ttl_seconds: sessionDurationSeconds(sessionHours) },
           },
           etag,
@@ -221,9 +208,9 @@ export function OauthClientSections({
       sessionHours <= MAX_SESSION_DURATION_HOURS);
 
   const addMutation = useMutation({
-    mutationFn: async (input: { reason: string }) =>
+    mutationFn: async () =>
       stepUp.runWithAdminStepUp(() =>
-        addOauthRedirectUri(resource.id, { reason: input.reason, uri: newUri.trim() }, etag),
+        addOauthRedirectUri(resource.id, { uri: newUri.trim() }, etag),
       ),
     onSuccess: async () => {
       setAddModal(false);
@@ -233,10 +220,8 @@ export function OauthClientSections({
   });
 
   const removeMutation = useMutation({
-    mutationFn: async (input: { reason: string; entry: RedirectEntry }) =>
-      stepUp.runWithAdminStepUp(() =>
-        removeOauthRedirectUri(resource.id, input.entry.id, input.reason, etag),
-      ),
+    mutationFn: async (input: { entry: RedirectEntry }) =>
+      stepUp.runWithAdminStepUp(() => removeOauthRedirectUri(resource.id, input.entry.id, etag)),
     onSuccess: async () => {
       setRemoveTarget(null);
       await invalidate();
@@ -244,10 +229,9 @@ export function OauthClientSections({
   });
 
   const grantMutation = useMutation({
-    mutationFn: async (input: { reason: string }) =>
+    mutationFn: async () =>
       stepUp.runWithAdminStepUp(() =>
         revokeOauthClientGrants(resource.id, {
-          reason: input.reason,
           ...(grantUserId.trim() ? { user_id: grantUserId.trim() } : {}),
         }),
       ),
@@ -257,24 +241,22 @@ export function OauthClientSections({
     },
   });
 
+  const [revealedSecret, setRevealedSecret] = useState<AdminSecretResult | null>(null);
+  const [overlapSeconds, setOverlapSeconds] = useState(0);
   const secretRequestMutation = useMutation({
-    mutationFn: async (input: { reason: string }) => {
-      const parent = await getAdminResource('application', resource.application_id ?? '');
-      return stepUp.runWithAdminStepUp(() =>
-        requestAdminActivation(
-          'application',
-          resource.application_id ?? '',
-          {
-            reason: input.reason,
-            action: secretRequest ?? 'create_secret',
-            target_resource_id: resource.id,
-          },
-          parent.etag,
+    mutationFn: () =>
+      stepUp.runWithAdminStepUp(() =>
+        (secretRequest === 'rotate_secret'
+          ? redeemOauthClientSecretRotation
+          : redeemOauthClientSecret)(
+          resource.id,
+          { overlap_seconds: secretRequest === 'rotate_secret' ? overlapSeconds : undefined },
+          etag,
         ),
-      );
-    },
-    onSuccess: async () => {
+      ),
+    onSuccess: async (result) => {
       setSecretRequest(null);
+      setRevealedSecret(result);
       await invalidate();
     },
   });
@@ -425,7 +407,6 @@ export function OauthClientSections({
               {t('admin.oauth.secretFlow')}
             </Text>
             <SubmitInlineError error={secretRequestMutation.error} />
-            <OauthSecretRedeemBanner resource={resource} etag={etag} refresh={invalidate} />
           </Stack>
         </SectionCard>
       )}
@@ -453,7 +434,7 @@ export function OauthClientSections({
             required
           />
         }
-        onSubmit={(reason) => addMutation.mutate({ reason })}
+        onSubmit={() => addMutation.mutate()}
       />
 
       <ReasonModal
@@ -470,9 +451,9 @@ export function OauthClientSections({
             ? t('admin.config.conflictHint')
             : undefined
         }
-        onSubmit={(reason) => {
+        onSubmit={() => {
           if (removeTarget) {
-            removeMutation.mutate({ reason, entry: removeTarget });
+            removeMutation.mutate({ entry: removeTarget });
           }
         }}
       />
@@ -514,12 +495,12 @@ export function OauthClientSections({
             data-autofocus
           />
         }
-        onSubmit={(reason) => {
+        onSubmit={() => {
           if (!sessionHoursValid) {
             setSessionError(true);
             return;
           }
-          sessionMutation.mutate(reason);
+          sessionMutation.mutate();
         }}
       />
 
@@ -542,7 +523,7 @@ export function OauthClientSections({
             data-autofocus
           />
         }
-        onSubmit={(reason) => grantMutation.mutate({ reason })}
+        onSubmit={() => grantMutation.mutate()}
       />
 
       <ReasonModal
@@ -557,7 +538,23 @@ export function OauthClientSections({
         confirmLabel={t('common.submit')}
         pending={secretRequestMutation.isPending}
         error={secretRequestMutation.error}
-        onSubmit={(reason) => secretRequestMutation.mutate({ reason })}
+        extraFields={
+          secretRequest === 'rotate_secret' ? (
+            <NumberInput
+              label={t('admin.oauth.overlap')}
+              value={overlapSeconds}
+              onChange={(value) => setOverlapSeconds(Number(value) || 0)}
+              min={0}
+              max={3600}
+            />
+          ) : undefined
+        }
+        onSubmit={() => secretRequestMutation.mutate()}
+      />
+      <SecretRevealModal
+        opened={revealedSecret !== null}
+        onClose={() => setRevealedSecret(null)}
+        secret={revealedSecret}
       />
     </>
   );

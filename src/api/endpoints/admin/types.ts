@@ -9,7 +9,8 @@ export type AdminRole =
   | 'auditor'
   | 'key_admin'
   | 'key_approver'
-  | 'operator';
+  | 'operator'
+  | 'developer';
 
 export type AdminCapability =
   | 'users:read'
@@ -205,12 +206,10 @@ export interface AdminKeyRotationRequest {
 }
 
 export interface AdminKeyRotationCreateInput {
-  reason: string;
   protocol: AdminKeyRotationProtocol;
 }
 
 export interface AdminKeyRotationApprovalInput {
-  reason: string;
   state: AdminKeyRotationState;
 }
 
@@ -241,7 +240,6 @@ export interface AdminChangeRequest {
   created_at: string;
   evaluated_diff: Record<string, unknown> | null;
   requested_by: string;
-  reason: string;
 }
 
 export interface AdminResourceView {
@@ -280,13 +278,11 @@ export interface AdminResourceListQuery {
 }
 
 export interface AdminResourceInput {
-  reason: string;
   application_id?: string;
   configuration: Record<string, unknown>;
 }
 
 export interface AdminActivationRequestInput {
-  reason: string;
   action: AdminChangeAction;
   target_resource_id?: string;
 }
@@ -299,7 +295,6 @@ export interface AdminActivationRequestResult {
 }
 
 export interface AdminApprovalDecisionInput {
-  reason: string;
   change_request_id: string;
   decision: 'approve' | 'reject';
 }
@@ -312,8 +307,6 @@ export interface AdminApprovalDecisionResult {
 }
 
 export interface AdminSecretRedeemInput {
-  reason: string;
-  change_request_id: string;
   overlap_seconds?: number;
 }
 
@@ -324,14 +317,12 @@ export interface AdminSecretResult {
 }
 
 export interface AdminMetadataImportInput {
-  reason: string;
   metadata: string;
   discovery_url?: string;
   format: 'saml' | 'oidc';
 }
 
 export interface AdminGrantRevocationInput {
-  reason: string;
   user_id?: string;
 }
 

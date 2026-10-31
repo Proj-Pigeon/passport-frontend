@@ -52,11 +52,10 @@ export function listDevices(cursor?: string, signal?: AbortSignal, userId?: stri
   });
 }
 
-export function revokeDevice(id: string, userId?: string, reason?: string) {
+export function revokeDevice(id: string, userId?: string) {
   const path = userId ? `/admin/v1/users/${encodeURIComponent(userId)}` : '/v1/me';
   return apiVoid(`${path}/devices/${encodeURIComponent(id)}`, {
     method: 'DELETE',
-    body: userId ? { reason } : undefined,
     scope: userId ? 'admin' : 'account',
   });
 }

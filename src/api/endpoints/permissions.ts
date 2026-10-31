@@ -16,14 +16,12 @@ export interface PermissionCreateInput {
   code: string;
   name: string;
   description: string;
-  reason: string;
 }
 
 export interface PermissionUpdateInput {
   name: string;
   description: string;
   status: PermissionDefinition['status'];
-  reason: string;
 }
 
 export interface PermissionGrants {
@@ -39,7 +37,6 @@ export interface PermissionGrantsInput {
   roles: string[];
   builtin_permission_ids: string[];
   application_permission_ids: string[];
-  reason: string;
 }
 
 export interface DeveloperApplication {
@@ -101,20 +98,17 @@ export function deleteApplicationPermission(
   scope: ApiScope,
   applicationId: string,
   definition: PermissionDefinition,
-  reason: string,
 ) {
   return apiVoid(`${collection(scope, applicationId)}/${encodeURIComponent(definition.id)}`, {
     scope,
     method: 'DELETE',
-    body: { reason },
     headers: { 'If-Match': permissionVersion(definition.version) },
   });
 }
 
-export function initializeGuEarthPermissions(applicationId: string, reason: string) {
+export function initializeGuEarthPermissions(applicationId: string) {
   return apiVoid(`${collection('admin', applicationId)}/presets/guearth`, {
     method: 'POST',
-    body: { reason },
     scope: 'admin',
   });
 }

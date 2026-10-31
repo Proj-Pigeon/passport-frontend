@@ -4,7 +4,6 @@ import {
   Button,
   Divider,
   Fieldset,
-  FileInput,
   Group,
   Modal,
   NumberInput,
@@ -22,11 +21,7 @@ import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 
-import {
-  createAdminResource,
-  listAdminResources,
-  uploadApplicationLogo,
-} from '@/api/endpoints/admin/resources';
+import { createAdminResource, listAdminResources } from '@/api/endpoints/admin/resources';
 import { SubmitErrorAlert } from '@/features/auth/components/SubmitErrorAlert';
 import { adminKeys } from '../../keys';
 import { useAdminSession } from '../../session/useAdminSession';
@@ -93,11 +88,9 @@ function ApplicationCreateForm({
   const [description, setDescription] = useState('');
   const [developerName, setDeveloperName] = useState('');
   const [developerUrl, setDeveloperUrl] = useState('');
-  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [owner, setOwner] = useState<string | null>(null);
   const [risk, setRisk] = useState('normal');
   const [applicationId, setApplicationId] = useState<string | null>(fixedApplicationId ?? null);
-  const [reason, setReason] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [createdApplicationId, setCreatedApplicationId] = useState<string | null>(null);
   const createdApplication = useRef<string | null>(null);
@@ -145,7 +138,6 @@ function ApplicationCreateForm({
           let parentId = createdApplication.current ?? applicationId;
           if (kind === 'application' && !createdApplication.current) {
             const application = await createAdminResource('application', {
-              reason: reason.trim(),
               configuration: {
                 display_name: displayName.trim(),
                 description: description.trim(),
@@ -159,16 +151,12 @@ function ApplicationCreateForm({
             parentId = application.id;
             createdApplication.current = application.id;
             setCreatedApplicationId(application.id);
-            if (logoFile) {
-              await uploadApplicationLogo(application.id, logoFile, logoFile.type);
-            }
             await queryClient.invalidateQueries({
               queryKey: adminKeys.resourceKind('application'),
             });
           }
           {
             await createAdminResource(preset === 'saml' ? 'saml' : 'oauth', {
-              reason: reason.trim(),
               application_id: parentId ?? undefined,
               configuration: protocolConfiguration(preset, fields, displayName.trim()),
             });
@@ -196,7 +184,6 @@ function ApplicationCreateForm({
     const next: Record<string, string> = {};
     const invalid = t('admin.applicationCreate.invalid');
     if (!displayName.trim() || [...displayName.trim()].length > 120) next['displayName'] = invalid;
-    if ([...reason.trim()].length > 1000) next['reason'] = t('admin.reason.hint');
     if (kind === 'application' && !/^usr_[A-Za-z0-9_-]+$/.test(ownerId.trim()))
       next['owner'] = invalid;
     if (kind === 'application' && developerUrl.trim() !== '') {
@@ -349,15 +336,7 @@ function ApplicationCreateForm({
                   maxRows={4}
                   error={errors['description']}
                 />
-                <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
-                  <FileInput
-                    label={t('admin.branding.logo')}
-                    description={t('admin.branding.logoHint')}
-                    accept="image/png,image/jpeg"
-                    value={logoFile}
-                    onChange={setLogoFile}
-                    clearable
-                  />
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
                   <TextInput
                     label={t('admin.branding.developerName')}
                     value={developerName}
@@ -507,18 +486,6 @@ function ApplicationCreateForm({
                 </Text>
               </>
             )}
-            <Textarea
-              label={t('admin.reason.label')}
-              description={t('admin.reason.hint')}
-              placeholder={t('admin.reason.placeholder')}
-              value={reason}
-              onChange={(event) => setReason(event.currentTarget.value)}
-              autosize
-              minRows={2}
-              maxRows={4}
-              required
-              error={errors['reason']}
-            />
           </Stack>
         </Fieldset>
         <Text size="xs" c="dimmed">

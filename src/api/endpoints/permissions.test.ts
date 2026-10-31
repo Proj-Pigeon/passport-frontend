@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { grantAdminStepUp, grantStepUp, seedUser, signIn, signInAdmin } from '@/test/mocks/db';
+import {
+  grantAccountRole,
+  grantAdminStepUp,
+  grantStepUp,
+  seedDeveloperResource,
+  seedUser,
+  signIn,
+  signInAdmin,
+} from '@/test/mocks/db';
 import { mockDb } from '@/test/mocks/server';
 import {
   createApplicationPermission,
@@ -31,7 +39,6 @@ const input = {
   code: 'api.access',
   name: 'Service access',
   description: 'Read service data',
-  reason: 'initial configuration',
 };
 
 describe('permission endpoints', () => {
@@ -42,7 +49,6 @@ describe('permission endpoints', () => {
       name: 'Custom',
       description: 'Renamed',
       status: 'disabled',
-      reason: 'pause',
     });
     expect(updated).toMatchObject({
       code: 'api.access',
@@ -50,10 +56,10 @@ describe('permission endpoints', () => {
       status: 'disabled',
       version: 2,
     });
-    await expect(
-      deleteApplicationPermission('admin', 'app/one', definition, 'stale'),
-    ).rejects.toMatchObject({ status: 412 });
-    await deleteApplicationPermission('admin', 'app/one', updated, 'retire');
+    await expect(deleteApplicationPermission('admin', 'app/one', definition)).rejects.toMatchObject(
+      { status: 412 },
+    );
+    await deleteApplicationPermission('admin', 'app/one', updated);
     expect((await listApplicationPermissions('admin', 'app/one')).items[0]?.status).toBe('deleted');
     await expect(createApplicationPermission('admin', 'app/one', input)).rejects.toMatchObject({
       status: 409,
@@ -62,8 +68,8 @@ describe('permission endpoints', () => {
 
   it('initializes fourteen GuEarth definitions idempotently without granting access', async () => {
     admin();
-    await initializeGuEarthPermissions('guearth', 'initialize');
-    await initializeGuEarthPermissions('guearth', 'repeat');
+    await initializeGuEarthPermissions('guearth');
+    await initializeGuEarthPermissions('guearth');
     const result = await listApplicationPermissions('admin', 'guearth');
     expect(result.items).toHaveLength(14);
     expect(result.items.map((item) => item.code)).toEqual(
@@ -77,21 +83,38 @@ describe('permission endpoints', () => {
     expect(mockDb.permissionGrants.size).toBe(0);
   });
 
+  it('requires the developer role to list owned applications', async () => {
+    const user = seedUser(mockDb);
+    signIn(mockDb, user, 'pwd');
+    seedDeveloperResource(mockDb, { owner_user_id: user.id });
+    await expect(listDeveloperApplications()).rejects.toMatchObject({ status: 403 });
+  });
+
   it('uses only account session and CSRF for owned developer applications', async () => {
     const user = seedUser(mockDb);
     signIn(mockDb, user, 'pwd');
     grantStepUp(mockDb);
-    mockDb.developerApplications.push(
-      { id: 'owned', display_name: 'Owned', status: 'active', owner_user_id: user.id },
-      { id: 'other', display_name: 'Other', status: 'active', owner_user_id: 'another' },
-    );
+    grantAccountRole(mockDb, user.id, ['developer']);
+    seedDeveloperResource(mockDb, {
+      id: 'owned',
+      kind: 'application',
+      display_name: 'Owned',
+      status: 'active',
+      owner_user_id: user.id,
+    });
+    seedDeveloperResource(mockDb, {
+      id: 'other',
+      kind: 'application',
+      display_name: 'Other',
+      status: 'active',
+      owner_user_id: 'another',
+    });
     expect((await listDeveloperApplications()).items.map((item) => item.id)).toEqual(['owned']);
     const definition = await createApplicationPermission('account', 'owned', input);
     await updateApplicationPermission('account', 'owned', definition, {
       name: 'Renamed',
       description: '',
       status: 'active',
-      reason: 'rename',
     });
     expect(mockDb.adminSession).toBeNull();
     await expect(listApplicationPermissions('account', 'other')).rejects.toMatchObject({
@@ -113,7 +136,6 @@ describe('permission endpoints', () => {
         roles: ['user_admin'],
         builtin_permission_ids: [],
         application_permission_ids: [definition.id],
-        reason: 'delegate',
       },
       current.meta.etag!,
     );
@@ -123,19 +145,18 @@ describe('permission endpoints', () => {
     await expect(
       putPermissionGrants(
         'target',
-        { roles: [], builtin_permission_ids: [], application_permission_ids: [], reason: 'stale' },
+        { roles: [], builtin_permission_ids: [], application_permission_ids: [] },
         current.meta.etag!,
       ),
     ).rejects.toMatchObject({ status: 412 });
   });
 
-  it('denies self grants and users-write without super administrator identity', async () => {
+  it('拒绝自授权及非超级管理员修改权限', async () => {
     const user = admin();
     const body = {
       roles: ['super_admin'],
       builtin_permission_ids: [],
       application_permission_ids: [],
-      reason: 'elevate',
     };
     await expect(putPermissionGrants(user.id, body, '"1"')).rejects.toMatchObject({ status: 403 });
     signInAdmin(mockDb, user, ['user_admin']);
@@ -150,13 +171,11 @@ describe('permission endpoints', () => {
       roles: [],
       builtin_permission_ids: [],
       application_permission_ids: [definition.id],
-      reason: 'grant access',
     };
     await putPermissionGrants('target', body, '"1"');
     const disabled = await updateApplicationPermission('admin', 'app', definition, {
       name: input.name,
       description: input.description,
-      reason: input.reason,
       status: 'disabled',
     });
     expect(disabled.grant_count).toBe(1);
@@ -166,7 +185,7 @@ describe('permission endpoints', () => {
     await expect(putPermissionGrants('new-target', body, '"1"')).rejects.toMatchObject({
       status: 400,
     });
-    await deleteApplicationPermission('admin', 'app', disabled, 'delete grants');
+    await deleteApplicationPermission('admin', 'app', disabled);
     expect((await listApplicationPermissions('admin', 'app')).items[0]?.grant_count).toBe(0);
     await expect(putPermissionGrants('target', body, '"3"')).rejects.toMatchObject({ status: 400 });
   });
@@ -193,17 +212,9 @@ describe('permission endpoints', () => {
     expect((await createApplicationPermission('account', 'owned', input)).grant_count).toBe(0);
   });
 
-  it('enforces trimmed Unicode reason lengths', async () => {
+  it('无需备注即可创建权限', async () => {
     admin();
-    for (const reason of [' a ', String.fromCodePoint(0x10400).repeat(2), 'a'.repeat(1001)]) {
-      await expect(
-        createApplicationPermission('admin', 'app', { ...input, reason }),
-      ).rejects.toMatchObject({ status: 400 });
-    }
-    expect(
-      (await createApplicationPermission('admin', 'app', { ...input, reason: '  甲乙丙  ' }))
-        .grant_count,
-    ).toBe(0);
+    expect((await createApplicationPermission('admin', 'app', input)).grant_count).toBe(0);
   });
 
   it('requires step-up for sensitive writes', async () => {
@@ -220,7 +231,6 @@ const resourceInput = {
   name: 'GuEarth',
   audience: 'https://api.example.test',
   client_ids: ['oc_device'],
-  reason: 'register',
 };
 
 function switchAdmin(user: ReturnType<typeof seedUser>, roles: Parameters<typeof signInAdmin>[2]) {
@@ -232,14 +242,10 @@ describe('resource server endpoints', () => {
   it('autoapproves for a sole approver but requires explicit one-time redemption', async () => {
     admin();
     let resource = await createResourceServer(resourceInput);
-    await expect(
-      requestResourceServerActivation(resource, 'activate', 'activate'),
-    ).rejects.toMatchObject({ status: 409 });
-    const request = await requestResourceServerActivation(
-      resource,
-      'issue_secret',
-      'issue credential',
-    );
+    await expect(requestResourceServerActivation(resource, 'activate')).rejects.toMatchObject({
+      status: 409,
+    });
+    const request = await requestResourceServerActivation(resource, 'issue_secret');
     expect(request.status).toBe('approved');
     expect(mockDb.adminSecretCounter).toBe(0);
     resource = await getResourceServer(resource.id);
@@ -248,30 +254,24 @@ describe('resource server endpoints', () => {
       base_version: 2,
       snapshot: { name: 'GuEarth', client_ids: ['oc_device'] },
     });
-    const secret = await createResourceServerSecret(resource, 'redeem approval', request.id);
+    const secret = await createResourceServerSecret(resource, request.id);
     expect(secret.credential_id).toBeTruthy();
-    await expect(
-      createResourceServerSecret(resource, 'stale replay', request.id),
-    ).rejects.toMatchObject({ status: 412 });
+    await expect(createResourceServerSecret(resource, request.id)).rejects.toMatchObject({
+      status: 412,
+    });
     resource = await getResourceServer(resource.id);
     expect(resource.version).toBe(3);
     expect(resource.change_requests?.[0]?.status).toBe('applied');
-    await expect(
-      createResourceServerSecret(resource, 'replay approval', request.id),
-    ).rejects.toMatchObject({ status: 409 });
+    await expect(createResourceServerSecret(resource, request.id)).rejects.toMatchObject({
+      status: 409,
+    });
     expect(mockDb.adminSecretCounter).toBe(1);
-    expect(
-      (await requestResourceServerActivation(resource, 'activate', 'activate service')).status,
-    ).toBe('applied');
+    expect((await requestResourceServerActivation(resource, 'activate')).status).toBe('applied');
     resource = await getResourceServer(resource.id);
     expect(resource.status).toBe('active');
-    const rotate = await requestResourceServerActivation(
-      resource,
-      'rotate_secret',
-      'rotate credential',
-    );
+    const rotate = await requestResourceServerActivation(resource, 'rotate_secret');
     resource = await getResourceServer(resource.id);
-    await createResourceServerSecret(resource, 'redeem rotation', rotate.id);
+    await createResourceServerSecret(resource, rotate.id);
     expect(mockDb.adminSecretCounter).toBe(2);
   });
 
@@ -280,23 +280,18 @@ describe('resource server endpoints', () => {
     const approver = seedUser(mockDb, { id: 'approver', username: 'approver' });
     mockDb.adminRolesOf.set(approver.id, ['application_approver']);
     let resource = await createResourceServer(resourceInput);
-    const request = await requestResourceServerActivation(
-      resource,
-      'issue_secret',
-      'issue credential',
-    );
+    const request = await requestResourceServerActivation(resource, 'issue_secret');
     expect(request.status).toBe('pending');
     resource = await getResourceServer(resource.id);
-    await expect(
-      requestResourceServerActivation(resource, 'issue_secret', 'duplicate request'),
-    ).rejects.toMatchObject({ status: 409 });
-    await expect(
-      createResourceServerSecret(resource, 'unapproved redemption', request.id),
-    ).rejects.toMatchObject({ status: 409 });
+    await expect(requestResourceServerActivation(resource, 'issue_secret')).rejects.toMatchObject({
+      status: 409,
+    });
+    await expect(createResourceServerSecret(resource, request.id)).rejects.toMatchObject({
+      status: 409,
+    });
     const decision = {
       change_request_id: request.id,
       decision: 'approve' as const,
-      reason: 'reviewed snapshot',
     };
     await expect(decideResourceServerApproval(resource, decision)).rejects.toMatchObject({
       status: 403,
@@ -304,17 +299,13 @@ describe('resource server endpoints', () => {
     switchAdmin(approver, ['application_approver', 'application_admin']);
     expect((await decideResourceServerApproval(resource, decision)).status).toBe('approved');
     expect((await getResourceServer(resource.id)).version).toBe(resource.version);
-    await expect(
-      createResourceServerSecret(resource, 'wrong requester', request.id),
-    ).rejects.toMatchObject({ status: 403 });
+    await expect(createResourceServerSecret(resource, request.id)).rejects.toMatchObject({
+      status: 403,
+    });
     switchAdmin(requester, ['super_admin']);
-    await createResourceServerSecret(resource, 'original requester', request.id);
+    await createResourceServerSecret(resource, request.id);
     resource = await getResourceServer(resource.id);
-    const activation = await requestResourceServerActivation(
-      resource,
-      'activate',
-      'activate service',
-    );
+    const activation = await requestResourceServerActivation(resource, 'activate');
     resource = await getResourceServer(resource.id);
     switchAdmin(approver, ['application_approver']);
     expect(
@@ -349,31 +340,27 @@ describe('resource server endpoints', () => {
       status: 400,
     });
     let resource = await createResourceServer(resourceInput);
-    await expect(
-      requestResourceServerActivation(resource, 'rotate_secret', 'no credential'),
-    ).rejects.toMatchObject({ status: 409 });
-    const request = await requestResourceServerActivation(
-      resource,
-      'issue_secret',
-      'issue credential',
-    );
+    await expect(requestResourceServerActivation(resource, 'rotate_secret')).rejects.toMatchObject({
+      status: 409,
+    });
+    const request = await requestResourceServerActivation(resource, 'issue_secret');
     resource = await getResourceServer(resource.id);
     const old = resource;
     resource = await updateResourceServer(resource, { ...resourceInput, name: 'New name' });
-    await expect(
-      createResourceServerSecret(old, 'stale version', request.id),
-    ).rejects.toMatchObject({ status: 412 });
-    await expect(
-      createResourceServerSecret(resource, 'stale approval', request.id),
-    ).rejects.toMatchObject({ status: 409 });
-    const next = await requestResourceServerActivation(resource, 'issue_secret', 'new approval');
+    await expect(createResourceServerSecret(old, request.id)).rejects.toMatchObject({
+      status: 412,
+    });
+    await expect(createResourceServerSecret(resource, request.id)).rejects.toMatchObject({
+      status: 409,
+    });
+    const next = await requestResourceServerActivation(resource, 'issue_secret');
     resource = await getResourceServer(resource.id);
     mockDb.resourceServers[0]!.change_requests!.find(
       (item) => item.id === next.id,
     )!.snapshot.audience = 'https://other.example.test';
-    await expect(
-      createResourceServerSecret(resource, 'mismatched snapshot', next.id),
-    ).rejects.toMatchObject({ status: 409 });
+    await expect(createResourceServerSecret(resource, next.id)).rejects.toMatchObject({
+      status: 409,
+    });
     expect(mockDb.adminSecretCounter).toBe(0);
   });
 });

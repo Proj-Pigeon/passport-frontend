@@ -34,12 +34,12 @@ export function ApplicationTypeSection({
     applicationType(resource.configuration['application_type']) ??
     applicationType(resource.published_configuration?.['application_type']);
   const mutation = useMutation({
-    mutationFn: (reason: string) =>
+    mutationFn: () =>
       stepUp.runWithAdminStepUp(() =>
         patchAdminResource(
           'application',
           resource.id,
-          { reason, configuration: { ...resource.configuration, application_type: type } },
+          { configuration: { ...resource.configuration, application_type: type } },
           etag,
         ),
       ),
@@ -83,7 +83,7 @@ export function ApplicationTypeSection({
         confirmLabel={t('common.submit')}
         pending={mutation.isPending}
         error={mutation.error}
-        onSubmit={(reason) => mutation.mutate(reason)}
+        onSubmit={() => mutation.mutate()}
       />
     </Stack>
   );

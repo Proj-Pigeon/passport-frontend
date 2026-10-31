@@ -44,12 +44,12 @@ export function FederationCredentialsCard({
       : '');
 
   const clientIdMutation = useMutation({
-    mutationFn: async (input: { reason: string }) =>
+    mutationFn: async () =>
       stepUp.runWithAdminStepUp(() =>
         patchAdminResource(
           'federation',
           resource.id,
-          { ...input, configuration: { client_id: clientId.trim() } },
+          { configuration: { client_id: clientId.trim() } },
           etag,
         ),
       ),
@@ -60,10 +60,8 @@ export function FederationCredentialsCard({
   });
 
   const setMutation = useMutation({
-    mutationFn: async (input: { reason: string }) =>
-      stepUp.runWithAdminStepUp(() =>
-        setFederationSecret(resource.id, { reason: input.reason, secret }),
-      ),
+    mutationFn: async () =>
+      stepUp.runWithAdminStepUp(() => setFederationSecret(resource.id, { secret })),
     onSuccess: async () => {
       setConfirm(null);
       setSecret('');
@@ -72,8 +70,7 @@ export function FederationCredentialsCard({
   });
 
   const clearMutation = useMutation({
-    mutationFn: async (input: { reason: string }) =>
-      stepUp.runWithAdminStepUp(() => clearFederationSecret(resource.id, input)),
+    mutationFn: async () => stepUp.runWithAdminStepUp(() => clearFederationSecret(resource.id)),
     onSuccess: async () => {
       setConfirm(null);
       await refresh();
@@ -195,16 +192,16 @@ export function FederationCredentialsCard({
             />
           ) : undefined
         }
-        onSubmit={(reason) => {
+        onSubmit={() => {
           if (confirm?.action === 'set') {
             if (secret.trim().length === 0) {
               return;
             }
-            setMutation.mutate({ reason });
+            setMutation.mutate();
           } else if (confirm?.action === 'clear') {
-            clearMutation.mutate({ reason });
+            clearMutation.mutate();
           } else if (confirm?.action === 'clientId') {
-            clientIdMutation.mutate({ reason });
+            clientIdMutation.mutate();
           }
         }}
       />

@@ -134,7 +134,6 @@ function findChangeRequest(
 function newChangeRequest(
   resource: MockAdminResource,
   action: AdminChangeRequest['action'],
-  reason: string,
   requestedBy: string,
 ): AdminChangeRequest {
   const change: AdminChangeRequest = {
@@ -146,7 +145,6 @@ function newChangeRequest(
     created_at: new Date().toISOString(),
     evaluated_diff: null,
     requested_by: requestedBy,
-    reason,
   };
   resource.change_requests.push(change);
   return change;
@@ -667,6 +665,8 @@ export function createAdminHandlers(db: MockDb): RequestHandler[] {
             ...(configuration as Record<string, unknown>),
           };
         }
+        if (resource.status === 'active' && kind !== 'federation')
+          resource.published_configuration = { ...resource.configuration };
         return resourceWithEtag(db, bumpResource(resource));
       }),
     );
@@ -690,7 +690,6 @@ export function createAdminHandlers(db: MockDb): RequestHandler[] {
           return envelope(400, 'invalid_request', 'A JSON request body is required.');
         }
         const action = str(body['action']);
-        const reason = str(body['reason']);
         if (!['activate', 'deactivate', 'create_secret', 'rotate_secret'].includes(action)) {
           return envelope(422, 'validation_failed', 'The action is not supported.');
         }
@@ -703,7 +702,7 @@ export function createAdminHandlers(db: MockDb): RequestHandler[] {
         const duplicated = target.change_requests.some(
           (entry) => entry.status === 'pending' && entry.action === action,
         );
-        if (duplicated) {
+        if (kind === 'federation' && duplicated) {
           return envelope(
             409,
             'conflict',
@@ -713,10 +712,9 @@ export function createAdminHandlers(db: MockDb): RequestHandler[] {
         const change = newChangeRequest(
           target,
           action as AdminChangeRequest['action'],
-          reason,
           db.adminSession?.user_id ?? 'unknown',
         );
-        if (soleApproverSession(db)) {
+        if (kind !== 'federation' || soleApproverSession(db)) {
           change.status =
             action === 'create_secret' || action === 'rotate_secret' ? 'approved' : 'applied';
           if (action === 'activate') {
@@ -739,6 +737,9 @@ export function createAdminHandlers(db: MockDb): RequestHandler[] {
       }),
 
       http.post(`${prefix}/:resourceId/approval-decisions`, async ({ params, request }) => {
+        if (kind !== 'federation') {
+          return notFound();
+        }
         const guard = adminGuard(db, request, { capability: 'applications:approve' });
         if (guard) {
           return guard;
@@ -1268,25 +1269,14 @@ async function redeemSecret(
   if (!resource || resource.kind !== 'oauth') {
     return notFound();
   }
+  const mismatch = ifMatchFailure(request, resource.version);
+  if (mismatch) return mismatch;
   const body = await readJson(request);
-  const found = findChangeRequest(db, str(body?.['change_request_id']));
-  if (!found) {
-    return envelope(404, 'not_found', 'The change request was not found.');
-  }
-  const { change } = found;
-  if (change.action !== 'create_secret' && change.action !== 'rotate_secret') {
-    return envelope(409, 'conflict', 'The change request is not a secret request.');
-  }
-  if (change.status !== 'approved') {
-    return envelope(409, 'conflict', 'The change request has not been approved yet.');
-  }
-  if (db.adminSession && change.requested_by !== db.adminSession.user_id) {
-    return envelope(403, 'forbidden', 'Only the requester may redeem the secret.');
-  }
-  if (rotation !== (change.action === 'rotate_secret')) {
-    return envelope(409, 'conflict', 'The secret endpoint does not match the change action.');
-  }
-  change.status = 'applied';
+  if (resource.configuration['client_type'] !== 'confidential')
+    return envelope(409, 'conflict', 'A confidential client is required.');
+  if (!rotation && body?.['overlap_seconds'] !== undefined && Number(body['overlap_seconds']) !== 0)
+    return envelope(400, 'invalid_request', 'Overlap is only supported for rotation.');
+  bumpResource(resource);
   db.adminSecretCounter += 1;
   const overlapSeconds = Number(body?.['overlap_seconds']);
   return HttpResponse.json(

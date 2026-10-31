@@ -65,7 +65,7 @@ describe('Application types', () => {
     expect(await screen.findByText(/应用类型已锁定/, {}, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: '应用类型' })).not.toBeInTheDocument();
   });
-  it('assigns a type to a legacy application through a reasoned change', async () => {
+  it('assigns a type to a legacy application after confirmation', async () => {
     admin();
     seedAdminResource(mockDb, { id: 'apl_legacy', display_name: 'Legacy' });
     renderRoute(['/admin/applications/apl_legacy']);
@@ -76,7 +76,7 @@ describe('Application types', () => {
     expect(select).toHaveValue('设备授权');
     await user.click(screen.getByRole('button', { name: '提交' }));
     const modal = await screen.findByRole('dialog');
-    await user.type(within(modal).getByLabelText(/^操作原因/), 'Classify compatible application');
+    expect(within(modal).queryByLabelText(/^操作原因/)).not.toBeInTheDocument();
     await user.click(within(modal).getByRole('button', { name: '提交' }));
     expect(await screen.findByText(/应用类型已锁定/)).toBeInTheDocument();
     expect(mockDb.adminResources[0]?.configuration['application_type']).toBe('device');
@@ -135,7 +135,6 @@ describe('Application types', () => {
     await user.click(preset);
     await user.keyboard('{ArrowDown}{Enter}');
     await fillText(user, within(modal).getByLabelText(/^显示名称/), 'Legacy client');
-    await fillText(user, within(modal).getByLabelText(/^操作原因/), 'Add compatible client');
     await user.clear(parent);
     await user.type(parent, 'Legacy');
     await user.keyboard('{ArrowDown}{Enter}');
@@ -183,7 +182,6 @@ describe('Application types', () => {
     expect(within(modal).queryByLabelText(/^回调地址/)).not.toBeInTheDocument();
     expect(within(modal).queryByRole('link', { name: '前往应用详情' })).not.toBeInTheDocument();
     await fillText(user, within(modal).getByLabelText(/^显示名称/), 'GuEarth desktop');
-    await fillText(user, within(modal).getByLabelText(/^操作原因/), 'Add device client');
     await user.click(within(modal).getByRole('button', { name: '创建草稿' }));
     await waitFor(() =>
       expect(mockDb.adminResources.find((item) => item.kind === 'oauth')).toMatchObject({
@@ -202,13 +200,13 @@ describe('Application types', () => {
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: '创建草稿' }));
     const modal = await screen.findByRole('dialog');
+    expect(modal.querySelector('input[type="file"]')).toBeNull();
     await user.click(within(modal).getByRole('combobox', { name: /^接入预设/ }));
     await user.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}{Enter}');
     expect(within(modal).getByRole('combobox', { name: /^接入预设/ })).toHaveValue('设备授权');
     expect(within(modal).queryByLabelText(/^回调地址/)).not.toBeInTheDocument();
     expect(within(modal).queryByRole('link', { name: '前往应用详情' })).not.toBeInTheDocument();
     await fillText(user, within(modal).getByLabelText(/^显示名称/), 'New device app');
-    await fillText(user, within(modal).getByLabelText(/^操作原因/), 'Create device application');
     await user.click(within(modal).getByRole('button', { name: '创建草稿' }));
     await waitFor(() => expect(mockDb.adminResources).toHaveLength(2));
     const application = mockDb.adminResources.find((item) => item.kind === 'application');

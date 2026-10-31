@@ -28,13 +28,12 @@ export function MetadataImportCard({
   const supportsDiscovery = kind === 'federation' && format === 'oidc';
 
   const mutation = useMutation({
-    mutationFn: (input: { reason: string }) =>
+    mutationFn: () =>
       stepUp.runWithAdminStepUp(() =>
         importResourceMetadata(
           kind,
           resource.id,
           {
-            reason: input.reason,
             metadata: modal === 'discovery' ? '' : metadata,
             discovery_url: modal === 'discovery' ? discoveryUrl.trim() : undefined,
             format,
@@ -145,7 +144,7 @@ export function MetadataImportCard({
             />
           )
         }
-        onSubmit={(reason) => mutation.mutate({ reason })}
+        onSubmit={() => mutation.mutate()}
       />
     </>
   );

@@ -97,7 +97,7 @@ describe('DevicesCard', () => {
     expect(revoke).toHaveBeenCalledOnce();
   });
 
-  it('requires a reason for an administrator to revoke a user device', async () => {
+  it('allows an administrator to revoke a user device without a reason', async () => {
     const admin = seedUser(mockDb);
     signInAdmin(mockDb, admin, ['user_admin']);
     grantAdminStepUp(mockDb);
@@ -119,8 +119,8 @@ describe('DevicesCard', () => {
       http.get('*/admin/v1/users/:id/devices', () =>
         HttpResponse.json({ items, next_cursor: null }),
       ),
-      http.delete('*/admin/v1/users/:id/devices/:device', async ({ request }) => {
-        revoke(await request.json());
+      http.delete('*/admin/v1/users/:id/devices/:device', ({ params }) => {
+        revoke(params['device']);
         items = [];
         return new HttpResponse(null, { status: 204 });
       }),
@@ -130,11 +130,11 @@ describe('DevicesCard', () => {
     await screen.findByText('Lost laptop');
     await user.click(screen.getByRole('button', { name: '撤销访问' }));
     const dialog = within(await screen.findByRole('dialog'));
-    expect(dialog.getByRole('button', { name: '撤销访问' })).toBeDisabled();
-    await user.type(dialog.getByLabelText(/^操作原因/), 'Device lost');
+    expect(dialog.queryByLabelText(/^操作原因/)).not.toBeInTheDocument();
+    expect(dialog.getByRole('button', { name: '撤销访问' })).toBeEnabled();
     await user.click(dialog.getByRole('button', { name: '撤销访问' }));
     expect(await screen.findByText('暂无活动设备。')).toBeInTheDocument();
-    expect(revoke).toHaveBeenCalledWith({ reason: 'Device lost' });
+    expect(revoke).toHaveBeenCalledWith('dev_admin_target');
   });
 });
 

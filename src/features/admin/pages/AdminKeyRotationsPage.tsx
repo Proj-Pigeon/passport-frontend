@@ -54,10 +54,8 @@ export function AdminKeyRotationsPage() {
   const [history, setHistory] = useState<RotationHistoryEntry[]>([]);
 
   const createMutation = useMutation({
-    mutationFn: (input: { reason: string }) =>
-      stepUp.runWithAdminStepUp(() =>
-        createAdminKeyRotation({ reason: input.reason, protocol: protocol ?? 'oidc' }),
-      ),
+    mutationFn: () =>
+      stepUp.runWithAdminStepUp(() => createAdminKeyRotation({ protocol: protocol ?? 'oidc' })),
     onSuccess: (data) => {
       setCreateModal(false);
       setHistory((previous) => [data, ...previous].slice(0, 10));
@@ -67,11 +65,11 @@ export function AdminKeyRotationsPage() {
   });
 
   const approveMutation = useMutation({
-    mutationFn: (input: { reason: string }) =>
+    mutationFn: () =>
       stepUp.runWithAdminStepUp(() =>
         approveAdminKeyRotation(
           rotationId.trim(),
-          { reason: input.reason, state: targetState ?? 'published' },
+          { state: targetState ?? 'published' },
           `"${version.trim() || '1'}"`,
         ),
       ),
@@ -252,7 +250,7 @@ export function AdminKeyRotationsPage() {
             allowDeselect={false}
           />
         }
-        onSubmit={(reason) => createMutation.mutate({ reason })}
+        onSubmit={() => createMutation.mutate()}
       />
 
       <ReasonModal
@@ -308,7 +306,7 @@ export function AdminKeyRotationsPage() {
             </SimpleGrid>
           </Stack>
         }
-        onSubmit={(reason) => approveMutation.mutate({ reason })}
+        onSubmit={() => approveMutation.mutate()}
       />
     </AdminPageContainer>
   );
