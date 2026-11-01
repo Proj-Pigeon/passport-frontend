@@ -116,7 +116,7 @@ export function AccountLayout() {
                     {isLoading ? (
                       <Skeleton circle width={30} height={30} />
                     ) : (
-                      <AccountAvatar size="sm" radius="xl" />
+                      <AccountAvatar size="sm" />
                     )}
                     <Stack gap={0} visibleFrom="xs">
                       {isLoading ? (

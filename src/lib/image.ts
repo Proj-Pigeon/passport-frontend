@@ -1,6 +1,8 @@
 export const AVATAR_MAX_BYTES = 512 * 1024;
 export const AVATAR_MIN_DIMENSION = 1;
 export const AVATAR_MAX_DIMENSION = 2048;
+export const AVATAR_SOURCE_MAX_BYTES = 16 * 1024 * 1024;
+export const AVATAR_SOURCE_MAX_DIMENSION = 8192;
 
 export const AVATAR_MEDIA_TYPES = ['image/jpeg', 'image/png'] as const;
 
@@ -21,6 +23,24 @@ export interface PreparedAvatar {
   height: number;
   size: number;
 }
+
+export type AvatarSourceIssue =
+  | 'unsupported_media_type'
+  | 'media_type_mismatch'
+  | 'source_too_large'
+  | 'invalid_image'
+  | 'source_invalid_dimensions'
+  | 'read_failed';
+
+export interface CropImageSource {
+  url: string;
+  mediaType: AvatarMediaType;
+  width: number;
+  height: number;
+}
+
+export type ImageSourceResult =
+  { ok: true; source: CropImageSource } | { ok: false; issue: AvatarSourceIssue };
 
 export type AvatarPrepareResult =
   { ok: true; avatar: PreparedAvatar } | { ok: false; issue: AvatarIssue };
@@ -135,6 +155,61 @@ export async function prepareAvatarFile(file: Blob): Promise<AvatarPrepareResult
       width,
       height,
       size: buffer.byteLength,
+    },
+  };
+}
+
+export async function readImageForCrop(file: Blob): Promise<ImageSourceResult> {
+  if (file.size > AVATAR_SOURCE_MAX_BYTES) {
+    return { ok: false, issue: 'source_too_large' };
+  }
+
+  let buffer: ArrayBuffer;
+  try {
+    buffer = await file.arrayBuffer();
+  } catch {
+    return { ok: false, issue: 'read_failed' };
+  }
+
+  if (file.type.length > 0 && !isAvatarMediaType(file.type)) {
+    return { ok: false, issue: 'unsupported_media_type' };
+  }
+
+  const detected = detectImageMediaType(new Uint8Array(buffer));
+  if (!detected) {
+    return { ok: false, issue: 'invalid_image' };
+  }
+  if (file.type.length > 0 && file.type !== detected) {
+    return { ok: false, issue: 'media_type_mismatch' };
+  }
+
+  const dimensions = await readImageDimensions(new Blob([buffer], { type: detected }));
+  if (!dimensions) {
+    return { ok: false, issue: 'invalid_image' };
+  }
+  const { width, height } = dimensions;
+  if (
+    !Number.isFinite(width) ||
+    !Number.isFinite(height) ||
+    width < AVATAR_MIN_DIMENSION ||
+    height < AVATAR_MIN_DIMENSION ||
+    width > AVATAR_SOURCE_MAX_DIMENSION ||
+    height > AVATAR_SOURCE_MAX_DIMENSION
+  ) {
+    return { ok: false, issue: 'source_invalid_dimensions' };
+  }
+
+  if (typeof URL?.createObjectURL !== 'function') {
+    return { ok: false, issue: 'read_failed' };
+  }
+
+  return {
+    ok: true,
+    source: {
+      url: URL.createObjectURL(new Blob([buffer], { type: detected })),
+      mediaType: detected,
+      width,
+      height,
     },
   };
 }

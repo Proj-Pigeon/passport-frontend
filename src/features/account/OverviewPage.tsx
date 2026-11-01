@@ -64,7 +64,7 @@ export function OverviewPage() {
 
       <Paper p={{ base: 'md', sm: 'lg' }}>
         <Group gap="lg" wrap="nowrap" align="center">
-          <AccountAvatar size={64} radius="xl" />
+          <AccountAvatar size={64} />
           <Stack gap={4} style={{ minWidth: 0 }}>
             <Text fz="lg" fw={600} lineClamp={1}>
               {displayName}

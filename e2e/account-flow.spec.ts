@@ -78,12 +78,15 @@ test.describe('account profile', () => {
     await createVerifiedAccount(page, request);
 
     await page.goto('/account/profile');
+    await page.getByRole('button', { name: '编辑昵称' }).click();
     await page.getByLabel(/^昵称/).fill('E2E 昵称');
     await page.getByRole('button', { name: '保存' }).click();
     await expect(page.getByText('资料已更新')).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
 
     await page.reload();
-    await expect(page.getByLabel(/^昵称/)).toHaveValue('E2E 昵称');
+    await expect(page.getByText('E2E 昵称')).toBeVisible();
+    await page.getByRole('button', { name: '编辑昵称' }).click();
     await expect(page.getByRole('button', { name: '保存' })).toBeDisabled();
 
     await page.goto('/account');
@@ -98,26 +101,29 @@ test.describe('account profile', () => {
     await expect(page.getByRole('button', { name: '删除' })).not.toBeVisible();
     await expect(page.getByRole('button', { name: '上传图片' })).toBeEnabled();
 
+    await page.locator('input[type="file"]').setInputFiles(AVATAR_PATH);
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByRole('img', { name: '裁剪头像' })).toBeVisible();
     const uploaded = page.waitForResponse(
       (response) =>
         new URL(response.url()).pathname === '/v1/me/avatar' &&
         response.request().method() === 'PUT',
     );
-    await page.locator('input[type="file"]').setInputFiles(AVATAR_PATH);
+    await dialog.getByRole('button', { name: '确认上传' }).click();
     expect((await uploaded).ok()).toBe(true);
     await expect(page.getByText('头像已更新')).toBeVisible();
     await expect(page.locator('img[src*="/v1/me/avatar"]').first()).toBeVisible();
 
     await page.getByRole('button', { name: '删除' }).click();
-    const dialog = page.getByRole('dialog');
-    await expect(dialog.getByText('删除头像')).toBeVisible();
-    await dialog.getByRole('button', { name: '删除' }).click();
+    const deleteDialog = page.getByRole('dialog');
+    await expect(deleteDialog.getByText('删除头像')).toBeVisible();
+    await deleteDialog.getByRole('button', { name: '删除' }).click();
 
     await expect(page.getByText('头像已删除')).toBeVisible();
     await expect(page.locator('img[src*="/v1/me/avatar"]')).toHaveCount(0);
   });
 
-  test('rejects an oversized image in the browser before uploading', async ({ page, request }) => {
+  test('offers cropping for an oversized image without uploading', async ({ page, request }) => {
     await createVerifiedAccount(page, request);
     const uploads: string[] = [];
     page.on('request', (entry) => {
@@ -133,7 +139,8 @@ test.describe('account profile', () => {
       buffer: Buffer.concat([AVATAR_BYTES, Buffer.alloc(600 * 1024)]),
     });
 
-    await expect(page.getByText('图片超过 512 KB 限制。')).toBeVisible();
+    await expect(page.getByRole('dialog').getByRole('img', { name: '裁剪头像' })).toBeVisible();
+    await page.getByRole('dialog').getByRole('button', { name: '取消' }).click();
     await expect(page.getByRole('button', { name: '上传图片' })).toBeEnabled();
     expect(uploads).toEqual([]);
   });

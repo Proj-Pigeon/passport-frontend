@@ -9,7 +9,9 @@ import { AccountAvatar } from '@/components/AccountAvatar';
 import { useDeleteAvatar, useUploadAvatar } from '@/features/account/useAvatar';
 import { useAvatarUrl } from '@/features/account/useProfile';
 import { describeApiError } from '@/i18n/errors';
-import { prepareAvatarFile } from '@/lib/image';
+import { readImageForCrop, type CropImageSource } from '@/lib/image';
+
+import { AvatarCropModal, type AvatarCropResult } from './AvatarCropModal';
 
 export function AvatarUploader() {
   const { t } = useTranslation();
@@ -20,15 +22,20 @@ export function AvatarUploader() {
   const fileResetRef = useRef<() => void>(() => {});
   const mountedRef = useRef(false);
   const preparingRef = useRef(false);
+  const sourceRef = useRef<CropImageSource | null>(null);
   const [isPreparing, setIsPreparing] = useState(false);
+  const [source, setSource] = useState<CropImageSource | null>(null);
   const [issue, setIssue] = useState<string | null>(null);
   const isUploading = isPreparing || upload.isPending;
-  const isBusy = isUploading || remove.isPending;
+  const isBusy = isUploading || remove.isPending || source !== null;
 
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      if (sourceRef.current) {
+        URL.revokeObjectURL(sourceRef.current.url);
+      }
     };
   }, []);
 
@@ -48,34 +55,49 @@ export function AvatarUploader() {
     setIsPreparing(true);
     setIssue(null);
     try {
-      const result = await prepareAvatarFile(file);
+      const result = await readImageForCrop(file);
       if (!mountedRef.current) {
+        if (result.ok) {
+          URL.revokeObjectURL(result.source.url);
+        }
         return;
       }
       if (!result.ok) {
         setIssue(t(fieldErrorI18nKey('avatar', result.issue)));
         return;
       }
-
-      upload.mutate(
-        { blob: result.avatar.blob, mediaType: result.avatar.mediaType },
-        {
-          onError: (error) => {
-            const code = isApiError(error) ? error.fieldCode('avatar') : undefined;
-            setIssue(
-              code
-                ? t(fieldErrorI18nKey('avatar', code), { defaultValue: describeApiError(error) })
-                : describeApiError(error),
-            );
-          },
-        },
-      );
+      if (sourceRef.current) {
+        URL.revokeObjectURL(sourceRef.current.url);
+      }
+      sourceRef.current = result.source;
+      setSource(result.source);
     } finally {
       preparingRef.current = false;
       if (mountedRef.current) {
         setIsPreparing(false);
       }
     }
+  };
+
+  const closeCrop = () => {
+    setSource(null);
+  };
+
+  const handleCropConfirm = ({ blob, mediaType }: AvatarCropResult) => {
+    closeCrop();
+    upload.mutate(
+      { blob, mediaType },
+      {
+        onError: (error) => {
+          const code = isApiError(error) ? error.fieldCode('avatar') : undefined;
+          setIssue(
+            code
+              ? t(fieldErrorI18nKey('avatar', code), { defaultValue: describeApiError(error) })
+              : describeApiError(error),
+          );
+        },
+      },
+    );
   };
 
   const confirmDelete = () => {
@@ -91,7 +113,7 @@ export function AvatarUploader() {
   return (
     <Stack gap="md">
       <Group gap="lg" align="flex-start" wrap="nowrap">
-        <AccountAvatar size={88} radius="xl" />
+        <AccountAvatar size={88} />
 
         <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
           {avatarUrl && (
@@ -148,6 +170,8 @@ export function AvatarUploader() {
           <Text size="sm">{issue}</Text>
         </Alert>
       )}
+
+      <AvatarCropModal source={source} onCancel={closeCrop} onConfirm={handleCropConfirm} />
     </Stack>
   );
 }

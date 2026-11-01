@@ -7,7 +7,11 @@ import { useProfile, useUpdateDisplayName } from '@/features/account/useProfile'
 import { fieldErrorsFromApiError, useFieldErrorText } from '@/i18n/errors';
 import { normalizeDisplayName, profileSchema } from '@/lib/validators';
 
-export function DisplayNameForm() {
+export interface DisplayNameEditModalProps {
+  close: () => void;
+}
+
+export function DisplayNameEditModal({ close }: DisplayNameEditModalProps) {
   const { t } = useTranslation();
   const errorText = useFieldErrorText();
   const { profile } = useProfile();
@@ -24,6 +28,7 @@ export function DisplayNameForm() {
 
   const handleSubmit = form.onSubmit((values) => {
     mutation.mutate(normalizeDisplayName(values.display_name), {
+      onSuccess: () => close(),
       onError: (error) => {
         if (isApiError(error) && error.status === 422) {
           form.setErrors(fieldErrorsFromApiError(error));
@@ -44,8 +49,12 @@ export function DisplayNameForm() {
           autoComplete="nickname"
           maxLength={80}
           disabled={mutation.isPending}
+          data-autofocus
         />
         <Group justify="flex-end">
+          <Button variant="subtle" onClick={close} disabled={mutation.isPending}>
+            {t('common.cancel')}
+          </Button>
           <Button type="submit" loading={mutation.isPending} disabled={!dirty}>
             {t('common.save')}
           </Button>
