@@ -38,6 +38,7 @@ import { formatDateTime } from '@/lib/format';
 
 import { DevicesCard } from '@/features/devices/DevicesCard';
 import { AdminPageContainer } from '../components/AdminPageShell';
+import { AdminUserIdentityCard } from '../components/AdminUserIdentityCard';
 import { PermissionGrantsCard } from '../components/PermissionGrantsCard';
 import { adminKeys } from '../keys';
 import { AdminStatusBadge } from '../components/AdminStatusBadge';
@@ -254,7 +255,8 @@ export function AdminUserDetailPage() {
 
 export function AdminUserOverviewSubpage() {
   const { t } = useTranslation();
-  const { user } = useOutletContext<AdminUserDetailContextValue>();
+  const { user, userId, canWrite } = useOutletContext<AdminUserDetailContextValue>();
+  const { data: session } = useAdminSession();
 
   return (
     <Grid>
@@ -310,39 +312,47 @@ export function AdminUserOverviewSubpage() {
       </Grid.Col>
 
       <Grid.Col span={{ base: 12, md: 5 }}>
-        <SectionCard title={t('admin.users.identitiesCard')}>
-          {user.external_identities.length === 0 ? (
-            <PageState kind="empty" minHeight={80} title={t('admin.users.noIdentities')} />
-          ) : (
-            <Stack gap={0}>
-              {user.external_identities.map((identity, index) => (
-                <Stack key={identity.id} gap={0}>
-                  {index > 0 && <Divider my="sm" />}
-                  <Group justify="space-between" gap="sm">
-                    <Stack gap={2}>
-                      <Group gap="xs">
-                        <Text size="sm" fw={500}>
-                          {identity.provider}
-                        </Text>
+        <Stack gap="lg">
+          <SectionCard title={t('admin.users.identitiesCard')}>
+            {user.external_identities.length === 0 ? (
+              <PageState kind="empty" minHeight={80} title={t('admin.users.noIdentities')} />
+            ) : (
+              <Stack gap={0}>
+                {user.external_identities.map((identity, index) => (
+                  <Stack key={identity.id} gap={0}>
+                    {index > 0 && <Divider my="sm" />}
+                    <Group justify="space-between" gap="sm">
+                      <Stack gap={2}>
+                        <Group gap="xs">
+                          <Text size="sm" fw={500}>
+                            {identity.provider}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            {identity.provider_type}
+                          </Text>
+                        </Group>
                         <Text size="xs" c="dimmed">
-                          {identity.provider_type}
+                          {t('admin.users.identityLinkedAt', {
+                            time: formatDateTime(identity.created_at) ?? '—',
+                          })}
+                          {identity.last_used_at
+                            ? ` · ${t('admin.users.identityLastUsedAt', { time: formatDateTime(identity.last_used_at) ?? '—' })}`
+                            : ''}
                         </Text>
-                      </Group>
-                      <Text size="xs" c="dimmed">
-                        {t('admin.users.identityLinkedAt', {
-                          time: formatDateTime(identity.created_at) ?? '—',
-                        })}
-                        {identity.last_used_at
-                          ? ` · ${t('admin.users.identityLastUsedAt', { time: formatDateTime(identity.last_used_at) ?? '—' })}`
-                          : ''}
-                      </Text>
-                    </Stack>
-                  </Group>
-                </Stack>
-              ))}
-            </Stack>
-          )}
-        </SectionCard>
+                      </Stack>
+                    </Group>
+                  </Stack>
+                ))}
+              </Stack>
+            )}
+          </SectionCard>
+          <AdminUserIdentityCard
+            key={userId}
+            userId={userId}
+            canWrite={canWrite}
+            isSelf={session?.user_id === userId}
+          />
+        </Stack>
       </Grid.Col>
     </Grid>
   );

@@ -73,7 +73,7 @@ test('the shipped image includes headers at every nginx add_header scope', () =>
     assert.match(headers, new RegExp(`add_header ${name} "[^"\\n]+" always;`));
   }
   assert.match(headers, /script-src 'self' https:\/\/challenges\.cloudflare\.com;/);
-  assert.match(headers, /frame-src https:\/\/challenges\.cloudflare\.com;/);
+  assert.match(headers, /frame-src https:\/\/challenges\.cloudflare\.com https:\/\/verify\.didit\.me;/);
   assert.match(headers, /style-src 'self' 'unsafe-inline';/);
   assert.match(headers, /connect-src 'self' https: http: wss: ws:;/);
   assert.match(headers, /font-src 'self' data: https:;/);

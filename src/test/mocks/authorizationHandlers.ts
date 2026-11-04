@@ -552,7 +552,7 @@ export function createAuthorizationHandlers(db: MockDb): RequestHandler[] {
           revocation_endpoint: 'https://passport.example.com/v1/revocation',
           introspection_endpoint: 'https://passport.example.com/v1/introspection',
           end_session_endpoint: 'https://passport.example.com/v1/logout',
-          scopes_supported: ['openid', 'profile', 'email'],
+          scopes_supported: ['openid', 'profile', 'email', 'identity'],
           code_challenge_methods: ['S256'],
           grant_types: ['authorization_code', 'refresh_token'],
           id_token_signing_alg: ['RS256'],

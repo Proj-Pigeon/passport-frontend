@@ -1,4 +1,5 @@
 import type { AccountStatus, AuthenticationMethod, AuthenticatorTransport } from '@/api/types';
+import type { IdentityRecord, AdminIdentityReveal } from '@/api/endpoints/account/identity';
 import type {
   DeveloperApplication,
   PermissionDefinition,
@@ -131,6 +132,9 @@ export interface MockAdminResource {
 }
 
 export interface MockDb {
+  identityEnabled: boolean;
+  identities: Map<string, IdentityRecord[]>;
+  identityMaterials: Map<string, AdminIdentityReveal>;
   users: MockUser[];
   verificationTokens: Map<string, string>;
   resetTokens: Map<string, string>;
@@ -223,6 +227,9 @@ export const INTERACTION_TTL_MS = 5 * 60_000;
 
 export function createMockDb(): MockDb {
   return {
+    identityEnabled: false,
+    identities: new Map(),
+    identityMaterials: new Map(),
     users: [],
     verificationTokens: new Map(),
     resetTokens: new Map(),

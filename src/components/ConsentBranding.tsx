@@ -11,7 +11,7 @@ export interface ConsentApplication {
   developerUrl?: string | null;
 }
 
-const KNOWN_SCOPES = ['openid', 'profile', 'email'] as const;
+const KNOWN_SCOPES = ['openid', 'profile', 'email', 'identity'] as const;
 
 export function ConsentBrandRow({ application }: { application: ConsentApplication }) {
   return (

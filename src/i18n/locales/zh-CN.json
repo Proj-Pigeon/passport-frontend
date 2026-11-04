@@ -505,10 +505,45 @@
         "title": "读取邮箱地址",
         "description": "允许应用获取你在{{platform}}中绑定的邮箱地址。"
       },
+      "identity": {
+        "title": "读取实名认证",
+        "description": "允许应用读取你的认证状态、真实姓名和证件号码。"
+      },
       "unknownDescription": "应用还请求了一项其他权限（{{scope}}）。"
     }
   },
   "account": {
+    "identity": {
+      "title": "实名认证",
+      "modalTitle": "实名认证",
+      "iframeTitle": "身份核验窗口",
+      "start": "开始认证",
+      "continue": "继续认证",
+      "reverify": "重新认证",
+      "providerError": "认证暂时遇到问题，请重试",
+      "status": {
+        "verified": "已通过",
+        "pending": "认证中",
+        "rejected": "未通过",
+        "notVerified": "未开始"
+      },
+      "currentStatus": "当前状态",
+      "legalName": "法定姓名",
+      "documentNumber": "证件号码",
+      "documentType": "证件类型",
+      "channel": "认证渠道",
+      "channelValue": "Didit",
+      "verifiedAt": "认证完成于 {{time}}",
+      "unverifiedHint": "你还没有完成身份认证。完成认证后，我们会在这里显示最新状态。",
+      "pendingHint": "身份认证正在进行中，完成后状态会自动更新；你也可以继续完成剩余步骤。",
+      "rejectedHint": "上次身份认证未通过。请确认证件清晰有效后重新认证。",
+      "documentTypes": {
+        "idCard": "居民身份证",
+        "passport": "护照",
+        "driverLicense": "驾驶证",
+        "residencePermit": "居留许可"
+      }
+    },
     "overview": {
       "title": "概览",
       "subtitle": "查看账号信息与安全状态",
@@ -770,6 +805,37 @@
     },
     "users": {
       "title": "用户管理",
+      "identity": {
+        "title": "实名认证",
+        "empty": "暂无实名认证记录",
+        "reveal": "查看实名材料",
+        "revealAttempt": "查看 {{time}} 的材料",
+        "fullName": "真实姓名",
+        "documentNumber": "证件号码",
+        "dateOfBirth": "出生日期",
+        "documentType": "证件类型",
+        "issuingCountry": "签发国家",
+        "decisionAt": "认证时间",
+        "status": "状态",
+        "attempts": "认证记录",
+        "audited": "本次浏览已记录审计",
+        "approve": "通过",
+        "reject": "驳回",
+        "reset": "重置",
+        "reason": "操作理由",
+        "reviewStates": {
+          "pending": "审核中",
+          "approved": "已通过",
+          "rejected": "已驳回",
+          "reset": "已重置"
+        },
+        "images": {
+          "document_front": "证件正面",
+          "document_back": "证件背面",
+          "portrait": "证件照片",
+          "selfie": "自拍"
+        }
+      },
       "subtitle": "查询用户、查看安全概览并执行管理操作。",
       "searchPlaceholder": "搜索用户名或邮箱…",
       "statusFilter": "按状态筛选",

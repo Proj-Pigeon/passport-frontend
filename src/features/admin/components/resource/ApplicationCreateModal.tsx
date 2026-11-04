@@ -390,7 +390,7 @@ function ApplicationCreateForm({
                 )}
                 <TagsInput
                   label={t('admin.applicationCreate.scopes')}
-                  data={['openid', 'profile', 'email', 'offline_access']}
+                  data={['openid', 'profile', 'email', 'identity', 'offline_access']}
                   value={fields.scopes}
                   onChange={(value) => update('scopes', value)}
                   error={errors['scopes']}

@@ -505,10 +505,45 @@
         "title": "Read your email address",
         "description": "Allows the app to read the email address linked to your {{platform}} account."
       },
+      "identity": {
+        "title": "Read verified identity",
+        "description": "Allows the app to read your verification status, legal name and document number."
+      },
       "unknownDescription": "The app is also requesting another permission ({{scope}})."
     }
   },
   "account": {
+    "identity": {
+      "title": "Identity verification",
+      "modalTitle": "Verify your identity",
+      "iframeTitle": "Identity verification window",
+      "start": "Start verification",
+      "continue": "Continue verification",
+      "reverify": "Verify again",
+      "providerError": "Verification is temporarily unavailable. Try again.",
+      "status": {
+        "verified": "Approved",
+        "pending": "In progress",
+        "rejected": "Not approved",
+        "notVerified": "Not started"
+      },
+      "currentStatus": "Current status",
+      "legalName": "Legal name",
+      "documentNumber": "Document number",
+      "documentType": "Document type",
+      "channel": "Verification channel",
+      "channelValue": "Didit",
+      "verifiedAt": "Verified on {{time}}",
+      "unverifiedHint": "You haven't completed identity verification yet. Your latest status will appear here once you complete it.",
+      "pendingHint": "Your identity verification is in progress. The status will update automatically when it's done; you can also continue any remaining steps.",
+      "rejectedHint": "Your last identity verification was not approved. Make sure your document is clear and valid, then try again.",
+      "documentTypes": {
+        "idCard": "National ID card",
+        "passport": "Passport",
+        "driverLicense": "Driver's license",
+        "residencePermit": "Residence permit"
+      }
+    },
     "overview": {
       "title": "Account overview",
       "subtitle": "Review your account details and security status",
@@ -770,6 +805,37 @@
     },
     "users": {
       "title": "Users",
+      "identity": {
+        "title": "Identity verification",
+        "empty": "No identity verification records",
+        "reveal": "View identity materials",
+        "revealAttempt": "View materials from {{time}}",
+        "fullName": "Legal name",
+        "documentNumber": "Document number",
+        "dateOfBirth": "Date of birth",
+        "documentType": "Document type",
+        "issuingCountry": "Issuing country",
+        "decisionAt": "Verified at",
+        "status": "Status",
+        "attempts": "Verification history",
+        "audited": "This viewing has been recorded in the audit log",
+        "approve": "Approve",
+        "reject": "Reject",
+        "reset": "Reset",
+        "reason": "Reason",
+        "reviewStates": {
+          "pending": "In review",
+          "approved": "Approved",
+          "rejected": "Rejected",
+          "reset": "Reset"
+        },
+        "images": {
+          "document_front": "Document front",
+          "document_back": "Document back",
+          "portrait": "Document portrait",
+          "selfie": "Selfie"
+        }
+      },
       "subtitle": "Search users, review security details and take administrative actions.",
       "searchPlaceholder": "Search username or email…",
       "statusFilter": "Filter by status",

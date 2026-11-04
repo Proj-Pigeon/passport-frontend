@@ -6,6 +6,7 @@ import { AccountPageHeader } from '@/components/AccountSections';
 import { AuthorizedAppsCard } from '@/features/devices/AuthorizedAppsCard';
 import { DevicesCard } from '@/features/devices/DevicesCard';
 import { AccountSecurityCard } from './components/AccountSecurityCard';
+import { IdentityVerificationCard } from './components/IdentityVerificationCard';
 import { PasskeySection } from './components/PasskeySection';
 
 export function SecurityPage() {
@@ -18,6 +19,7 @@ export function SecurityPage() {
         subtitle={t('account.security.subtitle')}
       />
       <AccountSecurityCard />
+      <IdentityVerificationCard />
       <PasskeySection />
       <DevicesCard />
       <AuthorizedAppsCard />

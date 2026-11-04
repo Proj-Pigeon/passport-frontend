@@ -180,9 +180,11 @@ function interactionDecision(
 
 import { createAdminHandlers } from './adminHandlers';
 import { createAuthorizationHandlers } from './authorizationHandlers';
+import { createIdentityHandlers } from './identityHandlers';
 
 export function createHandlers(db: MockDb): RequestHandler[] {
   return [
+    ...createIdentityHandlers(db),
     ...createAuthorizationHandlers(db),
     http.get('*/v1/me/devices', () =>
       db.session ? HttpResponse.json({ items: [], next_cursor: null }) : unauthorized(),

@@ -253,7 +253,7 @@ export function DeveloperProtocolSettingsCard({
                   <TagsInput
                     size="md"
                     label={t('admin.applicationCreate.scopes')}
-                    data={['openid', 'profile', 'email', 'offline_access']}
+                    data={['openid', 'profile', 'email', 'identity', 'offline_access']}
                     value={values.allowed_scopes}
                     onChange={(value) => update('allowed_scopes', value)}
                     error={errors.allowed_scopes}

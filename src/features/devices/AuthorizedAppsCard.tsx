@@ -38,7 +38,7 @@ import { PageState } from '@/components/PageState';
 import { SubmitErrorAlert } from '@/features/auth/components/SubmitErrorAlert';
 import { formatDate } from '@/lib/format';
 
-const KNOWN_SCOPES = ['openid', 'profile', 'email'] as const;
+const KNOWN_SCOPES = ['openid', 'profile', 'email', 'identity'] as const;
 
 export function AuthorizedAppsCard() {
   const { t } = useTranslation();
