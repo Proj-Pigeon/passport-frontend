@@ -20,6 +20,13 @@ export interface IdentityRecord {
 export interface MyIdentityResponse {
   enabled: boolean;
   identity: IdentityRecord | null;
+  reverification_request: IdentityReverificationRequest | null;
+}
+
+export interface IdentityReverificationRequest {
+  id: string;
+  reason: string;
+  created_at: string;
 }
 
 export interface IdentitySessionResponse {
@@ -50,6 +57,7 @@ export function refreshIdentitySession(id: string) {
 export interface AdminIdentityResponse {
   identity: IdentityRecord | null;
   attempts: IdentityRecord[];
+  reverification_request: IdentityReverificationRequest | null;
 }
 
 export interface AdminIdentityReveal {
@@ -91,6 +99,40 @@ export function reviewAdminUserIdentity(
   return apiVoid(`/admin/v1/users/${encodeURIComponent(userId)}/identity/review`, {
     method: 'POST',
     body: { id, decision, reason },
+    scope: 'admin',
+  });
+}
+
+export function requestAdminUserIdentityReverification(userId: string, reason: string) {
+  return apiVoid(`/admin/v1/users/${encodeURIComponent(userId)}/identity/reverification-requests`, {
+    method: 'POST',
+    body: { reason },
+    scope: 'admin',
+  });
+}
+
+export function cancelAdminUserIdentityReverification(userId: string, id: string, reason: string) {
+  return apiVoid(
+    `/admin/v1/users/${encodeURIComponent(userId)}/identity/reverification-requests/${encodeURIComponent(id)}`,
+    { method: 'DELETE', body: { reason }, scope: 'admin' },
+  );
+}
+
+export function deleteAdminUserIdentity(userId: string, id: string, reason: string) {
+  return apiVoid(
+    `/admin/v1/users/${encodeURIComponent(userId)}/identity/${encodeURIComponent(id)}`,
+    {
+      method: 'DELETE',
+      body: { reason },
+      scope: 'admin',
+    },
+  );
+}
+
+export function bindAdminUserIdentity(userId: string, id: string, reason: string) {
+  return apiVoid(`/admin/v1/users/${encodeURIComponent(userId)}/identity/binding`, {
+    method: 'POST',
+    body: { id, reason },
     scope: 'admin',
   });
 }

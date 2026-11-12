@@ -1,4 +1,4 @@
-import { Stack, Text } from '@mantine/core';
+import { Button, Stack, Text } from '@mantine/core';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -57,9 +57,14 @@ export function IdentityVerificationModal({
   return (
     <Stack gap="sm">
       {error !== null && (
-        <Text c="red" size="sm">
-          {describeApiError(error)}
-        </Text>
+        <Stack gap="xs">
+          <Text c="red" size="sm">
+            {describeApiError(error)}
+          </Text>
+          <Button variant="light" onClick={onClose}>
+            {t('account.identity.closeAndWait')}
+          </Button>
+        </Stack>
       )}
       <iframe
         ref={frameRef}

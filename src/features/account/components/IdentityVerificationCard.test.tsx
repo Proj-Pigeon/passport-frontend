@@ -23,11 +23,11 @@ export const identityRecord: IdentityRecord = {
 
 describe('IdentityVerificationCard', () => {
   it.each([
-    ['approved', 'Approved', true, '已通过', '重新认证'],
+    ['approved', 'Approved', true, '已通过', null],
     ['pending', 'In Progress', false, '认证中', '继续认证'],
-    ['rejected', 'Declined', false, '未通过', '重新认证'],
-    ['reset', 'Approved', false, '未开始', '重新认证'],
-    ['pending', 'Expired', false, '未开始', '重新认证'],
+    ['rejected', 'Declined', false, '未通过', null],
+    ['reset', 'Approved', false, '未开始', null],
+    ['pending', 'Expired', false, '未开始', null],
   ] as const)(
     'renders %s state without revealing plaintext',
     async (reviewState, status, verified, label, action) => {
@@ -39,7 +39,7 @@ describe('IdentityVerificationCard', () => {
       ]);
       renderRoute(['/account/security']);
       expect((await screen.findAllByText(label)).length).toBeGreaterThan(0);
-      expect(screen.getByRole('button', { name: action })).toBeInTheDocument();
+      if (action) expect(screen.getByRole('button', { name: action })).toBeInTheDocument();
       expect(screen.queryByText('张三')).not.toBeInTheDocument();
       if (verified) {
         expect(screen.getByText(/1101\*+1234/)).toBeInTheDocument();

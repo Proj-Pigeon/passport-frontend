@@ -1,6 +1,5 @@
-import { Button, Group, Paper, Skeleton, Stack, Text, Title } from '@mantine/core';
+import { Alert, Button, Group, Paper, Skeleton, Stack, Text, Title } from '@mantine/core';
 import { useModals } from '@mantine/modals';
-import { IconRefresh } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -135,9 +134,11 @@ export function IdentityVerificationCard() {
   if (!query.data.enabled) return null;
 
   const identity = query.data.identity;
+  const reverificationRequest = query.data.reverification_request;
   const status = identityStatus(identity);
   const verified = status === 'verified';
-  const actionLabel = status === 'pending' ? 'continue' : identity ? 'reverify' : 'start';
+  const canContinue = Boolean(identity && status === 'pending');
+  const canStartRequested = Boolean(reverificationRequest && !canContinue);
   const hint =
     status === 'pending'
       ? t('account.identity.pendingHint')
@@ -186,44 +187,39 @@ export function IdentityVerificationCard() {
           </Text>
         )}
 
-        {create.isError && (
-          <Text size="sm" c="red">
-            {describeApiError(create.error)}
-          </Text>
+        {reverificationRequest && (
+          <Alert color="orange" title={t('account.identity.reverification.title')}>
+            {reverificationRequest.reason || t('account.identity.reverification.description')}
+          </Alert>
         )}
 
-        {verified ? (
-          <Group
-            justify={verifiedAt ? 'space-between' : 'flex-end'}
-            align="center"
-            gap="sm"
-            wrap="wrap"
-          >
+        {create.isError && (
+          <Alert color="red" title={t('account.identity.sessionUnavailable')}>
+            <Stack gap={4}>
+              <Text size="sm">{describeApiError(create.error)}</Text>
+              <Text size="sm">{t('account.identity.sessionUnavailableHint')}</Text>
+            </Stack>
+          </Alert>
+        )}
+
+        {verified && !reverificationRequest ? (
+          <Group justify="flex-start" align="center" gap="sm" wrap="wrap">
             {verifiedAt && (
               <Text size="xs" c="dimmed">
                 {t('account.identity.verifiedAt', { time: verifiedAt })}
               </Text>
             )}
-            <Button
-              variant="subtle"
-              size="xs"
-              leftSection={<IconRefresh size={14} />}
-              loading={create.isPending}
-              onClick={() => void openSession().catch(() => undefined)}
-            >
-              {t('account.identity.reverify')}
-            </Button>
           </Group>
-        ) : (
+        ) : canContinue || canStartRequested || (!identity && !reverificationRequest) ? (
           <Button
             fullWidth
             size="md"
             loading={create.isPending}
             onClick={() => void openSession().catch(() => undefined)}
           >
-            {t(`account.identity.${actionLabel}`)}
+            {t(`account.identity.${canContinue ? 'continue' : 'start'}`)}
           </Button>
-        )}
+        ) : null}
       </Stack>
     </IdentityCardFrame>
   );

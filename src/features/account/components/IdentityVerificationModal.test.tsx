@@ -2,6 +2,7 @@ import { act, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { renderWithProviders } from '@/test/render';
+import type { MyIdentityResponse } from '@/api/endpoints/account/identity';
 import { IdentityVerificationModal } from './IdentityVerificationModal';
 import { DIDIT_ORIGIN, embeddedUrl } from './identityVerification';
 
@@ -14,10 +15,10 @@ const session = {
 
 describe('IdentityVerificationModal', () => {
   it('ignores foreign origins and unrelated frames, and refreshes only through the server', async () => {
-    let resolveRefresh: (result: { enabled: boolean; identity: null }) => void = () => undefined;
+    let resolveRefresh: (result: MyIdentityResponse) => void = () => undefined;
     const onRefresh = vi.fn(
       () =>
-        new Promise<{ enabled: boolean; identity: null }>((resolve) => {
+        new Promise<MyIdentityResponse>((resolve) => {
           resolveRefresh = resolve;
         }),
     );
@@ -43,7 +44,9 @@ describe('IdentityVerificationModal', () => {
     send(DIDIT_ORIGIN, iframe.contentWindow);
     expect(onRefresh).toHaveBeenCalledExactlyOnceWith(session.id);
     expect(onClose).not.toHaveBeenCalled();
-    await act(async () => resolveRefresh({ enabled: true, identity: null }));
+    await act(async () =>
+      resolveRefresh({ enabled: true, identity: null, reverification_request: null }),
+    );
     await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
   });
 

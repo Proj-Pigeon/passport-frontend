@@ -33,6 +33,8 @@ export function createIdentityHandlers(db: MockDb): RequestHandler[] {
         HttpResponse.json({
           enabled: db.identityEnabled,
           identity: db.identities.get(db.currentUserId ?? '')?.[0] ?? null,
+          reverification_request:
+            db.identityReverificationRequests.get(db.currentUserId ?? '') ?? null,
         }),
     ),
     http.post('*/v1/me/identity/sessions', ({ request }) => {
@@ -47,6 +49,17 @@ export function createIdentityHandlers(db: MockDb): RequestHandler[] {
           item.review_state === 'pending' &&
           !['Expired', 'Abandoned', 'Kyc Expired', 'Declined', 'Approved'].includes(item.status),
       );
+      const reverificationRequest = db.identityReverificationRequests.get(userId);
+      if (active) {
+        return HttpResponse.json({
+          id: active.id,
+          session_id: active.session_id,
+          session_url: `https://verify.didit.me/session/${active.session_id}`,
+          expires_at: new Date(Date.now() + 30 * 60_000).toISOString(),
+        });
+      }
+      if (!reverificationRequest && attempts[0]?.verified)
+        return envelope(409, 'conflict', 'Identity verification is already completed and locked.');
       const now = new Date().toISOString();
       const record: IdentityRecord = active ?? {
         id: `kyc_mock_${attempts.length + 1}`,
@@ -63,6 +76,7 @@ export function createIdentityHandlers(db: MockDb): RequestHandler[] {
         verified: false,
       };
       if (!active) db.identities.set(userId, [record, ...attempts]);
+      if (reverificationRequest) db.identityReverificationRequests.delete(userId);
       return HttpResponse.json(
         {
           id: record.id,
@@ -84,8 +98,29 @@ export function createIdentityHandlers(db: MockDb): RequestHandler[] {
       const failure = adminGuard(request);
       if (failure) return failure;
       const records = db.identities.get(String(params.userId)) ?? [];
-      return HttpResponse.json({ identity: records[0] ?? null, attempts: records });
+      return HttpResponse.json({
+        identity: records[0] ?? null,
+        attempts: records,
+        reverification_request:
+          db.identityReverificationRequests.get(String(params.userId)) ?? null,
+      });
     }),
+    http.post(
+      '*/admin/v1/users/:userId/identity/reverification-requests',
+      async ({ request, params }) => {
+        const failure = adminGuard(request, true);
+        if (failure) return failure;
+        const input = await readJson(request);
+        const reason = str(input?.reason).trim();
+        if (reason.length < 3) return envelope(422, 'validation_failed', 'A reason is required.');
+        db.identityReverificationRequests.set(String(params.userId), {
+          id: `irr_${Date.now()}`,
+          reason,
+          created_at: new Date().toISOString(),
+        });
+        return new HttpResponse(null, { status: 204 });
+      },
+    ),
     http.post('*/admin/v1/users/:userId/identity/reveal', async ({ request, params }) => {
       const failure = adminGuard(request, true);
       if (failure) return failure;

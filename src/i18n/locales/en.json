@@ -519,8 +519,10 @@
       "iframeTitle": "Identity verification window",
       "start": "Start verification",
       "continue": "Continue verification",
-      "reverify": "Verify again",
       "providerError": "Verification is temporarily unavailable. Try again.",
+      "closeAndWait": "This KYC request has been canceled. Please contact customer support for more details.",
+      "sessionUnavailable": "This verification link is unavailable",
+      "sessionUnavailableHint": "Please contact customer support or try again later.",
       "status": {
         "verified": "Approved",
         "pending": "In progress",
@@ -537,6 +539,10 @@
       "unverifiedHint": "You haven't completed identity verification yet. Your latest status will appear here once you complete it.",
       "pendingHint": "Your identity verification is in progress. The status will update automatically when it's done; you can also continue any remaining steps.",
       "rejectedHint": "Your last identity verification was not approved. Make sure your document is clear and valid, then try again.",
+      "reverification": {
+        "title": "Administrator requested a new verification",
+        "description": "Review your identity information and start the new verification here."
+      },
       "documentTypes": {
         "idCard": "National ID card",
         "passport": "Passport",
@@ -822,6 +828,14 @@
         "approve": "Approve",
         "reject": "Reject",
         "reset": "Reset",
+        "request": "Request verification",
+        "requestPending": "A new verification request is waiting for the user",
+        "cancelRequest": "Delete re-verification request",
+        "cancelRequestReason": "Delete an accidentally created re-verification request",
+        "bind": "Bind this record",
+        "delete": "Delete this record",
+        "bindReason": "Bind an approved identity record to the account",
+        "deleteReason": "Delete an identity verification request created by mistake",
         "reason": "Reason",
         "reviewStates": {
           "pending": "In review",

@@ -134,6 +134,7 @@ export interface MockAdminResource {
 export interface MockDb {
   identityEnabled: boolean;
   identities: Map<string, IdentityRecord[]>;
+  identityReverificationRequests: Map<string, { id: string; reason: string; created_at: string }>;
   identityMaterials: Map<string, AdminIdentityReveal>;
   users: MockUser[];
   verificationTokens: Map<string, string>;
@@ -229,6 +230,7 @@ export function createMockDb(): MockDb {
   return {
     identityEnabled: false,
     identities: new Map(),
+    identityReverificationRequests: new Map(),
     identityMaterials: new Map(),
     users: [],
     verificationTokens: new Map(),

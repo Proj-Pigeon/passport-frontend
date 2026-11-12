@@ -519,8 +519,10 @@
       "iframeTitle": "身份核验窗口",
       "start": "开始认证",
       "continue": "继续认证",
-      "reverify": "重新认证",
       "providerError": "认证暂时遇到问题，请重试",
+      "closeAndWait": "本次认证请求已被取消，请联系客户支持以获取更多详情。",
+      "sessionUnavailable": "认证服务当前不可用",
+      "sessionUnavailableHint": "请联系客户支持或稍后再试。",
       "status": {
         "verified": "已通过",
         "pending": "认证中",
@@ -537,6 +539,10 @@
       "unverifiedHint": "你还没有完成身份认证。完成认证后，我们会在这里显示最新状态。",
       "pendingHint": "身份认证正在进行中，完成后状态会自动更新；你也可以继续完成剩余步骤。",
       "rejectedHint": "上次身份认证未通过。请确认证件清晰有效后重新认证。",
+      "reverification": {
+        "title": "管理员要求重新实名认证",
+        "description": "请在用户端确认身份信息后开始新的实名认证。"
+      },
       "documentTypes": {
         "idCard": "居民身份证",
         "passport": "护照",
@@ -822,6 +828,14 @@
         "approve": "通过",
         "reject": "驳回",
         "reset": "重置",
+        "request": "要求重新认证",
+        "requestPending": "新的实名认证请求已等待用户处理",
+        "cancelRequest": "删除重新认证请求",
+        "cancelRequestReason": "删除误操作的重新认证请求",
+        "bind": "绑定此记录",
+        "delete": "删除此记录",
+        "bindReason": "管理员选择已通过的实名记录绑定账号",
+        "deleteReason": "删除误操作的实名认证请求",
         "reason": "操作理由",
         "reviewStates": {
           "pending": "审核中",
